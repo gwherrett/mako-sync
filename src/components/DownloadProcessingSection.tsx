@@ -87,6 +87,9 @@ export function DownloadProcessingSection() {
   // Inline mapping state
   const [savingGenre, setSavingGenre] = useState<string | null>(null);
 
+  // Filter state
+  const [statusFilter, setStatusFilter] = useState<'all' | 'mapped' | 'unmapped' | 'error'>('all');
+
   // Check for File System Access API support
   const isSupported = isFileSystemAccessSupported();
 
@@ -307,7 +310,14 @@ export function DownloadProcessingSection() {
   const handleReset = () => {
     setResult(null);
     setProgress(null);
+    setStatusFilter('all');
   };
+
+  // Filter files based on status
+  const filteredFiles = result?.files.filter((file) => {
+    if (statusFilter === 'all') return true;
+    return file.status === statusFilter;
+  }) ?? [];
 
   // Get status badge
   const getStatusBadge = (status: ProcessedFile['status']) => {
@@ -450,24 +460,44 @@ export function DownloadProcessingSection() {
         {/* Results */}
         {result && (
           <>
-            {/* Summary */}
-            <div className="flex flex-wrap gap-4 text-sm">
-              <div className="flex items-center gap-2">
-                <Music className="h-4 w-4" />
-                <span>Total: {result.summary.total}</span>
-              </div>
-              <div className="flex items-center gap-2 text-green-600">
-                <CheckCircle2 className="h-4 w-4" />
-                <span>Mapped: {result.summary.mapped}</span>
-              </div>
-              <div className="flex items-center gap-2 text-yellow-600">
-                <AlertCircle className="h-4 w-4" />
-                <span>Unmapped: {result.summary.unmapped}</span>
-              </div>
-              <div className="flex items-center gap-2 text-red-600">
-                <XCircle className="h-4 w-4" />
-                <span>Errors: {result.summary.errors}</span>
-              </div>
+            {/* Summary with filter buttons */}
+            <div className="flex flex-wrap gap-2 text-sm">
+              <Button
+                variant={statusFilter === 'all' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setStatusFilter('all')}
+                className="h-8"
+              >
+                <Music className="h-4 w-4 mr-1" />
+                All ({result.summary.total})
+              </Button>
+              <Button
+                variant={statusFilter === 'mapped' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setStatusFilter('mapped')}
+                className={`h-8 ${statusFilter !== 'mapped' ? 'text-green-600 border-green-300 hover:bg-green-50' : 'bg-green-600 hover:bg-green-700'}`}
+              >
+                <CheckCircle2 className="h-4 w-4 mr-1" />
+                Mapped ({result.summary.mapped})
+              </Button>
+              <Button
+                variant={statusFilter === 'unmapped' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setStatusFilter('unmapped')}
+                className={`h-8 ${statusFilter !== 'unmapped' ? 'text-yellow-600 border-yellow-300 hover:bg-yellow-50' : 'bg-yellow-600 hover:bg-yellow-700'}`}
+              >
+                <AlertCircle className="h-4 w-4 mr-1" />
+                Unmapped ({result.summary.unmapped})
+              </Button>
+              <Button
+                variant={statusFilter === 'error' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setStatusFilter('error')}
+                className={`h-8 ${statusFilter !== 'error' ? 'text-red-600 border-red-300 hover:bg-red-50' : 'bg-red-600 hover:bg-red-700'}`}
+              >
+                <XCircle className="h-4 w-4 mr-1" />
+                Errors ({result.summary.errors})
+              </Button>
               <div className="ml-auto flex gap-2">
                 <Button variant="outline" size="sm" onClick={handleReset}>
                   Clear
@@ -535,7 +565,7 @@ export function DownloadProcessingSection() {
             )}
 
             {/* Files table */}
-            {result.files.length > 0 && (
+            {filteredFiles.length > 0 && (
               <div className="border rounded-lg max-h-96 overflow-auto">
                 <Table>
                   <TableHeader className="sticky top-0 bg-background">
@@ -547,7 +577,7 @@ export function DownloadProcessingSection() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {result.files.map((file) => (
+                    {filteredFiles.map((file) => (
                       <TableRow key={file.relativePath}>
                         <TableCell>
                           <div className="font-medium truncate max-w-[280px]">
@@ -615,6 +645,21 @@ export function DownloadProcessingSection() {
                     ))}
                   </TableBody>
                 </Table>
+              </div>
+            )}
+
+            {/* Empty state for filtered results */}
+            {result.files.length > 0 && filteredFiles.length === 0 && (
+              <div className="text-center py-8 text-muted-foreground border rounded-lg">
+                <p>No files match the current filter.</p>
+                <Button
+                  variant="link"
+                  size="sm"
+                  onClick={() => setStatusFilter('all')}
+                  className="mt-2"
+                >
+                  Show all files
+                </Button>
               </div>
             )}
 
