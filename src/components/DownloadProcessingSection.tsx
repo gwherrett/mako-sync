@@ -166,36 +166,38 @@ export function DownloadProcessingSection() {
 
   // Update a single file's SuperGenre
   const updateFileSuperGenre = useCallback((filename: string, superGenre: string) => {
-    if (!result) return;
+    setResult((prevResult) => {
+      if (!prevResult) return prevResult;
 
-    const updatedFiles = result.files.map((f) => {
-      if (f.filename === filename) {
-        return { ...f, superGenre, status: 'mapped' as const };
-      }
-      return f;
+      const updatedFiles = prevResult.files.map((f) => {
+        if (f.filename === filename) {
+          return { ...f, superGenre, status: 'mapped' as const };
+        }
+        return f;
+      });
+
+      const summary = {
+        total: updatedFiles.length,
+        mapped: updatedFiles.filter((f) => f.status === 'mapped').length,
+        unmapped: updatedFiles.filter((f) => f.status === 'unmapped').length,
+        errors: updatedFiles.filter((f) => f.status === 'error').length,
+      };
+
+      // Recalculate unmapped genres
+      const unmappedGenresSet = new Set<string>();
+      updatedFiles.forEach((f) => {
+        if (f.status === 'unmapped' && f.genres.length > 0) {
+          f.genres.forEach((g) => unmappedGenresSet.add(g.toLowerCase().trim()));
+        }
+      });
+
+      return {
+        files: updatedFiles,
+        unmappedGenres: Array.from(unmappedGenresSet).sort(),
+        summary,
+      };
     });
-
-    const summary = {
-      total: updatedFiles.length,
-      mapped: updatedFiles.filter((f) => f.status === 'mapped').length,
-      unmapped: updatedFiles.filter((f) => f.status === 'unmapped').length,
-      errors: updatedFiles.filter((f) => f.status === 'error').length,
-    };
-
-    // Recalculate unmapped genres
-    const unmappedGenresSet = new Set<string>();
-    updatedFiles.forEach((f) => {
-      if (f.status === 'unmapped' && f.genres.length > 0) {
-        f.genres.forEach((g) => unmappedGenresSet.add(g.toLowerCase().trim()));
-      }
-    });
-
-    setResult({
-      files: updatedFiles,
-      unmappedGenres: Array.from(unmappedGenresSet).sort(),
-      summary,
-    });
-  }, [result]);
+  }, []);
 
   // Save a new genre mapping and update the file
   const handleSaveMapping = async (file: ProcessedFile, superGenre: string) => {
