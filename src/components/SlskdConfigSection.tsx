@@ -191,64 +191,58 @@ export function SlskdConfigSection() {
           </p>
         </div>
 
-        <div className="space-y-2">
-          <Label>Downloads Folder</Label>
-          {isDirectoryPickerSupported ? (
-            <>
-              {isLoadingDirectory ? (
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  Checking for saved folder access...
+        {isDirectoryPickerSupported && (
+          <div className="space-y-2">
+            <Label>Folder Access (for Tag Writing)</Label>
+            {isLoadingDirectory ? (
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Checking for saved folder access...
+              </div>
+            ) : directoryHandle ? (
+              <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 px-3 py-2 bg-muted rounded-md flex-1">
+                  <FolderOpen className="h-4 w-4" />
+                  <span className="font-medium">{directoryHandle.name}</span>
+                  <Badge variant="outline" className="text-xs">Read/Write Access Granted</Badge>
                 </div>
-              ) : directoryHandle ? (
-                <div className="flex items-center gap-2">
-                  <div className="flex items-center gap-2 px-3 py-2 bg-muted rounded-md flex-1">
-                    <FolderOpen className="h-4 w-4" />
-                    <span className="font-medium">{directoryHandle.name}</span>
-                    <Badge variant="outline" className="text-xs">Read/Write</Badge>
-                  </div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handleSelectDirectory}
-                  >
-                    Change
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={handleClearDirectory}
-                  >
-                    Clear
-                  </Button>
-                </div>
-              ) : (
-                <Button variant="outline" onClick={handleSelectDirectory}>
-                  <FolderOpen className="h-4 w-4 mr-2" />
-                  Select Downloads Folder
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleSelectDirectory}
+                >
+                  Change
                 </Button>
-              )}
-              <p className="text-sm text-muted-foreground">
-                {directoryHandle
-                  ? 'Folder access is saved. Tags can be written directly to files in Process Downloads.'
-                  : 'Select your slskd downloads folder for processing. Access will be remembered across sessions.'}
-              </p>
-            </>
-          ) : (
-            <>
-              <Input
-                id="slskd-downloads"
-                type="text"
-                placeholder="D:\Downloads\slskd"
-                value={downloadsFolder}
-                onChange={(e) => setDownloadsFolder(e.target.value)}
-              />
-              <p className="text-sm text-muted-foreground">
-                The folder where slskd saves downloaded files. (Note: Your browser doesn't support direct file access. Use Chrome or Edge for best experience.)
-              </p>
-            </>
-          )}
-        </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleClearDirectory}
+                >
+                  Clear
+                </Button>
+              </div>
+            ) : (
+              <Button variant="outline" onClick={handleSelectDirectory}>
+                <FolderOpen className="h-4 w-4 mr-2" />
+                Grant Folder Access
+              </Button>
+            )}
+            <p className="text-sm text-muted-foreground">
+              {directoryHandle
+                ? 'Browser has read/write access to this folder. Tags can be written directly to files.'
+                : 'Grant browser access to your downloads folder to enable writing SuperGenre tags directly to MP3 files.'}
+            </p>
+          </div>
+        )}
+
+        {!isDirectoryPickerSupported && (
+          <Alert>
+            <Info className="h-4 w-4" />
+            <AlertDescription>
+              Your browser doesn't support the File System Access API. Use Chrome or Edge for direct tag writing.
+            </AlertDescription>
+          </Alert>
+        )}
 
         <div className="space-y-2">
           <Label>Search Query Format</Label>

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Shield, ArrowLeft } from 'lucide-react';
+import { Settings, ArrowLeft } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -113,10 +113,10 @@ const Security = () => {
               </Button>
             </Link>
             <div className="flex items-center gap-3">
-              <Shield className="h-8 w-8 text-primary" />
+              <Settings className="h-8 w-8 text-primary" />
               <div>
-                <h1 className="text-2xl font-bold text-foreground">Security Center</h1>
-                <p className="text-muted-foreground">Token status overview</p>
+                <h1 className="text-2xl font-bold text-foreground">Options & Authentication</h1>
+                <p className="text-muted-foreground">Configuration and token status</p>
               </div>
             </div>
           </div>
