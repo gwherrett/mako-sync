@@ -9,7 +9,7 @@
  */
 
 import { parseBlob } from 'music-metadata-browser';
-import ID3Writer from 'browser-id3-writer';
+import { ID3Writer } from 'browser-id3-writer';
 import { Buffer } from 'buffer';
 import { withTimeout } from '@/utils/promiseUtils';
 import type {
