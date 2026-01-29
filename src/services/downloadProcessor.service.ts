@@ -5,7 +5,7 @@
  * - Extracts metadata (artist, title, album, genre) using music-metadata-browser
  * - Maps ID3 genre tags to SuperGenre using the effective genre map
  * - Writes SuperGenre to TXXX:CUSTOM1 ID3 tag using browser-id3-writer
- * - Collects unmapped genres for inline mapping in UI
+ * - Uses File System Access API to write tags back to original files in place
  */
 
 import { parseBlob } from 'music-metadata-browser';
@@ -18,6 +18,7 @@ import type {
   ProcessingProgress,
   ProcessedFileStatus,
 } from '@/types/slskd';
+import type { FileWithHandle } from './directoryHandle.service';
 
 // Make Buffer available globally for music-metadata-browser
 if (typeof window !== 'undefined') {
@@ -104,10 +105,11 @@ function mapToSuperGenre(
  */
 async function processFile(
   file: File,
-  genreMap: Map<string, string>
+  genreMap: Map<string, string>,
+  relativePath?: string,
+  fileHandle?: FileSystemFileHandle
 ): Promise<ProcessedFile> {
-  const relativePath =
-    (file as any).webkitRelativePath || file.name;
+  const path = relativePath || (file as any).webkitRelativePath || file.name;
 
   try {
     const metadata = await extractFileMetadata(file);
@@ -119,7 +121,7 @@ async function processFile(
 
     return {
       filename: file.name,
-      relativePath,
+      relativePath: path,
       artist: metadata.artist,
       title: metadata.title,
       album: metadata.album,
@@ -127,12 +129,13 @@ async function processFile(
       superGenre,
       status,
       file,
+      fileHandle,
     };
   } catch (error) {
     console.error(`Error processing ${file.name}:`, error);
     return {
       filename: file.name,
-      relativePath,
+      relativePath: path,
       artist: 'Unknown',
       title: file.name.replace(/\.mp3$/i, ''),
       album: null,
@@ -141,6 +144,7 @@ async function processFile(
       status: 'error',
       error: error instanceof Error ? error.message : 'Unknown error',
       file,
+      fileHandle,
     };
   }
 }
@@ -190,6 +194,80 @@ export async function processDownloads(
             current: i + index + 1,
             total: mp3Files.length,
             currentFile: file.name,
+          });
+        }
+
+        return result;
+      })
+    );
+
+    processedFiles.push(...batchResults);
+
+    // Collect unmapped genres
+    batchResults.forEach((result) => {
+      if (result.status === 'unmapped') {
+        result.genres.forEach((genre) => {
+          unmappedGenresSet.add(genre.toLowerCase().trim());
+        });
+      }
+    });
+  }
+
+  // Calculate summary
+  const summary = {
+    total: processedFiles.length,
+    mapped: processedFiles.filter((f) => f.status === 'mapped').length,
+    unmapped: processedFiles.filter((f) => f.status === 'unmapped').length,
+    errors: processedFiles.filter((f) => f.status === 'error').length,
+  };
+
+  console.log(`✅ Processing complete:`, summary);
+
+  return {
+    files: processedFiles,
+    unmappedGenres: Array.from(unmappedGenresSet).sort(),
+    summary,
+  };
+}
+
+/**
+ * Process files from File System Access API with handles for write-back
+ *
+ * @param filesWithHandles - Array of files with their handles from getAllMp3Files
+ * @param genreMap - Map of genre -> SuperGenre from useGenreMap hook
+ * @param onProgress - Optional callback for progress updates
+ * @param batchSize - Number of files to process in parallel (default: 5)
+ */
+export async function processDownloadsWithHandles(
+  filesWithHandles: FileWithHandle[],
+  genreMap: Map<string, string>,
+  onProgress?: (progress: ProcessingProgress) => void,
+  batchSize: number = DEFAULT_BATCH_SIZE
+): Promise<ProcessingResult> {
+  const processedFiles: ProcessedFile[] = [];
+  const unmappedGenresSet = new Set<string>();
+
+  console.log(`🎵 Processing ${filesWithHandles.length} MP3 files with handles...`);
+
+  // Process files in batches
+  for (let i = 0; i < filesWithHandles.length; i += batchSize) {
+    const batch = filesWithHandles.slice(i, i + batchSize);
+
+    const batchResults = await Promise.all(
+      batch.map(async (fileWithHandle, index) => {
+        const result = await processFile(
+          fileWithHandle.file,
+          genreMap,
+          fileWithHandle.relativePath,
+          fileWithHandle.handle
+        );
+
+        // Report progress
+        if (onProgress) {
+          onProgress({
+            current: i + index + 1,
+            total: filesWithHandles.length,
+            currentFile: fileWithHandle.file.name,
           });
         }
 
@@ -312,21 +390,23 @@ async function writeSuperGenreTag(file: File, superGenre: string): Promise<Blob>
 }
 
 /**
- * Write SuperGenre tags to all mapped files and trigger download
+ * Write SuperGenre tags to all mapped files in place using File System Access API
  *
- * @param files - Array of processed files to write tags to
+ * @param files - Array of processed files to write tags to (must have fileHandle)
  * @param onProgress - Optional callback for progress updates
  * @returns Object with success count and any errors
  */
-export async function writeTagsAndDownload(
+export async function writeTagsInPlace(
   files: ProcessedFile[],
   onProgress?: (progress: { current: number; total: number; filename: string }) => void
 ): Promise<{ success: number; errors: Array<{ filename: string; error: string }> }> {
-  const mappedFiles = files.filter((f) => f.status === 'mapped' && f.superGenre);
+  const mappedFiles = files.filter(
+    (f) => f.status === 'mapped' && f.superGenre && f.fileHandle
+  );
   const errors: Array<{ filename: string; error: string }> = [];
   let success = 0;
 
-  console.log(`📝 Writing tags to ${mappedFiles.length} files...`);
+  console.log(`📝 Writing tags to ${mappedFiles.length} files in place...`);
 
   for (let i = 0; i < mappedFiles.length; i++) {
     const file = mappedFiles[i];
@@ -340,17 +420,13 @@ export async function writeTagsAndDownload(
     }
 
     try {
+      // Create tagged blob
       const taggedBlob = await writeSuperGenreTag(file.file, file.superGenre!);
 
-      // Create download link and trigger download
-      const url = URL.createObjectURL(taggedBlob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = file.filename;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
+      // Write back to original file using the handle
+      const writable = await file.fileHandle!.createWritable();
+      await writable.write(taggedBlob);
+      await writable.close();
 
       success++;
     } catch (error) {
@@ -375,3 +451,6 @@ export const _testExports = {
   filterMp3Files,
   writeSuperGenreTag,
 };
+
+// Re-export for convenience
+export { processDownloadsWithHandles as processDownloadsFromDirectory };

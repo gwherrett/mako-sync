@@ -7,6 +7,7 @@
  * test the connection, and save the configuration.
  *
  * Configuration is stored in browser localStorage.
+ * Directory handle is stored in IndexedDB for persistent file access.
  */
 
 import { useState, useEffect } from 'react';
@@ -23,7 +24,13 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useSlskdConfig } from '@/hooks/useSlskdConfig';
-import { Loader2, Server, CheckCircle2, XCircle, Info } from 'lucide-react';
+import { Loader2, Server, CheckCircle2, XCircle, Info, FolderOpen } from 'lucide-react';
+import {
+  isFileSystemAccessSupported,
+  requestDirectoryAccess,
+  getDownloadsDirectory,
+  clearStoredDirectoryHandle,
+} from '@/services/directoryHandle.service';
 
 export function SlskdConfigSection() {
   const {
@@ -39,6 +46,11 @@ export function SlskdConfigSection() {
   const [downloadsFolder, setDownloadsFolder] = useState('');
   const [searchFormat, setSearchFormat] = useState<'primary' | 'full'>('primary');
 
+  // File System Access API state
+  const isDirectoryPickerSupported = isFileSystemAccessSupported();
+  const [directoryHandle, setDirectoryHandle] = useState<FileSystemDirectoryHandle | null>(null);
+  const [isLoadingDirectory, setIsLoadingDirectory] = useState(true);
+
   // Sync local state with loaded config
   useEffect(() => {
     if (config) {
@@ -48,6 +60,53 @@ export function SlskdConfigSection() {
       setSearchFormat(config.searchFormat || 'primary');
     }
   }, [config]);
+
+  // Try to restore saved directory handle on mount
+  useEffect(() => {
+    async function restoreHandle() {
+      if (!isDirectoryPickerSupported) {
+        setIsLoadingDirectory(false);
+        return;
+      }
+
+      try {
+        const handle = await getDownloadsDirectory();
+        if (handle) {
+          setDirectoryHandle(handle);
+          // Update the downloads folder path in config if different
+          if (handle.name !== downloadsFolder) {
+            setDownloadsFolder(handle.name);
+          }
+        }
+      } catch (error) {
+        console.error('Failed to restore directory handle:', error);
+      } finally {
+        setIsLoadingDirectory(false);
+      }
+    }
+
+    restoreHandle();
+  }, [isDirectoryPickerSupported]);
+
+  // Handle selecting a directory
+  const handleSelectDirectory = async () => {
+    try {
+      const handle = await requestDirectoryAccess();
+      if (handle) {
+        setDirectoryHandle(handle);
+        setDownloadsFolder(handle.name);
+      }
+    } catch (error) {
+      console.error('Failed to select directory:', error);
+    }
+  };
+
+  // Handle clearing the directory
+  const handleClearDirectory = async () => {
+    await clearStoredDirectoryHandle();
+    setDirectoryHandle(null);
+    setDownloadsFolder('');
+  };
 
   const handleSave = () => {
     saveConfig({ apiEndpoint, apiKey, downloadsFolder, searchFormat });
@@ -133,17 +192,62 @@ export function SlskdConfigSection() {
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="slskd-downloads">Downloads Folder</Label>
-          <Input
-            id="slskd-downloads"
-            type="text"
-            placeholder="D:\Downloads\slskd"
-            value={downloadsFolder}
-            onChange={(e) => setDownloadsFolder(e.target.value)}
-          />
-          <p className="text-sm text-muted-foreground">
-            The folder where slskd saves downloaded files. Used for processing downloads.
-          </p>
+          <Label>Downloads Folder</Label>
+          {isDirectoryPickerSupported ? (
+            <>
+              {isLoadingDirectory ? (
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Checking for saved folder access...
+                </div>
+              ) : directoryHandle ? (
+                <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 px-3 py-2 bg-muted rounded-md flex-1">
+                    <FolderOpen className="h-4 w-4" />
+                    <span className="font-medium">{directoryHandle.name}</span>
+                    <Badge variant="outline" className="text-xs">Read/Write</Badge>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleSelectDirectory}
+                  >
+                    Change
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleClearDirectory}
+                  >
+                    Clear
+                  </Button>
+                </div>
+              ) : (
+                <Button variant="outline" onClick={handleSelectDirectory}>
+                  <FolderOpen className="h-4 w-4 mr-2" />
+                  Select Downloads Folder
+                </Button>
+              )}
+              <p className="text-sm text-muted-foreground">
+                {directoryHandle
+                  ? 'Folder access is saved. Tags can be written directly to files in Process Downloads.'
+                  : 'Select your slskd downloads folder for processing. Access will be remembered across sessions.'}
+              </p>
+            </>
+          ) : (
+            <>
+              <Input
+                id="slskd-downloads"
+                type="text"
+                placeholder="D:\Downloads\slskd"
+                value={downloadsFolder}
+                onChange={(e) => setDownloadsFolder(e.target.value)}
+              />
+              <p className="text-sm text-muted-foreground">
+                The folder where slskd saves downloaded files. (Note: Your browser doesn't support direct file access. Use Chrome or Edge for best experience.)
+              </p>
+            </>
+          )}
         </div>
 
         <div className="space-y-2">

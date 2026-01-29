@@ -2,14 +2,13 @@
  * DownloadProcessingSection Component
  *
  * Processes downloaded MP3 files from slskd:
- * - Folder selection via webkitdirectory input
+ * - Uses File System Access API for persistent folder access
  * - Extracts metadata and maps genres to SuperGenre
  * - Inline genre mapping for unmapped genres
- * - Saves new mappings to spotify_genre_map_overrides
- * - Writes SuperGenre to TXXX:CUSTOM1 ID3 tag and downloads tagged files
+ * - Writes SuperGenre to TXXX:CUSTOM1 ID3 tag in place
  */
 
-import { useState, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
   Card,
   CardContent,
@@ -18,7 +17,6 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -45,29 +43,40 @@ import {
   XCircle,
   RefreshCw,
   Music,
-  Download,
+  Save,
+  FolderSync,
 } from 'lucide-react';
-import { useDownloadProcessor } from '@/hooks/useDownloadProcessor';
-import { writeTagsAndDownload } from '@/services/downloadProcessor.service';
-import { useSlskdConfig } from '@/hooks/useSlskdConfig';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { SUPER_GENRES } from '@/types/genreMapping';
-import type { ProcessedFile } from '@/types/slskd';
-
-// Extend input element to support webkitdirectory
-declare module 'react' {
-  interface InputHTMLAttributes<T> extends HTMLAttributes<T> {
-    webkitdirectory?: string;
-    directory?: string;
-  }
-}
+import { useGenreMap } from '@/hooks/useGenreMap';
+import {
+  processDownloadsWithHandles,
+  reprocessWithUpdatedMap,
+  writeTagsInPlace,
+} from '@/services/downloadProcessor.service';
+import {
+  isFileSystemAccessSupported,
+  getDownloadsDirectory,
+  getAllMp3Files,
+} from '@/services/directoryHandle.service';
+import { Link } from 'react-router-dom';
+import type { ProcessedFile, ProcessingProgress, ProcessingResult } from '@/types/slskd';
 
 export function DownloadProcessingSection() {
   const { toast } = useToast();
-  const { config } = useSlskdConfig();
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const [savingGenre, setSavingGenre] = useState<string | null>(null);
+  const { genreMap, isLoading: isGenreMapLoading, refetch: refetchGenreMap } = useGenreMap();
+
+  // Directory handle state (loaded from persisted storage, configured in Security)
+  const [directoryHandle, setDirectoryHandle] = useState<FileSystemDirectoryHandle | null>(null);
+  const [isLoadingDirectory, setIsLoadingDirectory] = useState(true);
+
+  // Processing state
+  const [result, setResult] = useState<ProcessingResult | null>(null);
+  const [progress, setProgress] = useState<ProcessingProgress | null>(null);
+  const [isProcessing, setIsProcessing] = useState(false);
+
+  // Tag writing state
   const [isWritingTags, setIsWritingTags] = useState(false);
   const [writeProgress, setWriteProgress] = useState<{
     current: number;
@@ -75,36 +84,118 @@ export function DownloadProcessingSection() {
     filename: string;
   } | null>(null);
 
-  const {
-    processFiles,
-    reprocessFiles,
-    reset,
-    result,
-    progress,
-    isProcessing,
-    isGenreMapLoading,
-    refetchGenreMap,
-    updateFileSuperGenre,
-  } = useDownloadProcessor();
+  // Inline mapping state
+  const [savingGenre, setSavingGenre] = useState<string | null>(null);
 
-  // Handle folder selection
-  const handleFolderSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files || files.length === 0) return;
+  // Check for File System Access API support
+  const isSupported = isFileSystemAccessSupported();
 
-    await processFiles(files);
+  // Load the saved directory handle on mount (configured in Security settings)
+  useEffect(() => {
+    async function loadHandle() {
+      if (!isSupported) {
+        setIsLoadingDirectory(false);
+        return;
+      }
 
-    // Reset input so same folder can be selected again
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
+      try {
+        const handle = await getDownloadsDirectory();
+        setDirectoryHandle(handle);
+      } catch (error) {
+        console.error('Failed to load directory handle:', error);
+      } finally {
+        setIsLoadingDirectory(false);
+      }
+    }
+
+    loadHandle();
+  }, [isSupported]);
+
+  // Process files from the directory
+  const handleProcessFiles = async () => {
+    if (!directoryHandle) return;
+
+    setIsProcessing(true);
+    setProgress(null);
+    setResult(null);
+
+    try {
+      // Get all MP3 files with their handles
+      const filesWithHandles = await getAllMp3Files(directoryHandle);
+
+      if (filesWithHandles.length === 0) {
+        toast({
+          title: 'No MP3 Files Found',
+          description: 'No MP3 files were found in the selected folder',
+          variant: 'destructive',
+        });
+        setIsProcessing(false);
+        return;
+      }
+
+      // Process files
+      const processingResult = await processDownloadsWithHandles(
+        filesWithHandles,
+        genreMap,
+        (prog) => setProgress(prog)
+      );
+
+      setResult(processingResult);
+    } catch (error) {
+      console.error('Processing failed:', error);
+      toast({
+        title: 'Processing Failed',
+        description: error instanceof Error ? error.message : 'Unknown error',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsProcessing(false);
+      setProgress(null);
     }
   };
 
+  // Re-process with updated genre map
+  const handleReprocessFiles = useCallback(() => {
+    if (!result) return;
+    const updatedResult = reprocessWithUpdatedMap(result.files, genreMap);
+    setResult(updatedResult);
+  }, [result, genreMap]);
+
+  // Update a single file's SuperGenre
+  const updateFileSuperGenre = useCallback((filename: string, superGenre: string) => {
+    if (!result) return;
+
+    const updatedFiles = result.files.map((f) => {
+      if (f.filename === filename) {
+        return { ...f, superGenre, status: 'mapped' as const };
+      }
+      return f;
+    });
+
+    const summary = {
+      total: updatedFiles.length,
+      mapped: updatedFiles.filter((f) => f.status === 'mapped').length,
+      unmapped: updatedFiles.filter((f) => f.status === 'unmapped').length,
+      errors: updatedFiles.filter((f) => f.status === 'error').length,
+    };
+
+    // Recalculate unmapped genres
+    const unmappedGenresSet = new Set<string>();
+    updatedFiles.forEach((f) => {
+      if (f.status === 'unmapped' && f.genres.length > 0) {
+        f.genres.forEach((g) => unmappedGenresSet.add(g.toLowerCase().trim()));
+      }
+    });
+
+    setResult({
+      files: updatedFiles,
+      unmappedGenres: Array.from(unmappedGenresSet).sort(),
+      summary,
+    });
+  }, [result]);
+
   // Save a new genre mapping and update the file
-  const handleSaveMapping = async (
-    file: ProcessedFile,
-    superGenre: string
-  ) => {
+  const handleSaveMapping = async (file: ProcessedFile, superGenre: string) => {
     // For files with no genre tags, just update local state (no mapping to save)
     if (file.genres.length === 0) {
       updateFileSuperGenre(file.filename, superGenre);
@@ -115,11 +206,10 @@ export function DownloadProcessingSection() {
       return;
     }
 
-    const genreToMap = file.genres[0]; // Use first genre for mapping
+    const genreToMap = file.genres[0];
     setSavingGenre(genreToMap);
 
     try {
-      // Call the genre-mapping edge function to save the override
       const { data: session } = await supabase.auth.getSession();
       if (!session?.session?.access_token) {
         throw new Error('Not authenticated');
@@ -145,10 +235,7 @@ export function DownloadProcessingSection() {
         throw new Error(error.error || 'Failed to save mapping');
       }
 
-      // Update local state immediately
       updateFileSuperGenre(file.filename, superGenre);
-
-      // Refetch genre map so future files use the new mapping
       await refetchGenreMap();
 
       toast({
@@ -167,29 +254,40 @@ export function DownloadProcessingSection() {
     }
   };
 
-  // Handle writing tags and downloading files
-  const handleWriteTagsAndDownload = async () => {
+  // Write tags to files in place
+  const handleWriteTags = async () => {
     if (!result || result.summary.mapped === 0) return;
+
+    // Check if files have handles
+    const filesWithHandles = result.files.filter((f) => f.fileHandle);
+    if (filesWithHandles.length === 0) {
+      toast({
+        title: 'Cannot Write Tags',
+        description: 'Files do not have write access. Please re-select the folder.',
+        variant: 'destructive',
+      });
+      return;
+    }
 
     setIsWritingTags(true);
     setWriteProgress(null);
 
     try {
-      const { success, errors } = await writeTagsAndDownload(
+      const { success, errors } = await writeTagsInPlace(
         result.files,
-        (progress) => setWriteProgress(progress)
+        (prog) => setWriteProgress(prog)
       );
 
       if (errors.length > 0) {
         toast({
           title: 'Tag Writing Complete (with errors)',
-          description: `${success} files tagged successfully, ${errors.length} failed`,
+          description: `${success} files updated, ${errors.length} failed`,
           variant: 'destructive',
         });
       } else {
         toast({
-          title: 'Tag Writing Complete',
-          description: `${success} files tagged and downloaded`,
+          title: 'Tags Written Successfully',
+          description: `${success} files updated with SuperGenre tags`,
         });
       }
     } catch (error) {
@@ -205,7 +303,13 @@ export function DownloadProcessingSection() {
     }
   };
 
-  // Get status badge variant
+  // Reset results
+  const handleReset = () => {
+    setResult(null);
+    setProgress(null);
+  };
+
+  // Get status badge
   const getStatusBadge = (status: ProcessedFile['status']) => {
     switch (status) {
       case 'mapped':
@@ -232,9 +336,30 @@ export function DownloadProcessingSection() {
     }
   };
 
-  const progressPercent = progress
-    ? (progress.current / progress.total) * 100
-    : 0;
+  const progressPercent = progress ? (progress.current / progress.total) * 100 : 0;
+
+  // Browser not supported
+  if (!isSupported) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <FolderOpen className="h-5 w-5" />
+            Process Downloads
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>
+              Your browser does not support the File System Access API.
+              Please use Chrome, Edge, or another Chromium-based browser.
+            </AlertDescription>
+          </Alert>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card>
@@ -244,50 +369,59 @@ export function DownloadProcessingSection() {
           Process Downloads
         </CardTitle>
         <CardDescription>
-          Scan downloaded files from slskd, map genres to SuperGenre for
-          organizing in MediaMonkey.
+          Scan downloaded files from slskd, map genres to SuperGenre, and write
+          CUSTOM1 tags for MediaMonkey organization.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        {/* Downloads folder info */}
-        {config.downloadsFolder && (
-          <Alert>
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription>
-              Configured downloads folder:{' '}
-              <code className="bg-muted px-1 rounded">{config.downloadsFolder}</code>
-              <br />
-              <span className="text-xs text-muted-foreground">
-                Select this folder below to process downloaded files.
-              </span>
-            </AlertDescription>
-          </Alert>
-        )}
-
-        {/* Folder selection */}
+        {/* Directory status */}
         <div className="space-y-2">
-          <div className="flex items-center gap-4">
-            <Input
-              ref={fileInputRef}
-              type="file"
-              webkitdirectory=""
-              directory=""
-              multiple
-              onChange={handleFolderSelect}
-              disabled={isProcessing || isGenreMapLoading}
-              className="max-w-md"
-            />
-            {result && (
-              <Button variant="outline" size="sm" onClick={reset}>
-                Clear Results
-              </Button>
-            )}
-          </div>
-          <p className="text-sm text-muted-foreground">
-            Select your slskd downloads folder. All MP3 files (including
-            subfolders) will be scanned.
-          </p>
+          {isLoadingDirectory ? (
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Checking for saved folder access...
+            </div>
+          ) : directoryHandle ? (
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2 px-3 py-2 bg-muted rounded-md">
+                <FolderOpen className="h-4 w-4" />
+                <span className="font-medium">{directoryHandle.name}</span>
+                <Badge variant="outline" className="text-xs">Read/Write</Badge>
+              </div>
+              <Link to="/security">
+                <Button variant="outline" size="sm">
+                  Change in Settings
+                </Button>
+              </Link>
+            </div>
+          ) : (
+            <Alert>
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>
+                No downloads folder configured.{' '}
+                <Link to="/security" className="font-medium underline">
+                  Configure in Security Settings
+                </Link>{' '}
+                to enable tag writing.
+              </AlertDescription>
+            </Alert>
+          )}
         </div>
+
+        {/* Scan button */}
+        {directoryHandle && !result && (
+          <Button
+            onClick={handleProcessFiles}
+            disabled={isProcessing || isGenreMapLoading}
+          >
+            {isProcessing ? (
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+            ) : (
+              <FolderSync className="h-4 w-4 mr-2" />
+            )}
+            Scan for MP3 Files
+          </Button>
+        )}
 
         {/* Processing progress */}
         {isProcessing && progress && (
@@ -335,28 +469,27 @@ export function DownloadProcessingSection() {
                 <span>Errors: {result.summary.errors}</span>
               </div>
               <div className="ml-auto flex gap-2">
+                <Button variant="outline" size="sm" onClick={handleReset}>
+                  Clear
+                </Button>
                 {result.summary.unmapped > 0 && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={reprocessFiles}
-                  >
+                  <Button variant="ghost" size="sm" onClick={handleReprocessFiles}>
                     <RefreshCw className="h-4 w-4 mr-1" />
-                    Re-check Mappings
+                    Re-check
                   </Button>
                 )}
                 {result.summary.mapped > 0 && (
                   <Button
                     size="sm"
-                    onClick={handleWriteTagsAndDownload}
+                    onClick={handleWriteTags}
                     disabled={isWritingTags}
                   >
                     {isWritingTags ? (
                       <Loader2 className="h-4 w-4 mr-1 animate-spin" />
                     ) : (
-                      <Download className="h-4 w-4 mr-1" />
+                      <Save className="h-4 w-4 mr-1" />
                     )}
-                    Write Tags & Download ({result.summary.mapped})
+                    Write Tags ({result.summary.mapped})
                   </Button>
                 )}
               </div>
@@ -415,7 +548,7 @@ export function DownloadProcessingSection() {
                   </TableHeader>
                   <TableBody>
                     {result.files.map((file) => (
-                      <TableRow key={file.filename}>
+                      <TableRow key={file.relativePath}>
                         <TableCell>
                           <div className="font-medium truncate max-w-[280px]">
                             {file.artist} - {file.title}
@@ -487,17 +620,30 @@ export function DownloadProcessingSection() {
 
             {/* Instructions */}
             <p className="text-sm text-muted-foreground">
-              Click "Write Tags & Download" to save SuperGenre to TXXX:CUSTOM1 tag.
+              Click "Write Tags" to save SuperGenre to TXXX:CUSTOM1 tag directly in your files.
               Then use MediaMonkey to organize files into Supercrates/[genre]/ folders.
             </p>
           </>
         )}
 
-        {/* Empty state */}
-        {!result && !isProcessing && (
+        {/* Empty state - folder configured */}
+        {directoryHandle && !result && !isProcessing && (
+          <div className="text-center py-8 text-muted-foreground">
+            <FolderSync className="h-12 w-12 mx-auto mb-4 opacity-50" />
+            <p>Click "Scan for MP3 Files" to process your downloads.</p>
+          </div>
+        )}
+
+        {/* Empty state - no folder configured */}
+        {!directoryHandle && !isLoadingDirectory && (
           <div className="text-center py-8 text-muted-foreground">
             <FolderOpen className="h-12 w-12 mx-auto mb-4 opacity-50" />
-            <p>Select your slskd downloads folder to process files.</p>
+            <p>Configure your downloads folder in Security Settings to get started.</p>
+            <Link to="/security">
+              <Button variant="outline" className="mt-4">
+                Go to Security Settings
+              </Button>
+            </Link>
           </div>
         )}
       </CardContent>

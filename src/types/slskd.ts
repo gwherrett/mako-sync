@@ -77,6 +77,20 @@ export interface SlskdTrackToSync {
 // =============================================================================
 
 /**
+ * File System Access API types (for writing tags back to original files)
+ * These extend the standard File API with handle references
+ */
+declare global {
+  interface Window {
+    showDirectoryPicker?: (options?: {
+      id?: string;
+      mode?: 'read' | 'readwrite';
+      startIn?: 'desktop' | 'documents' | 'downloads' | 'music' | 'pictures' | 'videos';
+    }) => Promise<FileSystemDirectoryHandle>;
+  }
+}
+
+/**
  * Status of a processed file
  */
 export type ProcessedFileStatus = 'mapped' | 'unmapped' | 'error';
@@ -103,8 +117,10 @@ export interface ProcessedFile {
   status: ProcessedFileStatus;
   /** Error message if status is 'error' */
   error?: string;
-  /** Reference to original File object for future tag writing */
+  /** Reference to original File object for reading */
   file: File;
+  /** File System Access API handle for writing back to original location */
+  fileHandle?: FileSystemFileHandle;
 }
 
 /**
