@@ -3,11 +3,10 @@
  *
  * Configuration UI for connecting to a slskd instance.
  * Allows users to enter their slskd API endpoint and key,
- * configure downloads folder and search format preferences,
- * test the connection, and save the configuration.
+ * configure search format preferences, test the connection,
+ * and save the configuration.
  *
  * Configuration is stored in browser localStorage.
- * Directory handle is stored in IndexedDB for persistent file access.
  */
 
 import { useState, useEffect } from 'react';
@@ -24,13 +23,7 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useSlskdConfig } from '@/hooks/useSlskdConfig';
-import { Loader2, Server, CheckCircle2, XCircle, Info, FolderOpen } from 'lucide-react';
-import {
-  isFileSystemAccessSupported,
-  requestDirectoryAccess,
-  getDownloadsDirectory,
-  clearStoredDirectoryHandle,
-} from '@/services/directoryHandle.service';
+import { Loader2, Server, CheckCircle2, XCircle, Info } from 'lucide-react';
 
 export function SlskdConfigSection() {
   const {
@@ -46,11 +39,6 @@ export function SlskdConfigSection() {
   const [downloadsFolder, setDownloadsFolder] = useState('');
   const [searchFormat, setSearchFormat] = useState<'primary' | 'full'>('primary');
 
-  // File System Access API state
-  const isDirectoryPickerSupported = isFileSystemAccessSupported();
-  const [directoryHandle, setDirectoryHandle] = useState<FileSystemDirectoryHandle | null>(null);
-  const [isLoadingDirectory, setIsLoadingDirectory] = useState(true);
-
   // Sync local state with loaded config
   useEffect(() => {
     if (config) {
@@ -60,53 +48,6 @@ export function SlskdConfigSection() {
       setSearchFormat(config.searchFormat || 'primary');
     }
   }, [config]);
-
-  // Try to restore saved directory handle on mount
-  useEffect(() => {
-    async function restoreHandle() {
-      if (!isDirectoryPickerSupported) {
-        setIsLoadingDirectory(false);
-        return;
-      }
-
-      try {
-        const handle = await getDownloadsDirectory();
-        if (handle) {
-          setDirectoryHandle(handle);
-          // Update the downloads folder path in config if different
-          if (handle.name !== downloadsFolder) {
-            setDownloadsFolder(handle.name);
-          }
-        }
-      } catch (error) {
-        console.error('Failed to restore directory handle:', error);
-      } finally {
-        setIsLoadingDirectory(false);
-      }
-    }
-
-    restoreHandle();
-  }, [isDirectoryPickerSupported]);
-
-  // Handle selecting a directory
-  const handleSelectDirectory = async () => {
-    try {
-      const handle = await requestDirectoryAccess();
-      if (handle) {
-        setDirectoryHandle(handle);
-        setDownloadsFolder(handle.name);
-      }
-    } catch (error) {
-      console.error('Failed to select directory:', error);
-    }
-  };
-
-  // Handle clearing the directory
-  const handleClearDirectory = async () => {
-    await clearStoredDirectoryHandle();
-    setDirectoryHandle(null);
-    setDownloadsFolder('');
-  };
 
   const handleSave = () => {
     saveConfig({ apiEndpoint, apiKey, downloadsFolder, searchFormat });
@@ -191,59 +132,6 @@ export function SlskdConfigSection() {
           </p>
         </div>
 
-        {isDirectoryPickerSupported && (
-          <div className="space-y-2">
-            <Label>Folder Access (for Tag Writing)</Label>
-            {isLoadingDirectory ? (
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Loader2 className="h-4 w-4 animate-spin" />
-                Checking for saved folder access...
-              </div>
-            ) : directoryHandle ? (
-              <div className="flex items-center gap-2">
-                <div className="flex items-center gap-2 px-3 py-2 bg-muted rounded-md flex-1">
-                  <FolderOpen className="h-4 w-4" />
-                  <span className="font-medium">{directoryHandle.name}</span>
-                  <Badge variant="outline" className="text-xs">Read/Write Access Granted</Badge>
-                </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleSelectDirectory}
-                >
-                  Change
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={handleClearDirectory}
-                >
-                  Clear
-                </Button>
-              </div>
-            ) : (
-              <Button variant="outline" onClick={handleSelectDirectory}>
-                <FolderOpen className="h-4 w-4 mr-2" />
-                Grant Folder Access
-              </Button>
-            )}
-            <p className="text-sm text-muted-foreground">
-              {directoryHandle
-                ? 'Browser has read/write access to this folder. Tags can be written directly to files.'
-                : 'Grant browser access to your downloads folder to enable writing SuperGenre tags directly to MP3 files.'}
-            </p>
-          </div>
-        )}
-
-        {!isDirectoryPickerSupported && (
-          <Alert>
-            <Info className="h-4 w-4" />
-            <AlertDescription>
-              Your browser doesn't support the File System Access API. Use Chrome or Edge for direct tag writing.
-            </AlertDescription>
-          </Alert>
-        )}
-
         <div className="space-y-2">
           <Label>Search Query Format</Label>
           <div className="flex gap-4">
@@ -282,19 +170,19 @@ export function SlskdConfigSection() {
 
         <div className="flex gap-2 pt-2">
           <Button
+            onClick={handleSave}
+            disabled={isSaving || !canSave}
+          >
+            {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            Save
+          </Button>
+          <Button
             variant="outline"
             onClick={handleTest}
             disabled={isTesting || !canSave}
           >
             {isTesting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             Test Connection
-          </Button>
-          <Button
-            onClick={handleSave}
-            disabled={isSaving || !canSave}
-          >
-            {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            Save & Test Connection
           </Button>
         </div>
 

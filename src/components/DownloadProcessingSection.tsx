@@ -60,8 +60,9 @@ import {
   isFileSystemAccessSupported,
   getDownloadsDirectory,
   getAllMp3Files,
+  requestDirectoryAccess,
+  clearStoredDirectoryHandle,
 } from '@/services/directoryHandle.service';
-import { Link } from 'react-router-dom';
 import type { ProcessedFile, ProcessingProgress, ProcessingResult } from '@/types/slskd';
 import { MetadataDebugModal } from './MetadataDebugModal';
 
@@ -99,7 +100,7 @@ export function DownloadProcessingSection() {
   // Check for File System Access API support
   const isSupported = isFileSystemAccessSupported();
 
-  // Load the saved directory handle on mount (configured in Security settings)
+  // Load the saved directory handle on mount
   useEffect(() => {
     async function loadHandle() {
       if (!isSupported) {
@@ -119,6 +120,25 @@ export function DownloadProcessingSection() {
 
     loadHandle();
   }, [isSupported]);
+
+  // Handle selecting a directory
+  const handleSelectDirectory = async () => {
+    try {
+      const handle = await requestDirectoryAccess();
+      if (handle) {
+        setDirectoryHandle(handle);
+      }
+    } catch (error) {
+      console.error('Failed to select directory:', error);
+    }
+  };
+
+  // Handle clearing the directory
+  const handleClearDirectory = async () => {
+    await clearStoredDirectoryHandle();
+    setDirectoryHandle(null);
+    setResult(null);
+  };
 
   // Process files from the directory
   const handleProcessFiles = async () => {
@@ -400,30 +420,38 @@ export function DownloadProcessingSection() {
               Checking for saved folder access...
             </div>
           ) : directoryHandle ? (
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2 px-3 py-2 bg-muted rounded-md">
+            <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 px-3 py-2 bg-muted rounded-md flex-1">
                 <FolderOpen className="h-4 w-4" />
                 <span className="font-medium">{directoryHandle.name}</span>
-                <Badge variant="outline" className="text-xs">Read/Write</Badge>
+                <Badge variant="outline" className="text-xs">Read/Write Access</Badge>
               </div>
-              <Link to="/security">
-                <Button variant="outline" size="sm">
-                  Change in Settings
-                </Button>
-              </Link>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleSelectDirectory}
+              >
+                Change
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleClearDirectory}
+              >
+                Clear
+              </Button>
             </div>
           ) : (
-            <Alert>
-              <AlertCircle className="h-4 w-4" />
-              <AlertDescription>
-                No downloads folder configured.{' '}
-                <Link to="/security" className="font-medium underline">
-                  Configure in Security Settings
-                </Link>{' '}
-                to enable tag writing.
-              </AlertDescription>
-            </Alert>
+            <Button variant="outline" onClick={handleSelectDirectory}>
+              <FolderOpen className="h-4 w-4 mr-2" />
+              Select Downloads Folder
+            </Button>
           )}
+          <p className="text-sm text-muted-foreground">
+            {directoryHandle
+              ? 'Browser has read/write access to this folder. Tags can be written directly to files.'
+              : 'Grant browser access to your downloads folder to enable scanning and writing SuperGenre tags.'}
+          </p>
         </div>
 
         {/* Scan button */}
@@ -706,12 +734,7 @@ export function DownloadProcessingSection() {
         {!directoryHandle && !isLoadingDirectory && (
           <div className="text-center py-8 text-muted-foreground">
             <FolderOpen className="h-12 w-12 mx-auto mb-4 opacity-50" />
-            <p>Configure your downloads folder in Security Settings to get started.</p>
-            <Link to="/security">
-              <Button variant="outline" className="mt-4">
-                Go to Security Settings
-              </Button>
-            </Link>
+            <p>Select your downloads folder above to get started.</p>
           </div>
         )}
       </CardContent>
