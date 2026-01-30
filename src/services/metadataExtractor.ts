@@ -7,7 +7,9 @@ import { withTimeout } from '@/utils/promiseUtils';
 
 // Timeout constants for metadata extraction
 const PARSE_BLOB_TIMEOUT_MS = 30000; // 30 seconds per file
-const FILE_EXTRACTION_TIMEOUT_MS = 45000; // 45 seconds including hash generation
+
+// Binary ID3v2 frame IDs to filter from logging (contain large binary data from DJ software like Serato)
+const BINARY_FRAME_IDS = ['GEOB', 'APIC', 'PRIV', 'SYLT', 'SYTC', 'ETCO', 'MLLT', 'AENC', 'ENCR', 'GRID', 'COMR', 'SIGN'];
 
 /**
  * Extracts year from various value formats
@@ -139,7 +141,21 @@ export const extractMetadata = async (file: File): Promise<ScannedTrack> => {
       throw new Error('Metadata object is null or undefined');
     }
     
-    console.log(`📋 Raw metadata object for "${file.name}":`, JSON.stringify(metadata, null, 2));
+    // Log metadata summary without binary data (GEOB frames can be huge from Serato/DJ software)
+    const metadataSummary = {
+      format: metadata.format,
+      common: metadata.common,
+      nativeFormats: metadata.native ? Object.keys(metadata.native) : [],
+      nativeTagCounts: metadata.native
+        ? Object.fromEntries(
+            Object.entries(metadata.native).map(([format, tags]) => [
+              format,
+              Array.isArray(tags) ? tags.length : 0
+            ])
+          )
+        : {}
+    };
+    console.log(`📋 Metadata summary for "${file.name}":`, JSON.stringify(metadataSummary, null, 2));
     
     // Check for expected properties
     console.log(`📊 Metadata validation for "${file.name}":`, {
@@ -151,10 +167,15 @@ export const extractMetadata = async (file: File): Promise<ScannedTrack> => {
       nativeKeys: metadata.native ? Object.keys(metadata.native) : []
     });
     
-    // Log available tag formats
+    // Log available tag formats (filter out binary frames like GEOB, APIC, PRIV)
     if (metadata.native) {
       Object.keys(metadata.native).forEach(tagFormat => {
-        console.log(`🏷️  ${tagFormat} tags:`, metadata.native[tagFormat]);
+        const tags = metadata.native[tagFormat];
+        const textTags = Array.isArray(tags)
+          ? tags.filter((tag: { id: string }) => !BINARY_FRAME_IDS.includes(tag.id))
+          : tags;
+        const skippedCount = Array.isArray(tags) ? tags.length - textTags.length : 0;
+        console.log(`🏷️  ${tagFormat} tags (${skippedCount} binary frames filtered):`, textTags);
       });
     }
     
@@ -227,7 +248,11 @@ export const extractMetadata = async (file: File): Promise<ScannedTrack> => {
       for (const format of tagFormats) {
         if (metadata.native[format]) {
           const tags = metadata.native[format];
-          console.log(`🏷️  Trying ${format} tags:`, tags);
+          // Filter binary frames for logging only
+          const textTagsForLog = Array.isArray(tags)
+            ? tags.filter((tag: { id: string }) => !BINARY_FRAME_IDS.includes(tag.id))
+            : tags;
+          console.log(`🏷️  Trying ${format} tags (text only):`, textTagsForLog);
           
           // Extract from native tags
           for (const tag of tags) {
