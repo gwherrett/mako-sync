@@ -33,6 +33,12 @@ const DEFAULT_BATCH_SIZE = 5;
 
 /**
  * Extract metadata from a single MP3 file
+ *
+ * Looks for genres in multiple locations:
+ * 1. metadata.common.genre (standard ID3v2 TCON frame)
+ * 2. ID3v2 native TCON frames
+ * 3. ID3v1 genre (older format)
+ * 4. TXXX custom frames that might contain genre info
  */
 async function extractFileMetadata(file: File): Promise<{
   artist: string;
@@ -49,19 +55,59 @@ async function extractFileMetadata(file: File): Promise<{
     `Metadata parsing timed out for ${file.name}`
   );
 
-  // Extract genres - can be array or single value
-  let genres: string[] = [];
+  // Collect genres from multiple sources
+  const genresSet = new Set<string>();
+
+  // 1. Standard common.genre (ID3v2 TCON)
   if (metadata.common.genre) {
-    genres = Array.isArray(metadata.common.genre)
+    const commonGenres = Array.isArray(metadata.common.genre)
       ? metadata.common.genre
       : [metadata.common.genre];
+    commonGenres.forEach((g) => g && genresSet.add(g));
+  }
+
+  // 2. Check native ID3v2 tags for additional genre info
+  const id3v2Native = metadata.native['ID3v2.3'] || metadata.native['ID3v2.4'] || [];
+  for (const tag of id3v2Native) {
+    // TCON = Content type (genre)
+    if (tag.id === 'TCON' && tag.value) {
+      const val = typeof tag.value === 'string' ? tag.value : String(tag.value);
+      // Handle numeric genre codes like "(17)" for Rock
+      const cleaned = val.replace(/^\(\d+\)/, '').trim();
+      if (cleaned) genresSet.add(cleaned);
+    }
+    // TXXX frames - check for genre-related custom tags
+    if (tag.id === 'TXXX' && tag.value) {
+      const txxx = tag.value as { description?: string; text?: string };
+      const desc = (txxx.description || '').toLowerCase();
+      // Look for genre-related TXXX frames (MediaMonkey and others use these)
+      if (desc.includes('genre') || desc === 'style' || desc === 'styles') {
+        const text = txxx.text || '';
+        if (text) {
+          // Split on common delimiters (semicolon, slash, comma)
+          text.split(/[;/,]/).forEach((g) => {
+            const trimmed = g.trim();
+            if (trimmed) genresSet.add(trimmed);
+          });
+        }
+      }
+    }
+  }
+
+  // 3. Check ID3v1 tags (older format, stored at end of file)
+  const id3v1Native = metadata.native['ID3v1'] || [];
+  for (const tag of id3v1Native) {
+    if (tag.id === 'genre' && tag.value) {
+      const val = typeof tag.value === 'string' ? tag.value : String(tag.value);
+      if (val) genresSet.add(val);
+    }
   }
 
   return {
     artist: metadata.common.artist || 'Unknown Artist',
     title: metadata.common.title || file.name.replace(/\.mp3$/i, ''),
     album: metadata.common.album || null,
-    genres: genres.filter(Boolean),
+    genres: Array.from(genresSet).filter(Boolean),
   };
 }
 
