@@ -376,43 +376,35 @@ export const extractMetadata = async (file: File): Promise<ScannedTrack> => {
   }
 };
 
+// Small delay to allow browser to release file handles and GC
+const FILE_READ_DELAY_MS = 10;
+
 /**
- * Process multiple files in batches to extract metadata
+ * Process multiple files sequentially to extract metadata.
+ * Sequential processing prevents File System Access API exhaustion
+ * that occurs when processing many files in parallel.
  */
 export const extractMetadataBatch = async (
   files: File[],
-  onProgress?: (current: number, total: number) => void,
-  batchSize: number = 5
+  onProgress?: (current: number, total: number) => void
 ): Promise<ScannedTrack[]> => {
   const scannedTracks: ScannedTrack[] = [];
-  const totalBatches = Math.ceil(files.length / batchSize);
 
-  console.log(`🚀 Starting metadata extraction: ${files.length} files in ${totalBatches} batches`);
+  // Process files sequentially to avoid exhausting File System Access API
+  for (let i = 0; i < files.length; i++) {
+    const file = files[i];
+    const track = await extractMetadata(file);
+    scannedTracks.push(track);
 
-  // Process files in batches
-  for (let i = 0; i < files.length; i += batchSize) {
-    const batch = files.slice(i, i + batchSize);
-    const batchNum = Math.floor(i / batchSize) + 1;
+    if (onProgress) {
+      onProgress(i + 1, files.length);
+    }
 
-    const batchResults = await Promise.all(
-      batch.map(async (file, index) => {
-        const track = await extractMetadata(file);
-
-        if (onProgress) {
-          onProgress(i + index + 1, files.length);
-        }
-
-        return track;
-      })
-    );
-    scannedTracks.push(...batchResults);
-
-    // Log batch summary every 10 batches to reduce console noise
-    if (batchNum % 10 === 0 || batchNum === totalBatches) {
-      console.log(`📦 Metadata extraction: ${batchNum}/${totalBatches} batches (${scannedTracks.length} files processed)`);
+    // Small delay every few files to allow browser cleanup
+    if (i > 0 && i % 5 === 0) {
+      await new Promise(resolve => setTimeout(resolve, FILE_READ_DELAY_MS));
     }
   }
 
-  console.log(`✅ Metadata extraction complete: ${scannedTracks.length} files`);
   return scannedTracks;
 };

@@ -6,10 +6,10 @@ import { extractMetadataBatch } from '@/services/metadataExtractor';
 import { withTimeout } from '@/utils/promiseUtils';
 
 const DB_UPSERT_TIMEOUT_MS = 120000; // 120 seconds per batch for database operations
-const BATCH_SIZE = 25; // Smaller batches to avoid rate limits
+const BATCH_SIZE = 15; // Smaller batches to prevent File System Access API exhaustion
 const MAX_RETRIES = 1; // Retry failed batch once
 const WARMUP_TIMEOUT_MS = 30000; // 30 seconds for warmup query
-const BATCH_DELAY_MS = 1000; // 1 second delay between batches to avoid rate limits
+const BATCH_DELAY_MS = 500; // Delay between batches to allow browser cleanup
 
 export const useLocalScanner = (onScanComplete?: () => void) => {
   const [isScanning, setIsScanning] = useState(false);
