@@ -5,11 +5,12 @@ import { scanDirectoryForLocalFiles } from '@/services/fileScanner';
 import { extractMetadataBatch } from '@/services/metadataExtractor';
 import { withTimeout } from '@/utils/promiseUtils';
 
-const DB_UPSERT_TIMEOUT_MS = 120000; // 120 seconds per batch for database operations
-const BATCH_SIZE = 15; // Smaller batches to prevent File System Access API exhaustion
-const MAX_RETRIES = 1; // Retry failed batch once
+const DB_UPSERT_TIMEOUT_MS = 60000; // 60 seconds per batch (shorter timeout, more retries)
+const BATCH_SIZE = 25; // Files per DB batch (sequential processing prevents API exhaustion)
+const MAX_RETRIES = 3; // More retries to handle token refresh interruptions
 const WARMUP_TIMEOUT_MS = 30000; // 30 seconds for warmup query
 const BATCH_DELAY_MS = 500; // Delay between batches to allow browser cleanup
+const RETRY_DELAY_MS = 3000; // Wait before retry to allow token refresh to complete
 
 export const useLocalScanner = (onScanComplete?: () => void) => {
   const [isScanning, setIsScanning] = useState(false);
@@ -124,26 +125,32 @@ export const useLocalScanner = (onScanComplete?: () => void) => {
         // Only log insert details on error or every 10 batches
 
         // Insert this batch into database with retry logic
+        // Handles token refresh interruptions by waiting and retrying
         let lastError: any = null;
         let success = false;
 
         for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
           try {
             if (attempt > 0) {
-              console.log(`🔄 Retry attempt ${attempt} for batch ${batchNumber}...`);
-              // Wait a bit before retrying
-              await new Promise(resolve => setTimeout(resolve, 2000));
+              // Wait longer on retry to allow token refresh to complete
+              console.log(`🔄 Retry attempt ${attempt} for batch ${batchNumber} (waiting ${RETRY_DELAY_MS}ms)...`);
+              await new Promise(resolve => setTimeout(resolve, RETRY_DELAY_MS));
+
+              // Verify session is valid before retry
+              const { data: { session } } = await supabase.auth.getSession();
+              if (!session) {
+                console.warn(`⚠️ No session on retry attempt ${attempt}, waiting for auth...`);
+                await new Promise(resolve => setTimeout(resolve, 2000));
+              }
             }
 
-            const upsertPromise = supabase
-              .from('local_mp3s')
-              .upsert(uniqueTracks, {
-                onConflict: 'hash',
-                ignoreDuplicates: false
-              });
-
             const result = await withTimeout(
-              Promise.resolve(upsertPromise),
+              supabase
+                .from('local_mp3s')
+                .upsert(uniqueTracks, {
+                  onConflict: 'hash',
+                  ignoreDuplicates: false
+                }),
               DB_UPSERT_TIMEOUT_MS,
               `Database upsert batch ${batchNumber} timed out after ${DB_UPSERT_TIMEOUT_MS / 1000}s`
             );
@@ -154,9 +161,16 @@ export const useLocalScanner = (onScanComplete?: () => void) => {
 
             success = true;
             break;
-          } catch (err) {
+          } catch (err: any) {
             lastError = err;
-            console.warn(`⚠️ Batch ${batchNumber} attempt ${attempt + 1} failed:`, err);
+            const isTimeout = err?.message?.includes('timed out');
+            const isAuthError = err?.message?.includes('JWT') || err?.code === 'PGRST301';
+
+            if (isTimeout || isAuthError) {
+              console.warn(`⚠️ Batch ${batchNumber} attempt ${attempt + 1} failed (${isTimeout ? 'timeout' : 'auth'}), will retry...`);
+            } else {
+              console.warn(`⚠️ Batch ${batchNumber} attempt ${attempt + 1} failed:`, err?.message || err);
+            }
           }
         }
 
