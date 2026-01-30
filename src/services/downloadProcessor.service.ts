@@ -4,7 +4,7 @@
  * Processes downloaded MP3 files from slskd:
  * - Extracts metadata (artist, title, album, genre) using music-metadata-browser
  * - Maps ID3 genre tags to SuperGenre using the effective genre map
- * - Writes SuperGenre to TXXX:CUSTOM1 ID3 tag using browser-id3-writer
+ * - Writes SuperGenre to COMM:Songs-DB_Custom1 ID3 tag (MediaMonkey format) using browser-id3-writer
  * - Uses File System Access API to write tags back to original files in place
  */
 
@@ -430,12 +430,15 @@ export function reprocessWithUpdatedMap(
 }
 
 /**
- * Write SuperGenre to TXXX:CUSTOM1 ID3 tag while preserving existing tags
+ * Write SuperGenre to COMM:Songs-DB_Custom1 ID3 tag while preserving existing tags
+ *
+ * MediaMonkey uses COMM frames with "Songs-DB_CustomX" descriptions for custom fields,
+ * not TXXX frames. This ensures compatibility when files are read back into MediaMonkey.
  *
  * ID3Writer replaces all tags by default, so we need to:
  * 1. Read existing metadata
  * 2. Re-write all important tags
- * 3. Add our CUSTOM1 tag
+ * 3. Add our Songs-DB_Custom1 comment tag
  *
  * @param file - The original MP3 file
  * @param superGenre - The SuperGenre to write
@@ -480,31 +483,47 @@ async function writeSuperGenreTag(file: File, superGenre: string): Promise<Blob>
   if (common.composer && common.composer.length > 0) {
     writer.setFrame('TCOM', common.composer);
   }
-  if (common.comment && common.comment.length > 0) {
-    writer.setFrame('COMM', {
-      description: '',
-      text: common.comment[0],
-      language: 'eng',
-    });
-  }
-
-  // Preserve existing TXXX frames (except CUSTOM1 which we'll overwrite)
+  // Preserve existing TXXX and COMM frames from native tags
   const id3v23 = metadata.native['ID3v2.3'] || [];
   const id3v24 = metadata.native['ID3v2.4'] || [];
   const id3v2Native = [...id3v23, ...id3v24];
 
+  let hasDefaultComment = false;
   for (const tag of id3v2Native) {
+    // Preserve TXXX frames
     if (tag.id === 'TXXX' && tag.value) {
       const txxx = tag.value as { description?: string; text?: string };
       const desc = txxx.description || '';
-      // Skip CUSTOM1 - we'll write our own
-      if (desc.toUpperCase() !== 'CUSTOM1' && txxx.text) {
+      if (txxx.text) {
         writer.setFrame('TXXX', {
           description: desc,
           value: txxx.text,
         });
       }
     }
+    // Preserve COMM frames (except Songs-DB_Custom1 which we'll overwrite)
+    if (tag.id === 'COMM' && tag.value) {
+      const comm = tag.value as { description?: string; text?: string; language?: string };
+      const desc = comm.description || '';
+      // Skip Songs-DB_Custom1 - we'll write our own SuperGenre value
+      if (desc !== 'Songs-DB_Custom1' && comm.text) {
+        writer.setFrame('COMM', {
+          description: desc,
+          text: comm.text,
+          language: comm.language || 'eng',
+        });
+        if (desc === '') hasDefaultComment = true;
+      }
+    }
+  }
+
+  // If no native COMM frame with empty description was found, use common.comment as fallback
+  if (!hasDefaultComment && common.comment && common.comment.length > 0) {
+    writer.setFrame('COMM', {
+      description: '',
+      text: common.comment[0],
+      language: 'eng',
+    });
   }
 
   // Preserve cover art if present
@@ -519,10 +538,13 @@ async function writeSuperGenreTag(file: File, superGenre: string): Promise<Blob>
     });
   }
 
-  // Now add our SuperGenre to TXXX frame with description "CUSTOM1"
-  writer.setFrame('TXXX', {
-    description: 'CUSTOM1',
-    value: superGenre,
+  // Add SuperGenre to COMM frame with description "Songs-DB_Custom1"
+  // MediaMonkey uses COMM:Songs-DB_CustomX format for custom fields (not TXXX)
+  // See: https://www.mediamonkey.com/sw/webhelp/frame/abouttrackproperties.htm
+  writer.setFrame('COMM', {
+    description: 'Songs-DB_Custom1',
+    text: superGenre,
+    language: 'eng',
   });
 
   writer.addTag();

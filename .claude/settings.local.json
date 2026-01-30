@@ -20,7 +20,10 @@
       "Bash(curl:*)",
       "Bash(npm run dev:*)",
       "Bash(npm install:*)",
-      "Bash(grep:*)"
+      "Bash(grep:*)",
+      "WebFetch(domain:www.mediamonkey.com)",
+      "WebFetch(domain:www.npmjs.com)",
+      "WebFetch(domain:github.com)"
     ]
   }
 }
