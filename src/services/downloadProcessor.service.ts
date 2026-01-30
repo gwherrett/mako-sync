@@ -67,7 +67,10 @@ async function extractFileMetadata(file: File): Promise<{
   }
 
   // 2. Check native ID3v2 tags for additional genre info
-  const id3v2Native = metadata.native['ID3v2.3'] || metadata.native['ID3v2.4'] || [];
+  const id3v23 = metadata.native['ID3v2.3'] || [];
+  const id3v24 = metadata.native['ID3v2.4'] || [];
+  const id3v2Native = [...id3v23, ...id3v24];
+
   for (const tag of id3v2Native) {
     // TCON = Content type (genre)
     if (tag.id === 'TCON' && tag.value) {
@@ -100,6 +103,19 @@ async function extractFileMetadata(file: File): Promise<{
     if (tag.id === 'genre' && tag.value) {
       const val = typeof tag.value === 'string' ? tag.value : String(tag.value);
       if (val) genresSet.add(val);
+    }
+  }
+
+  // Debug: log files with no genres found but have native tags
+  if (genresSet.size === 0) {
+    const nativeKeys = Object.keys(metadata.native);
+    if (nativeKeys.length > 0) {
+      console.log(`🔍 No genre found for "${file.name}". Native tag formats:`, nativeKeys);
+      // Log all native tags to help debug
+      for (const format of nativeKeys) {
+        const tags = metadata.native[format];
+        console.log(`  ${format} tags:`, tags?.map((t: { id: string; value: unknown }) => ({ id: t.id, value: t.value })));
+      }
     }
   }
 
@@ -414,18 +430,96 @@ export function reprocessWithUpdatedMap(
 }
 
 /**
- * Write SuperGenre to TXXX:CUSTOM1 ID3 tag
+ * Write SuperGenre to TXXX:CUSTOM1 ID3 tag while preserving existing tags
+ *
+ * ID3Writer replaces all tags by default, so we need to:
+ * 1. Read existing metadata
+ * 2. Re-write all important tags
+ * 3. Add our CUSTOM1 tag
  *
  * @param file - The original MP3 file
  * @param superGenre - The SuperGenre to write
  * @returns A new Blob with the updated ID3 tag
  */
 async function writeSuperGenreTag(file: File, superGenre: string): Promise<Blob> {
+  // First, read existing metadata so we can preserve it
+  const metadata = await parseBlob(file, {
+    includeChapters: false,
+    skipCovers: false, // We want to preserve cover art
+  });
+
   const arrayBuffer = await file.arrayBuffer();
   const writer = new ID3Writer(arrayBuffer);
 
-  // Write SuperGenre to TXXX frame with description "CUSTOM1"
-  // This is the tag MediaMonkey and other tools can read
+  // Preserve common tags
+  const common = metadata.common;
+
+  if (common.title) {
+    writer.setFrame('TIT2', common.title);
+  }
+  if (common.artist) {
+    writer.setFrame('TPE1', [common.artist]);
+  }
+  if (common.album) {
+    writer.setFrame('TALB', common.album);
+  }
+  if (common.year) {
+    writer.setFrame('TYER', common.year);
+  }
+  if (common.track?.no) {
+    writer.setFrame('TRCK', common.track.of
+      ? `${common.track.no}/${common.track.of}`
+      : String(common.track.no));
+  }
+  if (common.genre && common.genre.length > 0) {
+    writer.setFrame('TCON', common.genre);
+  }
+  if (common.albumartist) {
+    writer.setFrame('TPE2', common.albumartist);
+  }
+  if (common.composer && common.composer.length > 0) {
+    writer.setFrame('TCOM', common.composer);
+  }
+  if (common.comment && common.comment.length > 0) {
+    writer.setFrame('COMM', {
+      description: '',
+      text: common.comment[0],
+      language: 'eng',
+    });
+  }
+
+  // Preserve existing TXXX frames (except CUSTOM1 which we'll overwrite)
+  const id3v23 = metadata.native['ID3v2.3'] || [];
+  const id3v24 = metadata.native['ID3v2.4'] || [];
+  const id3v2Native = [...id3v23, ...id3v24];
+
+  for (const tag of id3v2Native) {
+    if (tag.id === 'TXXX' && tag.value) {
+      const txxx = tag.value as { description?: string; text?: string };
+      const desc = txxx.description || '';
+      // Skip CUSTOM1 - we'll write our own
+      if (desc.toUpperCase() !== 'CUSTOM1' && txxx.text) {
+        writer.setFrame('TXXX', {
+          description: desc,
+          value: txxx.text,
+        });
+      }
+    }
+  }
+
+  // Preserve cover art if present
+  if (common.picture && common.picture.length > 0) {
+    const pic = common.picture[0];
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (writer as any).setFrame('APIC', {
+      type: pic.type === 'Cover (front)' ? 3 : 0,
+      data: pic.data,
+      description: pic.description || '',
+      useUnicodeEncoding: false,
+    });
+  }
+
+  // Now add our SuperGenre to TXXX frame with description "CUSTOM1"
   writer.setFrame('TXXX', {
     description: 'CUSTOM1',
     value: superGenre,
