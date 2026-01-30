@@ -11,6 +11,9 @@ const PARSE_BLOB_TIMEOUT_MS = 30000; // 30 seconds per file
 // Binary ID3v2 frame IDs to filter from logging (contain large binary data from DJ software like Serato)
 const BINARY_FRAME_IDS = ['GEOB', 'APIC', 'PRIV', 'SYLT', 'SYTC', 'ETCO', 'MLLT', 'AENC', 'ENCR', 'GRID', 'COMR', 'SIGN'];
 
+// Set to true for detailed per-file logging (causes memory issues with large scans)
+const VERBOSE_LOGGING = false;
+
 /**
  * Extracts year from various value formats
  */
@@ -105,78 +108,76 @@ export interface ScannedTrack {
  * Extracts metadata from an MP3 file
  */
 export const extractMetadata = async (file: File): Promise<ScannedTrack> => {
-  console.log(`🚀 STARTING metadata extraction for: ${file.name} (${(file.size / (1024 * 1024)).toFixed(1)} MB)`);
-  
-  try {
+  if (VERBOSE_LOGGING) {
+    console.log(`🚀 STARTING metadata extraction for: ${file.name} (${(file.size / (1024 * 1024)).toFixed(1)} MB)`);
     console.log(`📊 File details:`, {
       name: file.name,
       size: file.size,
       type: file.type,
       lastModified: new Date(file.lastModified).toISOString()
     });
-
     console.log(`🔍 About to call parseBlob for: ${file.name}`);
-    
+  }
+
+  try {
     // Try parseBlob with specific error handling and timeout protection
-    let metadata;
-    try {
-      metadata = await withTimeout(
-        parseBlob(file, {
-          includeChapters: false,
-          skipCovers: true,
-          skipPostHeaders: false
-        }),
-        PARSE_BLOB_TIMEOUT_MS,
-        `Metadata parsing timed out for ${file.name} after ${PARSE_BLOB_TIMEOUT_MS / 1000}s`
-      );
-      console.log(`✅ parseBlob completed successfully for: ${file.name}`);
-    } catch (parseError: any) {
-      console.error(`❌ parseBlob FAILED for ${file.name}:`, parseError);
+    const metadata = await withTimeout(
+      parseBlob(file, {
+        includeChapters: false,
+        skipCovers: true,
+        skipPostHeaders: false
+      }),
+      PARSE_BLOB_TIMEOUT_MS,
+      `Metadata parsing timed out for ${file.name} after ${PARSE_BLOB_TIMEOUT_MS / 1000}s`
+    ).catch((parseError: Error) => {
+      console.error(`❌ parseBlob FAILED for ${file.name}:`, parseError.message);
       throw new Error(`parseBlob failed: ${parseError.message}`);
-    }
-    
+    });
+
     // Validate metadata object structure
     if (!metadata) {
       console.error(`❌ metadata is null/undefined for: ${file.name}`);
       throw new Error('Metadata object is null or undefined');
     }
-    
-    // Log metadata summary without binary data (GEOB frames can be huge from Serato/DJ software)
-    const metadataSummary = {
-      format: metadata.format,
-      common: metadata.common,
-      nativeFormats: metadata.native ? Object.keys(metadata.native) : [],
-      nativeTagCounts: metadata.native
-        ? Object.fromEntries(
-            Object.entries(metadata.native).map(([format, tags]) => [
-              format,
-              Array.isArray(tags) ? tags.length : 0
-            ])
-          )
-        : {}
-    };
-    console.log(`📋 Metadata summary for "${file.name}":`, JSON.stringify(metadataSummary, null, 2));
-    
-    // Check for expected properties
-    console.log(`📊 Metadata validation for "${file.name}":`, {
-      hasFormat: !!metadata.format,
-      hasCommon: !!metadata.common,
-      hasNative: !!metadata.native,
-      formatKeys: metadata.format ? Object.keys(metadata.format) : [],
-      commonKeys: metadata.common ? Object.keys(metadata.common) : [],
-      nativeKeys: metadata.native ? Object.keys(metadata.native) : []
-    });
-    
-    // Log available tag formats (filter out binary frames like GEOB, APIC, PRIV)
-    if (metadata.native) {
-      Object.keys(metadata.native).forEach(tagFormat => {
-        const tags = metadata.native[tagFormat];
-        const textTags = Array.isArray(tags)
-          ? tags.filter((tag: { id: string }) => !BINARY_FRAME_IDS.includes(tag.id))
-          : tags;
-        const skippedCount = Array.isArray(tags) ? tags.length - textTags.length : 0;
-        console.log(`🏷️  ${tagFormat} tags (${skippedCount} binary frames filtered):`, textTags);
+
+    if (VERBOSE_LOGGING) {
+      // Log metadata summary without binary data (GEOB frames can be huge from Serato/DJ software)
+      const metadataSummary = {
+        format: metadata.format,
+        common: metadata.common,
+        nativeFormats: metadata.native ? Object.keys(metadata.native) : [],
+        nativeTagCounts: metadata.native
+          ? Object.fromEntries(
+              Object.entries(metadata.native).map(([format, tags]) => [
+                format,
+                Array.isArray(tags) ? tags.length : 0
+              ])
+            )
+          : {}
+      };
+      console.log(`📋 Metadata summary for "${file.name}":`, JSON.stringify(metadataSummary, null, 2));
+
+      // Check for expected properties
+      console.log(`📊 Metadata validation for "${file.name}":`, {
+        hasFormat: !!metadata.format,
+        hasCommon: !!metadata.common,
+        hasNative: !!metadata.native,
+        formatKeys: metadata.format ? Object.keys(metadata.format) : [],
+        commonKeys: metadata.common ? Object.keys(metadata.common) : [],
+        nativeKeys: metadata.native ? Object.keys(metadata.native) : []
       });
+
+      // Log available tag formats (filter out binary frames like GEOB, APIC, PRIV)
+      if (metadata.native) {
+        Object.keys(metadata.native).forEach(tagFormat => {
+          const tags = metadata.native[tagFormat];
+          const textTags = Array.isArray(tags)
+            ? tags.filter((tag: { id: string }) => !BINARY_FRAME_IDS.includes(tag.id))
+            : tags;
+          const skippedCount = Array.isArray(tags) ? tags.length - textTags.length : 0;
+          console.log(`🏷️  ${tagFormat} tags (${skippedCount} binary frames filtered):`, textTags);
+        });
+      }
     }
     
     const hash = await generateFileHash(file);
@@ -200,19 +201,21 @@ export const extractMetadata = async (file: File): Promise<ScannedTrack> => {
       genre = metadata.common.genre?.[0] || null;
       bpm = metadata.common.bpm || null;
       key = metadata.common.key || null;
-      
-      console.log(`📊 Common metadata for "${file.name}":`, {
-        title: metadata.common.title,
-        artist: metadata.common.artist,
-        album: metadata.common.album,
-        year: metadata.common.year,
-        date: metadata.common.date,
-        originaldate: metadata.common.originaldate,
-        genre: metadata.common.genre,
-        track: metadata.common.track,
-        albumartist: metadata.common.albumartist
-      });
-      
+
+      if (VERBOSE_LOGGING) {
+        console.log(`📊 Common metadata for "${file.name}":`, {
+          title: metadata.common.title,
+          artist: metadata.common.artist,
+          album: metadata.common.album,
+          year: metadata.common.year,
+          date: metadata.common.date,
+          originaldate: metadata.common.originaldate,
+          genre: metadata.common.genre,
+          track: metadata.common.track,
+          albumartist: metadata.common.albumartist
+        });
+      }
+
       // Try additional common fields for year if not found
       if (!year) {
         const dateStr = metadata.common.date || metadata.common.originaldate;
@@ -220,7 +223,7 @@ export const extractMetadata = async (file: File): Promise<ScannedTrack> => {
           const extractedYear = extractYearFromString(dateStr);
           if (extractedYear) {
             year = extractedYear;
-            console.log(`📅 Extracted year from date field: ${year}`);
+            if (VERBOSE_LOGGING) console.log(`📅 Extracted year from date field: ${year}`);
           }
         }
       }
@@ -229,30 +232,27 @@ export const extractMetadata = async (file: File): Promise<ScannedTrack> => {
     // Extract format metadata (bitrate, etc.)
     if (metadata.format) {
       bitrate = metadata.format.bitrate ? Math.round(metadata.format.bitrate / 1000) : null;
-      console.log(`🎵 Format metadata for "${file.name}":`, {
-        bitrate: metadata.format.bitrate,
-        roundedBitrate: bitrate,
-        sampleRate: metadata.format.sampleRate,
-        numberOfChannels: metadata.format.numberOfChannels,
-        duration: metadata.format.duration
-      });
+      if (VERBOSE_LOGGING) {
+        console.log(`🎵 Format metadata for "${file.name}":`, {
+          bitrate: metadata.format.bitrate,
+          roundedBitrate: bitrate,
+          sampleRate: metadata.format.sampleRate,
+          numberOfChannels: metadata.format.numberOfChannels,
+          duration: metadata.format.duration
+        });
+      }
     }
-    
+
     // Fallback: Try extracting from native tags if common is missing
     if (metadata.native && (!title || !artist || !album || !year || !genre || !bpm || !key)) {
-      console.log(`🔄 Attempting fallback extraction from native tags...`);
-      
+      if (VERBOSE_LOGGING) console.log(`🔄 Attempting fallback extraction from native tags...`);
+
       // Try ID3v2.4 first, then ID3v2.3, then ID3v1
       const tagFormats = ['ID3v2.4', 'ID3v2.3', 'ID3v1', 'vorbis'];
-      
+
       for (const format of tagFormats) {
         if (metadata.native[format]) {
           const tags = metadata.native[format];
-          // Filter binary frames for logging only
-          const textTagsForLog = Array.isArray(tags)
-            ? tags.filter((tag: { id: string }) => !BINARY_FRAME_IDS.includes(tag.id))
-            : tags;
-          console.log(`🏷️  Trying ${format} tags (text only):`, textTagsForLog);
           
           // Extract from native tags
           for (const tag of tags) {
@@ -266,15 +266,15 @@ export const extractMetadata = async (file: File): Promise<ScannedTrack> => {
               album = typeof tag.value === 'string' ? tag.value : null;
             }
             if (!year && (
-              tag.id === 'TYER' || tag.id === 'TDRC' || tag.id === 'TDAT' || 
+              tag.id === 'TYER' || tag.id === 'TDRC' || tag.id === 'TDAT' ||
               tag.id === 'TORY' || tag.id === 'TDOR' || tag.id === 'TRDA' ||
-              tag.id === 'DATE' || tag.id === 'Date' || tag.id === 'YEAR' || 
+              tag.id === 'DATE' || tag.id === 'Date' || tag.id === 'YEAR' ||
               tag.id === 'Year' || tag.id === 'ORIGINALDATE'
             )) {
               const extractedYear = extractYearFromValue(tag.value);
               if (extractedYear) {
                 year = extractedYear;
-                console.log(`📅 Extracted year from ${tag.id}: ${year}`);
+                if (VERBOSE_LOGGING) console.log(`📅 Extracted year from ${tag.id}: ${year}`);
               }
             }
             if (!genre && (tag.id === 'TCON' || tag.id === 'GENRE' || tag.id === 'Genre')) {
@@ -291,9 +291,9 @@ export const extractMetadata = async (file: File): Promise<ScannedTrack> => {
             }
           }
           
-          // If we found some data in this format, log it
+          // If we found some data in this format, break out
           if (title || artist || album || year || genre || bpm || key) {
-            console.log(`✅ Found metadata in ${format}:`, { title, artist, album, year, genre, bpm, key });
+            if (VERBOSE_LOGGING) console.log(`✅ Found metadata in ${format}:`, { title, artist, album, year, genre, bpm, key });
             break;
           }
         }
@@ -326,36 +326,14 @@ export const extractMetadata = async (file: File): Promise<ScannedTrack> => {
       mix: normalized.mix,
     };
 
-    // Final extraction results
-    console.log(`🎵 Final metadata extracted for "${file.name}":`, {
-      artist: trackData.artist || '❌ MISSING',
-      album: trackData.album || '❌ MISSING', 
-      genre: trackData.genre || '❌ MISSING',
-      year: trackData.year || '❌ MISSING',
-      title: trackData.title || '❌ MISSING',
-      bpm: trackData.bpm || '❌ MISSING',
-      key: trackData.key || '❌ MISSING',
-      bitrate: trackData.bitrate ? `${trackData.bitrate} kbps` : '❌ MISSING',
-      fileSize: `${(file.size / (1024 * 1024)).toFixed(1)} MB`,
-      hash: trackData.hash?.substring(0, 8) + '...',
-      normalized: {
-        title: trackData.normalized_title,
-        artist: trackData.normalized_artist,
-        core_title: trackData.core_title,
-        primary_artist: trackData.primary_artist,
-        mix: trackData.mix || 'none'
-      }
-    });
-
     // Validate the extracted metadata before returning
     const validationResult = metadataSchema.safeParse(trackData);
-    
+
     if (!validationResult.success) {
       console.error(`❌ Metadata validation failed for ${file.name}:`, validationResult.error.issues);
       throw new Error(`Invalid metadata in ${file.name}: ${validationResult.error.issues.map(i => `${i.path.join('.')}: ${i.message}`).join(', ')}`);
     }
-    
-    console.log(`✅ Metadata validation passed for: ${file.name}`);
+
     return validationResult.data as ScannedTrack;
   } catch (error) {
     console.error(`❌ Failed to extract metadata from ${file.name}:`, error);
@@ -407,29 +385,34 @@ export const extractMetadataBatch = async (
   batchSize: number = 5
 ): Promise<ScannedTrack[]> => {
   const scannedTracks: ScannedTrack[] = [];
-  
-  console.log('🚀 Starting metadata extraction for all files...');
-  
+  const totalBatches = Math.ceil(files.length / batchSize);
+
+  console.log(`🚀 Starting metadata extraction: ${files.length} files in ${totalBatches} batches`);
+
   // Process files in batches
   for (let i = 0; i < files.length; i += batchSize) {
     const batch = files.slice(i, i + batchSize);
-    console.log(`📦 Processing batch ${Math.floor(i/batchSize) + 1}: files ${i + 1}-${Math.min(i + batchSize, files.length)}`);
-    
+    const batchNum = Math.floor(i / batchSize) + 1;
+
     const batchResults = await Promise.all(
       batch.map(async (file, index) => {
-        console.log(`🎯 About to extract metadata for: ${file.name}`);
         const track = await extractMetadata(file);
-        console.log(`✅ Metadata extraction completed for: ${file.name}`);
-        
+
         if (onProgress) {
           onProgress(i + index + 1, files.length);
         }
-        
+
         return track;
       })
     );
     scannedTracks.push(...batchResults);
+
+    // Log batch summary every 10 batches to reduce console noise
+    if (batchNum % 10 === 0 || batchNum === totalBatches) {
+      console.log(`📦 Metadata extraction: ${batchNum}/${totalBatches} batches (${scannedTracks.length} files processed)`);
+    }
   }
 
+  console.log(`✅ Metadata extraction complete: ${scannedTracks.length} files`);
   return scannedTracks;
 };
