@@ -19,7 +19,8 @@
       "Bash(ss:*)",
       "Bash(curl:*)",
       "Bash(npm run dev:*)",
-      "Bash(npm install:*)"
+      "Bash(npm install:*)",
+      "Bash(grep:*)"
     ]
   }
 }

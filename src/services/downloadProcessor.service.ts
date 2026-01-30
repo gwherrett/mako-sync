@@ -583,6 +583,75 @@ export async function writeTagsInPlace(
   return { success, errors };
 }
 
+/**
+ * Debug metadata result type
+ */
+export interface FileDebugMetadata {
+  nativeFormats: string[];
+  tags: Record<string, Array<{ id: string; value: unknown }>>;
+  extracted: {
+    artist: string;
+    title: string;
+    album: string | null;
+    genres: string[];
+  };
+  common: {
+    title?: string;
+    artist?: string;
+    album?: string;
+    genre?: string[];
+    year?: number;
+    track?: { no: number | null; of: number | null };
+    albumartist?: string;
+    composer?: string[];
+    comment?: string[];
+    bpm?: number;
+    key?: string;
+  };
+}
+
+/**
+ * Get detailed debug metadata for a single file
+ * Shows all native tag formats and their contents for debugging
+ */
+export async function getFileDebugMetadata(file: File): Promise<FileDebugMetadata> {
+  const metadata = await parseBlob(file, {
+    includeChapters: false,
+    skipCovers: true,
+  });
+
+  const nativeFormats = Object.keys(metadata.native);
+  const tags: Record<string, Array<{ id: string; value: unknown }>> = {};
+
+  for (const format of nativeFormats) {
+    tags[format] = metadata.native[format].map((t: { id: string; value: unknown }) => ({
+      id: t.id,
+      value: t.value,
+    }));
+  }
+
+  const extracted = await extractFileMetadata(file);
+
+  return {
+    nativeFormats,
+    tags,
+    extracted,
+    common: {
+      title: metadata.common.title,
+      artist: metadata.common.artist,
+      album: metadata.common.album,
+      genre: metadata.common.genre,
+      year: metadata.common.year,
+      track: metadata.common.track,
+      albumartist: metadata.common.albumartist,
+      composer: metadata.common.composer,
+      comment: metadata.common.comment,
+      bpm: metadata.common.bpm,
+      key: metadata.common.key,
+    },
+  };
+}
+
 // Export for testing
 export const _testExports = {
   extractFileMetadata,

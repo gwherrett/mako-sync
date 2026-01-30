@@ -45,6 +45,7 @@ import {
   Music,
   Save,
   FolderSync,
+  Info,
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -62,6 +63,7 @@ import {
 } from '@/services/directoryHandle.service';
 import { Link } from 'react-router-dom';
 import type { ProcessedFile, ProcessingProgress, ProcessingResult } from '@/types/slskd';
+import { MetadataDebugModal } from './MetadataDebugModal';
 
 export function DownloadProcessingSection() {
   const { toast } = useToast();
@@ -89,6 +91,10 @@ export function DownloadProcessingSection() {
 
   // Filter state
   const [statusFilter, setStatusFilter] = useState<'all' | 'mapped' | 'unmapped' | 'error'>('all');
+
+  // Debug modal state
+  const [debugFile, setDebugFile] = useState<ProcessedFile | null>(null);
+  const [debugModalOpen, setDebugModalOpen] = useState(false);
 
   // Check for File System Access API support
   const isSupported = isFileSystemAccessSupported();
@@ -576,6 +582,7 @@ export function DownloadProcessingSection() {
                       <TableHead>ID3 Genre(s)</TableHead>
                       <TableHead>SuperGenre</TableHead>
                       <TableHead className="w-[100px]">Status</TableHead>
+                      <TableHead className="w-[50px]"></TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -643,6 +650,20 @@ export function DownloadProcessingSection() {
                           )}
                         </TableCell>
                         <TableCell>{getStatusBadge(file.status)}</TableCell>
+                        <TableCell>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-7 w-7 p-0"
+                            onClick={() => {
+                              setDebugFile(file);
+                              setDebugModalOpen(true);
+                            }}
+                            title="View raw metadata"
+                          >
+                            <Info className="h-4 w-4" />
+                          </Button>
+                        </TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
@@ -694,6 +715,13 @@ export function DownloadProcessingSection() {
           </div>
         )}
       </CardContent>
+
+      {/* Metadata Debug Modal */}
+      <MetadataDebugModal
+        file={debugFile}
+        open={debugModalOpen}
+        onOpenChange={setDebugModalOpen}
+      />
     </Card>
   );
 }
