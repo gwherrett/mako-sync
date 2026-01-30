@@ -30,16 +30,21 @@ export const scanDirectoryForLocalFiles = async (options?: ScanOptions): Promise
   console.log(`📁 Directory selected: ${dirHandle.name}`);
 
   const localFiles: File[] = [];
-  
+  let lastLoggedCount = 0;
+
   // Recursively collect local music files
   const collectLocalFiles = async (dirHandle: any, path = '') => {
-    console.log(`🔍 Collecting files from: ${path || 'root'}`);
     for await (const entry of dirHandle.values()) {
       if (entry.kind === 'file' && entry.name.toLowerCase().endsWith('.mp3')) {
         const file = await entry.getFile();
-        console.log(`🎵 Found local file: ${entry.name} (${(file.size / (1024 * 1024)).toFixed(1)} MB)`);
         localFiles.push(file);
-        
+
+        // Log progress every 100 files to reduce console noise
+        if (localFiles.length - lastLoggedCount >= 100) {
+          console.log(`🎵 Found ${localFiles.length} files...`);
+          lastLoggedCount = localFiles.length;
+        }
+
         // Report progress if callback provided
         if (options?.onProgress) {
           options.onProgress(localFiles.length, localFiles.length);

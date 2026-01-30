@@ -84,7 +84,10 @@ export const useLocalScanner = (onScanComplete?: () => void) => {
         const fileBatch = localFiles.slice(i, i + BATCH_SIZE);
         const batchNumber = Math.floor(i / BATCH_SIZE) + 1;
 
-        console.log(`📦 Batch ${batchNumber}/${totalBatches}: Extracting metadata for ${fileBatch.length} files...`);
+        // Log every 10 batches to reduce console noise
+        if (batchNumber % 10 === 1 || batchNumber === totalBatches) {
+          console.log(`📦 Batch ${batchNumber}/${totalBatches}: Processing...`);
+        }
 
         // Extract metadata for this batch
         const scannedTracks = await extractMetadataBatch(
@@ -118,7 +121,7 @@ export const useLocalScanner = (onScanComplete?: () => void) => {
           return self.findIndex(t => t.hash === track.hash) === index;
         });
 
-        console.log(`💾 Batch ${batchNumber}/${totalBatches}: Inserting ${uniqueTracks.length} tracks...`);
+        // Only log insert details on error or every 10 batches
 
         // Insert this batch into database with retry logic
         let lastError: any = null;
@@ -163,11 +166,14 @@ export const useLocalScanner = (onScanComplete?: () => void) => {
         }
 
         insertedCount += uniqueTracks.length;
-        console.log(`✅ Batch ${batchNumber}/${totalBatches} complete (${insertedCount} tracks inserted so far)`);
+
+        // Log progress every 10 batches
+        if (batchNumber % 10 === 0 || batchNumber === totalBatches) {
+          console.log(`✅ Progress: ${batchNumber}/${totalBatches} batches (${insertedCount} tracks inserted)`);
+        }
 
         // Delay between batches to avoid rate limits
         if (i + BATCH_SIZE < localFiles.length) {
-          console.log(`⏳ Waiting ${BATCH_DELAY_MS}ms before next batch...`);
           await new Promise(resolve => setTimeout(resolve, BATCH_DELAY_MS));
         }
       }
