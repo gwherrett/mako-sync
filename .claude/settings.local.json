@@ -23,7 +23,12 @@
       "Bash(grep:*)",
       "WebFetch(domain:www.mediamonkey.com)",
       "WebFetch(domain:www.npmjs.com)",
-      "WebFetch(domain:github.com)"
+      "WebFetch(domain:github.com)",
+      "Bash(for file in src/services/*.ts)",
+      "Bash(do basename \"$file\")",
+      "Bash(done)",
+      "Bash(xargs basename:*)",
+      "Read(//tmp/**)"
     ]
   }
 }

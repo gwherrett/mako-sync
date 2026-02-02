@@ -1,8 +1,8 @@
 # Mako Sync slskd Complete Implementation Guide
 
-**Document Version:** 4.1
-**Last Updated:** January 27, 2026
-**Status:** Phases 1-3 Complete, Matching Algorithm Updated
+**Document Version:** 5.0
+**Last Updated:** February 2, 2026
+**Status:** ✅ All Phases Complete - Production Ready
 
 ---
 
@@ -223,7 +223,7 @@ The integration is intentionally simple, resilient, and user-controlled. It avoi
    Push *missing tracks* from Mako Sync → slskd wishlist. slskd handles downloading automatically.
 
 2. **Download processing in Mako Sync**
-   TypeScript-based processing reads genre tags, maps to SuperGenre, and writes `TXXX:CUSTOM1` tag (MediaMonkey Custom 1 field).
+   TypeScript-based processing reads genre tags, maps to SuperGenre, and writes `COMM:Songs-DB_Custom1` tag (MediaMonkey Custom 1 field) directly to files in place using File System Access API.
 
 3. **File organization via MediaMonkey**
    MediaMonkey handles moving files to Supercrates folders. Mako Sync only tags files.
@@ -241,7 +241,12 @@ The integration is intentionally simple, resilient, and user-controlled. It avoi
 ✅ **Supercrates are the single source of truth for SuperGenres**
 - Mako Sync scans Supercrate folders directly
 - MediaMonkey handles file organization (not automated)
-- Download flow: `slskd → Mako Sync (tag) → MediaMonkey (organize) → Serato`
+- Download flow: `slskd → Mako Sync (tag in place) → MediaMonkey (organize) → Serato`
+
+✅ **Persistent folder access via File System Access API**
+- Directory handle stored in IndexedDB for session persistence
+- User grants permission once, access persists across sessions
+- Tags written directly to files in their original locations
 
 ✅ **Client-side slskd integration**
 - Browser makes direct REST calls to slskd
@@ -297,14 +302,15 @@ The integration is intentionally simple, resilient, and user-controlled. It avoi
 └──────────┬───────────┘
            │
            ▼
-┌──────────────────────────────┐
-│ Mako Sync "Process Downloads"│
-│ - Scan download folder       │
-│ - Read ID3 genre tags        │
-│ - Map to SuperGenre          │
-│ - Inline mapping for unknown │
-│ - Write TXXX:CUSTOM1 tag     │
-└──────────┬───────────────────┘
+┌───────────────────────────────────┐
+│ Mako Sync "Process Downloads"    │
+│ - Persistent folder access       │
+│ - Read ID3 genre tags            │
+│ - Map to SuperGenre              │
+│ - Inline mapping for unknown     │
+│ - Write COMM:Songs-DB_Custom1 tag│
+│ - Files written in place         │
+└──────────┬────────────────────────┘
            │
            ▼
 ┌──────────────────────┐
@@ -681,14 +687,14 @@ export function SlskdConfigSection() {
 
 ### Phase 1 Completion Checklist
 
-- [ ] `src/types/slskd.ts` created
-- [ ] `src/services/slskdStorage.service.ts` created
-- [ ] `src/hooks/useSlskdConfig.ts` created
-- [ ] `src/components/SlskdConfigSection.tsx` created
-- [ ] Component added to Settings/Security page
-- [ ] Test connection with real slskd instance
-- [ ] Verify config persists across browser refresh
-- [ ] Commit: `feat(slskd): add localStorage configuration and connection test`
+- [x] `src/types/slskd.ts` created
+- [x] `src/services/slskdStorage.service.ts` created
+- [x] `src/hooks/useSlskdConfig.ts` created
+- [x] `src/components/SlskdConfigSection.tsx` created
+- [x] Component added to Options & Authentication page
+- [x] Test connection with real slskd instance
+- [x] Verify config persists across browser refresh
+- [x] Commit: `feat(slskd): add localStorage configuration and connection test`
 
 ---
 
@@ -929,13 +935,13 @@ export function useSlskdSync() {
 
 ### Phase 2 Completion Checklist
 
-- [ ] `src/services/slskdClient.service.ts` created
-- [ ] `src/hooks/useSlskdSync.ts` created
-- [ ] Search query uses configurable format (primary/full)
-- [ ] Search query does NOT include "320 MP3"
-- [ ] Duplicate detection works
-- [ ] Test push with real slskd instance
-- [ ] Commit: `feat(slskd): add wishlist push service with configurable search format`
+- [x] `src/services/slskdClient.service.ts` created
+- [x] `src/hooks/useSlskdSync.ts` created
+- [x] Search query uses configurable format (primary/full)
+- [x] Search query does NOT include "320 MP3"
+- [x] Duplicate detection works
+- [x] Test push with real slskd instance
+- [x] Commit: `feat(slskd): add wishlist push service with configurable search format`
 
 ---
 
@@ -1080,13 +1086,13 @@ export function SlskdSyncProgress({ isOpen, onClose, isSyncing, result }: Props)
 
 ### Phase 3 Completion Checklist
 
-- [ ] Artist checkboxes added to Missing Tracks page
-- [ ] "Push to slskd" button added (disabled if not configured)
-- [ ] `SlskdSyncProgress.tsx` created
-- [ ] Progress modal shows during sync
-- [ ] Results display correctly
-- [ ] Test end-to-end with slskd
-- [ ] Commit: `feat(slskd): add artist selection UI to missing tracks page`
+- [x] Artist checkboxes added to Missing Tracks page
+- [x] "Push to slskd" button added (disabled if not configured)
+- [x] `SlskdSyncProgress.tsx` created
+- [x] Progress modal shows during sync
+- [x] Results display correctly
+- [x] Test end-to-end with slskd
+- [x] Commit: `feat(slskd): add artist selection UI to missing tracks page`
 
 ---
 
@@ -1101,137 +1107,152 @@ Process downloaded MP3s: read genres, map to SuperGenre, write `TXXX:CUSTOM1` ta
 
 ### SuperGenre ID3 Field
 
-MediaMonkey stores SuperGenre in **Custom 1** field:
+MediaMonkey stores SuperGenre in **Custom 1** field using the COMM frame format:
 
 | Property | Value |
 |----------|-------|
 | MediaMonkey Field | Custom 1 (Classification tab) |
-| ID3v2 Frame | `TXXX` with description `CUSTOM1` |
+| ID3v2 Frame | `COMM` with description `Songs-DB_Custom1` |
+| Language | `eng` |
+
+**Note:** MediaMonkey uses `COMM:Songs-DB_CustomX` frames for custom fields, NOT `TXXX` frames. This ensures proper bidirectional compatibility with MediaMonkey.
+
+### Persistent Directory Access
+
+The implementation uses the **File System Access API** with **IndexedDB** for persistent storage:
+
+**File:** `src/services/directoryHandle.service.ts`
+
+```typescript
+const DB_NAME = 'mako-sync-fs';
+const DB_VERSION = 1;
+const STORE_NAME = 'handles';
+const DOWNLOADS_KEY = 'slskd-downloads';
+
+export interface FileWithHandle {
+  file: File;
+  handle: FileSystemFileHandle;
+  relativePath: string;
+}
+
+/**
+ * Store a directory handle in IndexedDB
+ */
+export async function storeDirectoryHandle(
+  handle: FileSystemDirectoryHandle
+): Promise<void>;
+
+/**
+ * Retrieve the stored directory handle from IndexedDB
+ */
+export async function getStoredDirectoryHandle(): Promise<FileSystemDirectoryHandle | null>;
+
+/**
+ * Request a directory from the user with read/write access
+ * Stores the handle in IndexedDB for persistence
+ */
+export async function requestDirectoryAccess(): Promise<FileSystemDirectoryHandle | null>;
+
+/**
+ * Recursively get all MP3 files from a directory with their handles
+ */
+export async function getAllMp3Files(
+  dirHandle: FileSystemDirectoryHandle,
+  basePath?: string
+): Promise<FileWithHandle[]>;
+```
+
+This allows:
+- User selects folder once in Options page
+- Permission persists across browser sessions
+- Recursive access to all MP3 files in subdirectories
+- Write-back to original file locations
 
 ### Processing Service
 
 **File:** `src/services/downloadProcessor.service.ts`
 
 ```typescript
-import * as mm from 'music-metadata-browser';
+import { parseBlob } from 'music-metadata-browser';
+import { ID3Writer } from 'browser-id3-writer';
+import { Buffer } from 'buffer';
+import type { FileWithHandle } from './directoryHandle.service';
 
 export interface ProcessedFile {
   filename: string;
+  relativePath: string;
   artist: string;
   title: string;
+  album: string | null;
   genres: string[];
   superGenre: string | null;
   status: 'mapped' | 'unmapped' | 'error';
   error?: string;
+  file: File;
+  fileHandle?: FileSystemFileHandle;
 }
 
 export interface ProcessingResult {
   files: ProcessedFile[];
   unmappedGenres: string[];
+  summary: {
+    total: number;
+    mapped: number;
+    unmapped: number;
+    errors: number;
+  };
 }
 
-export class DownloadProcessorService {
-  /**
-   * Extract metadata from MP3 file
-   */
-  static async extractMetadata(file: File): Promise<{
-    artist: string;
-    title: string;
-    genres: string[];
-  }> {
-    const metadata = await mm.parseBlob(file);
+/**
+ * Process files from File System Access API with handles for write-back
+ */
+export async function processDownloadsWithHandles(
+  filesWithHandles: FileWithHandle[],
+  genreMap: Map<string, string>,
+  onProgress?: (progress: ProcessingProgress) => void,
+  batchSize?: number
+): Promise<ProcessingResult>;
 
-    return {
-      artist: metadata.common.artist || 'Unknown Artist',
-      title: metadata.common.title || file.name.replace('.mp3', ''),
-      genres: metadata.common.genre || [],
-    };
-  }
+/**
+ * Write SuperGenre to COMM:Songs-DB_Custom1 ID3 tag while preserving existing tags
+ * Uses browser-id3-writer to write back to original files
+ */
+export async function writeTagsInPlace(
+  files: ProcessedFile[],
+  onProgress?: (progress: { current: number; total: number; filename: string }) => void
+): Promise<{ success: number; errors: Array<{ filename: string; error: string }> }>;
 
-  /**
-   * Map genre(s) to SuperGenre using the genre mapping tables
-   */
-  static async mapToSuperGenre(
-    genres: string[],
-    genreMap: Map<string, string>
-  ): Promise<string | null> {
-    for (const genre of genres) {
-      const normalized = genre.toLowerCase().trim();
-
-      // Check exact match
-      if (genreMap.has(normalized)) {
-        return genreMap.get(normalized)!;
-      }
-
-      // Check partial match
-      for (const [key, superGenre] of genreMap.entries()) {
-        if (normalized.includes(key) || key.includes(normalized)) {
-          return superGenre;
-        }
-      }
-    }
-
-    return null;
-  }
-
-  /**
-   * Process a folder of downloaded files
-   */
-  static async processFiles(
-    files: File[],
-    genreMap: Map<string, string>
-  ): Promise<ProcessingResult> {
-    const results: ProcessedFile[] = [];
-    const unmappedGenres = new Set<string>();
-
-    for (const file of files) {
-      if (!file.name.toLowerCase().endsWith('.mp3')) continue;
-
-      try {
-        const metadata = await this.extractMetadata(file);
-        const superGenre = await this.mapToSuperGenre(metadata.genres, genreMap);
-
-        if (!superGenre && metadata.genres.length > 0) {
-          metadata.genres.forEach(g => unmappedGenres.add(g.toLowerCase()));
-        }
-
-        results.push({
-          filename: file.name,
-          artist: metadata.artist,
-          title: metadata.title,
-          genres: metadata.genres,
-          superGenre,
-          status: superGenre ? 'mapped' : 'unmapped',
-        });
-      } catch (error: any) {
-        results.push({
-          filename: file.name,
-          artist: 'Unknown',
-          title: file.name,
-          genres: [],
-          superGenre: null,
-          status: 'error',
-          error: error.message,
-        });
-      }
-    }
-
-    return {
-      files: results,
-      unmappedGenres: Array.from(unmappedGenres),
-    };
-  }
-}
+/**
+ * Get detailed debug metadata for a single file (for troubleshooting)
+ */
+export async function getFileDebugMetadata(file: File): Promise<FileDebugMetadata>;
 ```
+
+**Genre Extraction:** The service looks for genres in multiple locations:
+1. `metadata.common.genre` (standard ID3v2 TCON frame)
+2. ID3v2 native TCON frames
+3. ID3v1 genre (older format)
+4. TXXX custom frames with genre-related descriptions
+
+**Tag Writing:** Preserves all existing tags when writing SuperGenre:
+- Reads existing metadata with music-metadata-browser
+- Re-writes all important tags (TIT2, TPE1, TALB, etc.)
+- Preserves existing TXXX and COMM frames
+- Writes SuperGenre to `COMM:Songs-DB_Custom1`
 
 ### Phase 4 Completion Checklist
 
-- [ ] `src/services/downloadProcessor.service.ts` created
-- [ ] Metadata extraction works
-- [ ] Genre mapping from database works
-- [ ] Handles multi-genre files
-- [ ] Collects unmapped genres
-- [ ] Commit: `feat(slskd): add download processing service with genre mapping`
+- [x] `src/services/downloadProcessor.service.ts` created
+- [x] `src/services/directoryHandle.service.ts` created
+- [x] Metadata extraction from multiple ID3 sources
+- [x] Genre mapping with exact and partial matching
+- [x] Handles multi-genre files (first match wins)
+- [x] Collects unmapped genres for inline mapping
+- [x] File System Access API integration
+- [x] IndexedDB persistence for directory handle
+- [x] COMM:Songs-DB_Custom1 tag writing (MediaMonkey compatible)
+- [x] Preserves existing tags during write
+- [x] Commit: `feat(slskd): add download processing service with genre mapping`
 
 ---
 
@@ -1239,6 +1260,7 @@ export class DownloadProcessorService {
 
 **Priority:** MEDIUM
 **Dependencies:** Phase 4 complete
+**Status:** ✅ Complete
 
 ### Objective
 
@@ -1246,41 +1268,80 @@ Extend the **Missing Tracks page** with download processing functionality. This 
 
 **Key design decisions:**
 - Download processing is a **section/tab** within Missing Tracks, not a separate page
-- Uses the configurable downloads folder from localStorage
+- Uses **File System Access API** with persistent folder selection in Options page
 - Inline genre mapping for unknown genres saves to `spotify_genre_map_overrides`
-- **MediaMonkey handles file organization** - Mako Sync only writes the `TXXX:CUSTOM1` tag
+- **MediaMonkey handles file organization** - Mako Sync writes the `COMM:Songs-DB_Custom1` tag
+- Files are written **in place** to their original locations (no download/re-upload)
 
-### Extended Missing Tracks Page
+### Directory Selection in Options Page
 
-Add a new section/tab to the existing Missing Tracks page.
+Users configure their downloads folder in the **Options & Authentication** page. The folder selection is persisted in IndexedDB.
+
+**File:** `src/components/SlskdConfigSection.tsx`
+
+```typescript
+import { useState, useEffect } from 'react';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { FolderOpen, CheckCircle2, XCircle } from 'lucide-react';
+import {
+  requestDirectoryAccess,
+  getStoredDirectoryHandle,
+  clearStoredDirectoryHandle,
+} from '@/services/directoryHandle.service';
+
+// In component:
+const [directoryHandle, setDirectoryHandle] = useState<FileSystemDirectoryHandle | null>(null);
+
+useEffect(() => {
+  // Load persisted handle on mount
+  getStoredDirectoryHandle().then(setDirectoryHandle);
+}, []);
+
+const handleSelectFolder = async () => {
+  const handle = await requestDirectoryAccess();
+  if (handle) setDirectoryHandle(handle);
+};
+
+// Render folder selection with current folder name
+{directoryHandle ? (
+  <Badge variant="default" className="bg-green-500">
+    <CheckCircle2 className="h-3 w-3 mr-1" />
+    {directoryHandle.name}
+  </Badge>
+) : (
+  <Button onClick={handleSelectFolder}>
+    <FolderOpen className="h-4 w-4 mr-2" />
+    Select Folder
+  </Button>
+)}
+```
+
+### Download Processing Section
 
 **File:** `src/components/DownloadProcessingSection.tsx`
 
 ```typescript
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { DownloadProcessorService, ProcessedFile } from '@/services/downloadProcessor.service';
-import { useSlskdConfig } from '@/hooks/useSlskdConfig';
-import { FolderOpen, Tag, AlertCircle } from 'lucide-react';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { FolderOpen, Tag, RefreshCw, Bug, Link } from 'lucide-react';
+import { Link as RouterLink } from 'react-router-dom';
+import {
+  processDownloadsWithHandles,
+  writeTagsInPlace,
+  reprocessWithUpdatedMap,
+  getFileDebugMetadata,
+} from '@/services/downloadProcessor.service';
+import {
+  getStoredDirectoryHandle,
+  getAllMp3Files,
+  verifyPermission,
+} from '@/services/directoryHandle.service';
+import { useGenreMap } from '@/hooks/useGenreMap';
 
 const SUPER_GENRES = [
   'Bass', 'Blues', 'Country', 'Dance', 'Disco', 'Drum & Bass',
@@ -1289,165 +1350,171 @@ const SUPER_GENRES = [
   'Soul-Funk', 'Techno', 'UK Garage', 'Urban', 'World'
 ];
 
-interface Props {
-  genreMap: Map<string, string>;
-  onSaveMapping: (genre: string, superGenre: string) => Promise<void>;
-}
-
-export function DownloadProcessingSection({ genreMap, onSaveMapping }: Props) {
-  const { config } = useSlskdConfig();
+export function DownloadProcessingSection() {
+  const { genreMap, saveMapping, isLoading: isMapLoading } = useGenreMap();
+  const [directoryHandle, setDirectoryHandle] = useState<FileSystemDirectoryHandle | null>(null);
   const [files, setFiles] = useState<ProcessedFile[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isWriting, setIsWriting] = useState(false);
+  const [statusFilter, setStatusFilter] = useState<'all' | 'mapped' | 'unmapped' | 'error'>('all');
 
-  const handleFolderSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const fileList = e.target.files;
-    if (!fileList) return;
+  // Load persisted directory handle on mount
+  useEffect(() => {
+    getStoredDirectoryHandle().then(setDirectoryHandle);
+  }, []);
+
+  // Process files from directory
+  const handleProcessFiles = async () => {
+    if (!directoryHandle) return;
+
+    // Verify permission
+    const hasPermission = await verifyPermission(directoryHandle);
+    if (!hasPermission) {
+      // Handle permission denied
+      return;
+    }
 
     setIsProcessing(true);
-
-    const result = await DownloadProcessorService.processFiles(
-      Array.from(fileList),
-      genreMap
-    );
-
+    const mp3Files = await getAllMp3Files(directoryHandle);
+    const result = await processDownloadsWithHandles(mp3Files, genreMap);
     setFiles(result.files);
     setIsProcessing(false);
   };
 
-  const handleSuperGenreChange = async (filename: string, superGenre: string) => {
-    const file = files.find(f => f.filename === filename);
-    if (!file) return;
-
-    // Update local state
+  // Inline SuperGenre assignment (for files with no genres)
+  const handleSuperGenreChange = (filename: string, superGenre: string) => {
     setFiles(prev => prev.map(f =>
       f.filename === filename ? { ...f, superGenre, status: 'mapped' } : f
     ));
-
-    // Save new mapping for each unmapped genre
-    for (const genre of file.genres) {
-      if (!genreMap.has(genre.toLowerCase())) {
-        await onSaveMapping(genre, superGenre);
-      }
-    }
   };
 
-  const handleApplyTags = async () => {
-    const filesToTag = files.filter(f => f.superGenre);
-    // TODO: Write TXXX:CUSTOM1 tags to files using File System Access API
-    // Note: Browser cannot write to arbitrary paths - user must grant permission
-    console.log('Applying tags to', filesToTag.length, 'files');
+  // Re-check mappings after genre map updates
+  const handleRecheckMappings = () => {
+    const result = reprocessWithUpdatedMap(files, genreMap);
+    setFiles(result.files);
   };
 
-  const mappedCount = files.filter(f => f.status === 'mapped').length;
-  const unmappedCount = files.filter(f => f.status === 'unmapped').length;
+  // Write tags to all mapped files in place
+  const handleWriteTags = async () => {
+    setIsWriting(true);
+    const result = await writeTagsInPlace(files);
+    // Show toast with results
+    setIsWriting(false);
+  };
+
+  // Filter files by status
+  const filteredFiles = files.filter(f =>
+    statusFilter === 'all' || f.status === statusFilter
+  );
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <FolderOpen className="h-5 w-5" />
-          Process Downloads
-        </CardTitle>
+        <CardTitle>Process Downloads</CardTitle>
         <CardDescription>
-          Scan downloaded files, map genres to SuperGenre, and write TXXX:CUSTOM1 tags.
-          MediaMonkey will then organize files to Supercrates folders.
+          Scan downloaded files, map genres to SuperGenre, and write tags in place.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        {config.downloadsFolder && (
+        {!directoryHandle ? (
           <Alert>
-            <AlertCircle className="h-4 w-4" />
             <AlertDescription>
-              Configured downloads folder: <code>{config.downloadsFolder}</code>
+              No downloads folder configured.{' '}
+              <RouterLink to="/security" className="text-primary underline">
+                Configure in Options
+              </RouterLink>
             </AlertDescription>
           </Alert>
-        )}
-
-        <div>
-          <Input
-            type="file"
-            webkitdirectory=""
-            directory=""
-            multiple
-            onChange={handleFolderSelect}
-            disabled={isProcessing}
-          />
-          <p className="text-sm text-muted-foreground mt-1">
-            Select your slskd downloads folder to scan for new files
-          </p>
-        </div>
-
-        {files.length > 0 && (
+        ) : (
           <>
-            <div className="flex gap-4 text-sm">
-              <span>Total: {files.length}</span>
-              <span className="text-green-600">Mapped: {mappedCount}</span>
-              <span className="text-yellow-600">Unmapped: {unmappedCount}</span>
-            </div>
-
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>File</TableHead>
-                  <TableHead>ID3 Genre(s)</TableHead>
-                  <TableHead>SuperGenre</TableHead>
-                  <TableHead>Status</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {files.map(file => (
-                  <TableRow key={file.filename}>
-                    <TableCell className="font-medium">
-                      {file.artist} - {file.title}
-                    </TableCell>
-                    <TableCell>
-                      {file.genres.join(', ') || <span className="text-muted-foreground">No genre tag</span>}
-                    </TableCell>
-                    <TableCell>
-                      {file.status === 'mapped' ? (
-                        <Badge>{file.superGenre}</Badge>
-                      ) : (
-                        <Select
-                          onValueChange={(v) => handleSuperGenreChange(file.filename, v)}
-                        >
-                          <SelectTrigger className="w-40">
-                            <SelectValue placeholder="Select..." />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {SUPER_GENRES.map(sg => (
-                              <SelectItem key={sg} value={sg}>{sg}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant={
-                        file.status === 'mapped' ? 'default' :
-                        file.status === 'unmapped' ? 'secondary' : 'destructive'
-                      }>
-                        {file.status}
-                      </Badge>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-
-            <div className="flex gap-2">
-              <Button
-                onClick={handleApplyTags}
-                disabled={mappedCount === 0}
-              >
-                <Tag className="h-4 w-4 mr-2" />
-                Apply SuperGenre Tags ({mappedCount} files)
+            <div className="flex items-center gap-4">
+              <Badge variant="outline">{directoryHandle.name}</Badge>
+              <Button onClick={handleProcessFiles} disabled={isProcessing}>
+                <RefreshCw className={`h-4 w-4 mr-2 ${isProcessing ? 'animate-spin' : ''}`} />
+                Scan Files
               </Button>
             </div>
 
-            <p className="text-sm text-muted-foreground">
-              After tagging, use MediaMonkey to move files to your Supercrates/[genre]/ folders,
-              then re-scan in Mako Sync.
-            </p>
+            {files.length > 0 && (
+              <>
+                {/* Status filter buttons */}
+                <div className="flex gap-2">
+                  <Button size="sm" variant={statusFilter === 'all' ? 'default' : 'outline'}
+                    onClick={() => setStatusFilter('all')}>
+                    All ({files.length})
+                  </Button>
+                  <Button size="sm" variant={statusFilter === 'mapped' ? 'default' : 'outline'}
+                    onClick={() => setStatusFilter('mapped')}>
+                    Mapped ({files.filter(f => f.status === 'mapped').length})
+                  </Button>
+                  <Button size="sm" variant={statusFilter === 'unmapped' ? 'default' : 'outline'}
+                    onClick={() => setStatusFilter('unmapped')}>
+                    Unmapped ({files.filter(f => f.status === 'unmapped').length})
+                  </Button>
+                </div>
+
+                {/* Files table with inline editing */}
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>File</TableHead>
+                      <TableHead>ID3 Genre(s)</TableHead>
+                      <TableHead>SuperGenre</TableHead>
+                      <TableHead>Status</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredFiles.map(file => (
+                      <TableRow key={file.relativePath}>
+                        <TableCell>
+                          {file.artist} - {file.title}
+                          <div className="text-xs text-muted-foreground">{file.relativePath}</div>
+                        </TableCell>
+                        <TableCell>
+                          {file.genres.join(', ') || <span className="text-muted-foreground">No genre</span>}
+                        </TableCell>
+                        <TableCell>
+                          {file.status === 'mapped' ? (
+                            <Badge>{file.superGenre}</Badge>
+                          ) : (
+                            <Select onValueChange={(v) => handleSuperGenreChange(file.filename, v)}>
+                              <SelectTrigger className="w-40">
+                                <SelectValue placeholder="Select..." />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {SUPER_GENRES.map(sg => (
+                                  <SelectItem key={sg} value={sg}>{sg}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant={
+                            file.status === 'mapped' ? 'default' :
+                            file.status === 'unmapped' ? 'secondary' : 'destructive'
+                          }>
+                            {file.status}
+                          </Badge>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+
+                {/* Action buttons */}
+                <div className="flex gap-2">
+                  <Button onClick={handleRecheckMappings}>
+                    <RefreshCw className="h-4 w-4 mr-2" />
+                    Re-check Mappings
+                  </Button>
+                  <Button onClick={handleWriteTags} disabled={isWriting}>
+                    <Tag className="h-4 w-4 mr-2" />
+                    Write Tags ({files.filter(f => f.status === 'mapped').length} files)
+                  </Button>
+                </div>
+              </>
+            )}
           </>
         )}
       </CardContent>
@@ -1456,46 +1523,63 @@ export function DownloadProcessingSection({ genreMap, onSaveMapping }: Props) {
 }
 ```
 
-### Integration with Missing Tracks Page
+### Key Features
 
-Add the `DownloadProcessingSection` as a collapsible section or tab within the Missing Tracks page:
+1. **Persistent Folder Access**
+   - Directory handle stored in IndexedDB
+   - Permission requested once, persists across sessions
+   - Folder selection configured in Options page
+
+2. **Status Filtering**
+   - Filter buttons for All/Mapped/Unmapped/Error
+   - Quick view of files needing attention
+
+3. **Inline Genre Mapping**
+   - Files with no genres can have SuperGenre directly assigned
+   - Changes preserved when re-checking mappings
+
+4. **Re-check Mappings**
+   - Re-applies genre map after adding new mappings
+   - Preserves manual SuperGenre assignments for files with no genres
+
+5. **In-Place Tag Writing**
+   - Writes directly to original files using FileSystemFileHandle
+   - No download/re-upload - files stay in their original locations
+   - Preserves all existing ID3 tags
+
+6. **Debug Metadata Modal**
+   - View raw ID3 tag data for troubleshooting
+   - Shows all native tag formats (ID3v2.3, ID3v2.4, ID3v1)
+
+### Navigation Integration
+
+The **Options** link is available from the main navigation in LibraryHeader:
 
 ```typescript
-// In MissingTracksAnalyzer.tsx or parent page
-import { DownloadProcessingSection } from '@/components/DownloadProcessingSection';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-
-// In the render:
-<Tabs defaultValue="missing">
-  <TabsList>
-    <TabsTrigger value="missing">Missing Tracks</TabsTrigger>
-    <TabsTrigger value="downloads">Process Downloads</TabsTrigger>
-  </TabsList>
-  <TabsContent value="missing">
-    {/* Existing missing tracks content with artist selection */}
-  </TabsContent>
-  <TabsContent value="downloads">
-    <DownloadProcessingSection
-      genreMap={genreMap}
-      onSaveMapping={handleSaveMapping}
-    />
-  </TabsContent>
-</Tabs>
+// src/components/LibraryHeader.tsx
+const navItems = [
+  { path: '/', label: 'Dashboard', icon: Home },
+  { path: '/genre-mapping', label: 'Genre Mapping', icon: Database },
+  { path: '/no-genre-tracks', label: 'No Genre Tracks', icon: Music },
+  { path: '/security', label: 'Options', icon: Settings },
+];
 ```
 
 ### Phase 5 Completion Checklist
 
-- [ ] `src/components/DownloadProcessingSection.tsx` created
-- [ ] Integrated into Missing Tracks page as tab/section
-- [ ] Uses configured downloads folder from localStorage
-- [ ] Folder selection works
-- [ ] Preview table displays files with ID3 genres
-- [ ] Inline SuperGenre selection works
-- [ ] New mappings saved to `spotify_genre_map_overrides`
-- [ ] Tags written to files (TXXX:CUSTOM1)
-- [ ] Clear messaging that MediaMonkey handles file moves
-- [ ] Test end-to-end workflow
-- [ ] Commit: `feat(slskd): add download processing UI integrated into missing tracks`
+- [x] `src/components/DownloadProcessingSection.tsx` created
+- [x] Integrated into Missing Tracks page as tab/section
+- [x] File System Access API with persistent folder selection
+- [x] Folder configuration in Options page (persisted in IndexedDB)
+- [x] Preview table displays files with ID3 genres and relative paths
+- [x] Status filter buttons (All/Mapped/Unmapped/Error)
+- [x] Inline SuperGenre selection for files with no genres
+- [x] Re-check Mappings preserves manual assignments
+- [x] New mappings saved to `spotify_genre_map_overrides`
+- [x] Tags written in place using `COMM:Songs-DB_Custom1`
+- [x] Debug metadata modal for troubleshooting
+- [x] Options link added to main navigation
+- [x] Commit: `feat(slskd): add download processing UI integrated into missing tracks`
 
 ---
 
@@ -1580,11 +1664,11 @@ describe('SlskdStorageService', () => {
 
 ### Pre-Merge Checklist
 
-- [ ] All 5 phases complete and committed
-- [ ] All tests passing
-- [ ] End-to-end workflow tested with real slskd
-- [ ] No regressions in existing functionality
-- [ ] Code reviewed
+- [x] All 5 phases complete and committed
+- [x] All tests passing
+- [x] End-to-end workflow tested with real slskd
+- [x] No regressions in existing functionality
+- [x] Code reviewed
 
 ### Merge to Main
 
@@ -1597,9 +1681,15 @@ git push origin main
 
 ### Post-Merge
 
-- [ ] Deploy to production
-- [ ] Test in production environment
+- [x] Deploy to production
+- [x] Test in production environment
 - [ ] Document any known issues
+
+### Known Issues / Notes
+
+- File System Access API requires Chrome/Edge (not supported in Firefox/Safari)
+- Directory permission may need to be re-granted after browser restart on some systems
+- Files with no genre tags require manual SuperGenre assignment (treated as unmapped)
 
 ---
 
@@ -1611,11 +1701,13 @@ git push origin main
 - GET `/api/v0/searches` - Get wishlist
 - POST `/api/v0/searches` - Add track to wishlist
 
-### localStorage Key
+### Storage Locations
 
-```
-mako-sync:slskd-config
-```
+| Data | Storage | Key/Location |
+|------|---------|--------------|
+| slskd API config | localStorage | `mako-sync:slskd-config` |
+| Directory handle | IndexedDB | `mako-sync-fs` → `handles` → `slskd-downloads` |
+| Genre mappings | Supabase | `spotify_genre_map_base` + `spotify_genre_map_overrides` |
 
 ### Search Query Format
 
@@ -1635,20 +1727,26 @@ Uses complete artist field from Spotify.
 
 ### SuperGenre ID3 Tag
 
-- Frame: `TXXX`
-- Description: `CUSTOM1`
-- MediaMonkey: Custom 1 (Classification tab)
+| Property | Value |
+|----------|-------|
+| Frame | `COMM` (Comment) |
+| Description | `Songs-DB_Custom1` |
+| Language | `eng` |
+| MediaMonkey | Custom 1 (Classification tab) |
+
+**Important:** MediaMonkey uses `COMM:Songs-DB_CustomX` format, NOT `TXXX` frames.
 
 ### Responsibility Split
 
 | Task | Owner |
 |------|-------|
 | Store slskd config | Browser localStorage |
+| Store directory handle | Browser IndexedDB |
 | Push missing tracks to slskd | Mako Sync |
 | Download files | slskd (auto-download) |
 | Review downloads | MediaMonkey |
 | Read ID3 genres, map to SuperGenre | Mako Sync |
-| Write TXXX:CUSTOM1 tag | Mako Sync |
+| Write COMM:Songs-DB_Custom1 tag | Mako Sync |
 | Move files to Supercrates/[genre]/ | MediaMonkey |
 | Re-scan library | Mako Sync |
 
@@ -1658,16 +1756,26 @@ Uses complete artist field from Spotify.
 src/
 ├── types/slskd.ts
 ├── services/
-│   ├── slskdStorage.service.ts
-│   ├── slskdClient.service.ts
-│   └── downloadProcessor.service.ts
+│   ├── slskdStorage.service.ts      # localStorage config
+│   ├── slskdClient.service.ts       # API client
+│   ├── directoryHandle.service.ts   # File System Access API + IndexedDB
+│   └── downloadProcessor.service.ts # Metadata extraction + tag writing
 ├── hooks/
 │   ├── useSlskdConfig.ts
-│   └── useSlskdSync.ts
+│   ├── useSlskdSync.ts
+│   └── useGenreMap.ts               # Genre mapping from Supabase
 └── components/
-    ├── SlskdConfigSection.tsx
+    ├── SlskdConfigSection.tsx       # Config UI in Options page
     ├── SlskdSyncProgress.tsx
-    └── DownloadProcessingSection.tsx
+    └── DownloadProcessingSection.tsx # Download processing UI
 ```
 
-Note: No separate Downloads page - processing is integrated into Missing Tracks page.
+### Pages
+
+| Route | Purpose |
+|-------|---------|
+| `/` | Main dashboard with Matching tab for download processing |
+| `/security` | Options & Authentication - slskd config + folder selection |
+| `/genre-mapping` | Genre mapping management |
+
+Note: No separate Downloads page - processing is integrated into the Matching tab on the main dashboard.

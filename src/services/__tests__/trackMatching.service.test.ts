@@ -15,10 +15,15 @@ describe('TrackMatchingService', () => {
         { id: '2', title: 'Track 2', artist: 'Artist 2', primary_artist: 'Artist 2', album: 'Album 2', genre: 'Pop', file_path: '/music/track2.mp3' },
       ];
 
+      // Mock pagination: first call returns tracks, second call returns empty to exit loop
+      const rangeMock = vi.fn()
+        .mockResolvedValueOnce({ data: mockTracks, error: null })
+        .mockResolvedValueOnce({ data: [], error: null });
+
       vi.mocked(supabase.from).mockReturnValue({
         select: vi.fn().mockReturnValue({
           eq: vi.fn().mockReturnValue({
-            limit: vi.fn().mockResolvedValue({ data: mockTracks, error: null })
+            range: rangeMock
           })
         })
       } as any);
@@ -33,7 +38,7 @@ describe('TrackMatchingService', () => {
       vi.mocked(supabase.from).mockReturnValue({
         select: vi.fn().mockReturnValue({
           eq: vi.fn().mockReturnValue({
-            limit: vi.fn().mockResolvedValue({ data: null, error: null })
+            range: vi.fn().mockResolvedValue({ data: null, error: null })
           })
         })
       } as any);
@@ -47,7 +52,7 @@ describe('TrackMatchingService', () => {
       vi.mocked(supabase.from).mockReturnValue({
         select: vi.fn().mockReturnValue({
           eq: vi.fn().mockReturnValue({
-            limit: vi.fn().mockResolvedValue({ data: null, error: { message: 'Database error' } })
+            range: vi.fn().mockResolvedValue({ data: null, error: { message: 'Database error' } })
           })
         })
       } as any);
@@ -200,13 +205,16 @@ describe('TrackMatchingService', () => {
         { id: 's2', title: 'Missing Track', artist: 'Artist Two', primary_artist: 'Artist Two', album: 'Album', genre: 'pop', super_genre: 'Pop' },
       ];
 
-      // Mock fetchLocalTracks
+      // Mock fetchLocalTracks (uses .range() for pagination) and fetchSpotifyTracks (uses .limit())
       vi.mocked(supabase.from).mockImplementation((table: string) => {
         if (table === 'local_mp3s') {
+          const rangeMock = vi.fn()
+            .mockResolvedValueOnce({ data: localTracks, error: null })
+            .mockResolvedValueOnce({ data: [], error: null });
           return {
             select: vi.fn().mockReturnValue({
               eq: vi.fn().mockReturnValue({
-                limit: vi.fn().mockResolvedValue({ data: localTracks, error: null })
+                range: rangeMock
               })
             })
           } as any;
@@ -241,10 +249,13 @@ describe('TrackMatchingService', () => {
 
       vi.mocked(supabase.from).mockImplementation((table: string) => {
         if (table === 'local_mp3s') {
+          const rangeMock = vi.fn()
+            .mockResolvedValueOnce({ data: localTracks, error: null })
+            .mockResolvedValueOnce({ data: [], error: null });
           return {
             select: vi.fn().mockReturnValue({
               eq: vi.fn().mockReturnValue({
-                limit: vi.fn().mockResolvedValue({ data: localTracks, error: null })
+                range: rangeMock
               })
             })
           } as any;
@@ -277,10 +288,13 @@ describe('TrackMatchingService', () => {
 
       vi.mocked(supabase.from).mockImplementation((table: string) => {
         if (table === 'local_mp3s') {
+          const rangeMock = vi.fn()
+            .mockResolvedValueOnce({ data: localTracks, error: null })
+            .mockResolvedValueOnce({ data: [], error: null });
           return {
             select: vi.fn().mockReturnValue({
               eq: vi.fn().mockReturnValue({
-                limit: vi.fn().mockResolvedValue({ data: localTracks, error: null })
+                range: rangeMock
               })
             })
           } as any;
@@ -313,10 +327,13 @@ describe('TrackMatchingService', () => {
 
       vi.mocked(supabase.from).mockImplementation((table: string) => {
         if (table === 'local_mp3s') {
+          const rangeMock = vi.fn()
+            .mockResolvedValueOnce({ data: localTracks, error: null })
+            .mockResolvedValueOnce({ data: [], error: null });
           return {
             select: vi.fn().mockReturnValue({
               eq: vi.fn().mockReturnValue({
-                limit: vi.fn().mockResolvedValue({ data: localTracks, error: null })
+                range: rangeMock
               })
             })
           } as any;
@@ -349,10 +366,13 @@ describe('TrackMatchingService', () => {
 
       vi.mocked(supabase.from).mockImplementation((table: string) => {
         if (table === 'local_mp3s') {
+          const rangeMock = vi.fn()
+            .mockResolvedValueOnce({ data: localTracks, error: null })
+            .mockResolvedValueOnce({ data: [], error: null });
           return {
             select: vi.fn().mockReturnValue({
               eq: vi.fn().mockReturnValue({
-                limit: vi.fn().mockResolvedValue({ data: localTracks, error: null })
+                range: rangeMock
               })
             })
           } as any;
@@ -380,18 +400,19 @@ describe('TrackMatchingService', () => {
         { id: 's1', title: 'Rock Track', artist: 'Artist', primary_artist: 'Artist', album: 'Album', genre: 'rock', super_genre: 'Rock' },
       ];
 
-      const limitMock = vi.fn();
       const eqSuperGenreMock = vi.fn().mockReturnValue({
-        ...{},
         then: (fn: any) => Promise.resolve({ data: spotifyTracks, error: null }).then(fn)
       });
 
       vi.mocked(supabase.from).mockImplementation((table: string) => {
         if (table === 'local_mp3s') {
+          const rangeMock = vi.fn()
+            .mockResolvedValueOnce({ data: localTracks, error: null })
+            .mockResolvedValueOnce({ data: [], error: null });
           return {
             select: vi.fn().mockReturnValue({
               eq: vi.fn().mockReturnValue({
-                limit: vi.fn().mockResolvedValue({ data: localTracks, error: null })
+                range: rangeMock
               })
             })
           } as any;
