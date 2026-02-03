@@ -4,7 +4,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
 
 import type { SpotifyConnection } from './types.ts'
-import { getValidAccessToken, refreshSpotifyToken } from './spotify-auth.ts'
+import { getValidAccessToken, refreshSpotifyToken, validateVaultSecrets } from './spotify-auth.ts'
 import { extractUniqueArtistIds, processSongsData } from './data-processing.ts'
 import { getArtistGenresWithCache } from './artist-genres.ts'
 
@@ -76,20 +76,37 @@ serve(async (req) => {
     console.log('Connection found:', {
       spotify_user_id: connection.spotify_user_id,
       expires_at: connection.expires_at,
-      has_refresh_token: !!connection.refresh_token,
+      has_vault_access_token: !!connection.access_token_secret_id,
+      has_vault_refresh_token: !!connection.refresh_token_secret_id,
       created_at: connection.created_at
     })
+
+    // Validate vault secrets exist before any operation
+    const vaultValidation = await validateVaultSecrets(connection as SpotifyConnection)
+    if (!vaultValidation.valid) {
+      console.error('🔐 Vault validation failed:', vaultValidation.error)
+      return new Response(
+        JSON.stringify({
+          error: vaultValidation.error,
+          code: 'VAULT_SECRETS_INVALID',
+          requires_reconnect: true
+        }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+    console.log('🔐 Vault secrets validated')
 
     // Handle Phase 4 special operations first
     if (refreshOnly) {
       console.log('🔄 REFRESH ONLY: Performing token refresh')
       try {
-        const newAccessToken = await refreshSpotifyToken(connection as SpotifyConnection, supabaseAdmin, user.id)
+        const refreshResult = await refreshSpotifyToken(connection as SpotifyConnection, supabaseAdmin, user.id)
         return new Response(
           JSON.stringify({
             success: true,
             message: 'Token refreshed successfully',
-            access_token_refreshed: true
+            access_token_refreshed: true,
+            new_expires_at: refreshResult.expiresAt
           }),
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         )
@@ -171,13 +188,14 @@ serve(async (req) => {
       console.log('🔄 FORCE TOKEN ROTATION: Rotating tokens for security')
       try {
         // Force refresh to get new tokens
-        const newAccessToken = await refreshSpotifyToken(connection as SpotifyConnection, supabaseAdmin, user.id)
-        
+        const refreshResult = await refreshSpotifyToken(connection as SpotifyConnection, supabaseAdmin, user.id)
+
         return new Response(
           JSON.stringify({
             success: true,
             message: 'Tokens rotated successfully',
-            token_rotation_completed: true
+            token_rotation_completed: true,
+            new_expires_at: refreshResult.expiresAt
           }),
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         )
