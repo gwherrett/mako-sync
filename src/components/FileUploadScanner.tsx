@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { FolderSearch, Loader2, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useLocalScanner } from '@/hooks/useLocalScanner';
 import {
   AlertDialog,
@@ -74,6 +74,9 @@ const FileUploadScanner = ({ onScanComplete }: FileUploadScannerProps) => {
           <FolderSearch className="w-5 h-5" />
           Scan Local Music Files
         </CardTitle>
+        <CardDescription>
+          Select folders to scan your local collection. Metadata is extracted and mapped to Supergenres for matching.
+        </CardDescription>
       </CardHeader>
       <CardContent>
         <div className="flex items-center gap-2">

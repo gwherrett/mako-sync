@@ -407,8 +407,7 @@ export function DownloadProcessingSection() {
           Process Downloads
         </CardTitle>
         <CardDescription>
-          Scan downloaded files from slskd, map genres to SuperGenre, and write
-          CUSTOM1 tags for MediaMonkey organization.
+          Map ID3 genres to Supergenres and write tags for MediaMonkey collection management.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">

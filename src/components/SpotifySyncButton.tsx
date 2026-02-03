@@ -5,7 +5,7 @@ import { useUnifiedSpotifyAuth } from '@/hooks/useUnifiedSpotifyAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { Progress } from '@/components/ui/progress';
 import { toast } from '@/hooks/use-toast';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
 interface SyncProgressData {
   tracks_processed: number;
@@ -217,6 +217,9 @@ const SpotifySyncButton = () => {
           </svg>
           Sync Spotify Liked Songs
         </CardTitle>
+        <CardDescription>
+          Import your Liked songs from Spotify. Tracks are auto-mapped to Supergenres based on artist metadata. These can be overridden in the Genre Mapper to suit your needs.
+        </CardDescription>
       </CardHeader>
       <CardContent>
         <div className="flex flex-col gap-2">

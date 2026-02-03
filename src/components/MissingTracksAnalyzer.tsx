@@ -346,7 +346,7 @@ const MissingTracksAnalyzer: React.FC<MissingTracksAnalyzerProps> = ({
             Missing Tracks Analysis
           </CardTitle>
           <CardDescription>
-            Find tracks in your Spotify collection that are missing from your local files.
+            Compare your Spotify library to local files. Select artists and push missing tracks to Slskd for wishlist searches.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
