@@ -3,7 +3,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { NewAuthProvider } from "@/contexts/NewAuthContext";
 import NewProtectedRoute from "@/components/NewProtectedRoute";
 import Index from "./pages/Index";
@@ -12,7 +12,6 @@ import ResetPassword from "./pages/ResetPassword";
 import { UnifiedSpotifyCallback } from "./components/spotify/UnifiedSpotifyCallback";
 import NotFound from "./pages/NotFound";
 import { GenreMapping } from "./pages/GenreMapping";
-import { TrackLevelProcessor } from "./components/NoGenreTracks/TrackLevelProcessor";
 import Security from "./pages/Security";
 
 const queryClient = new QueryClient();
@@ -35,11 +34,8 @@ function AppContent() {
             <GenreMapping />
           </NewProtectedRoute>
         } />
-        <Route path="/no-genre-tracks" element={
-          <NewProtectedRoute>
-            <TrackLevelProcessor />
-          </NewProtectedRoute>
-        } />
+        {/* Redirect /no-genre-tracks to Dashboard - No Genre tab is now Tab 4 */}
+        <Route path="/no-genre-tracks" element={<Navigate to="/?tab=nogenre" replace />} />
         <Route path="/security" element={
           <NewProtectedRoute>
             <Security />

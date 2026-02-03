@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
-import { Settings, Database, Shuffle } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
+import { Database, Search, Sparkles, Download } from 'lucide-react';
 import LibraryHeader from '@/components/LibraryHeader';
 import { StatsOverview } from '@/components/StatsOverview';
 import SetupChecklist from '@/components/SetupChecklist';
@@ -8,7 +8,11 @@ import TracksTable from '@/components/TracksTable';
 import LocalTracksTable from '@/components/LocalTracksTable';
 import FileUploadScanner from '@/components/FileUploadScanner';
 import SpotifySyncButton from '@/components/SpotifySyncButton';
-import SyncAnalysis from '@/components/SyncAnalysis';
+import MissingTracksAnalyzer from '@/components/MissingTracksAnalyzer';
+import { DownloadProcessingSection } from '@/components/DownloadProcessingSection';
+import { TrackLevelProcessor } from '@/components/NoGenreTracks/TrackLevelProcessor';
+import { TrackMatchingService } from '@/services/trackMatching.service';
+import { supabase } from '@/integrations/supabase/client';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 interface SpotifyTrack {
@@ -48,11 +52,45 @@ interface LocalTrack {
 }
 
 const Index = () => {
+  const [searchParams] = useSearchParams();
   const [selectedTrack, setSelectedTrack] = useState<SpotifyTrack | null>(null);
   const [selectedLocalTrack, setSelectedLocalTrack] = useState<LocalTrack | null>(null);
   const [isDashboardCollapsed, setIsDashboardCollapsed] = useState(false);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
-  const [activeTab, setActiveTab] = useState('local');
+
+  // Get initial tab from URL query param or default to 'spotify'
+  const initialTab = searchParams.get('tab') || 'spotify';
+  const [activeTab, setActiveTab] = useState(initialTab);
+
+  // State for MissingTracksAnalyzer
+  const [superGenres, setSuperGenres] = useState<string[]>([]);
+  const [selectedGenre, setSelectedGenre] = useState<string>('all');
+  const [user, setUser] = useState<any>(null);
+
+  // Update active tab when URL query param changes
+  useEffect(() => {
+    const tabParam = searchParams.get('tab');
+    if (tabParam && ['spotify', 'local', 'missing', 'nogenre', 'downloads'].includes(tabParam)) {
+      setActiveTab(tabParam);
+    }
+  }, [searchParams]);
+
+  // Load user and super genres for Missing Tracks tab
+  useEffect(() => {
+    const loadData = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      setUser(user);
+      if (user) {
+        try {
+          const genres = await TrackMatchingService.fetchSuperGenres(user.id);
+          setSuperGenres(genres);
+        } catch (error) {
+          console.error('Failed to fetch super genres:', error);
+        }
+      }
+    };
+    loadData();
+  }, []);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-expos-dark via-expos-dark-elevated to-black">
@@ -80,26 +118,35 @@ const Index = () => {
         )}
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-3 mb-8">
-            <TabsTrigger value="local">
-              <Database className="w-4 h-4 mr-2" />
-              Local
-            </TabsTrigger>
+          <TabsList className="grid w-full grid-cols-5 mb-8">
+            {/* Tab 1: Spotify Sync - Priority 1 */}
             <TabsTrigger value="spotify">
               <svg viewBox="0 0 24 24" className="w-4 h-4 mr-2" fill="currentColor">
                 <path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z"/>
               </svg>
               Spotify
             </TabsTrigger>
-            <TabsTrigger value="sync">
-              <Shuffle className="w-4 h-4 mr-2" />
-              Matching
+            {/* Tab 2: Local Files - Priority 2 */}
+            <TabsTrigger value="local">
+              <Database className="w-4 h-4 mr-2" />
+              Local
+            </TabsTrigger>
+            {/* Tab 3: Missing Tracks - Priority 3 */}
+            <TabsTrigger value="missing">
+              <Search className="w-4 h-4 mr-2" />
+              Missing
+            </TabsTrigger>
+            {/* Tab 4: No Genre Tracks - Priority 4 */}
+            <TabsTrigger value="nogenre">
+              <Sparkles className="w-4 h-4 mr-2" />
+              No Genre
+            </TabsTrigger>
+            {/* Tab 5: Process Downloads - Priority 5 */}
+            <TabsTrigger value="downloads">
+              <Download className="w-4 h-4 mr-2" />
+              Downloads
             </TabsTrigger>
           </TabsList>
-
-          <TabsContent value="sync">
-            <SyncAnalysis />
-          </TabsContent>
           
           <TabsContent value="spotify" className="space-y-8">
             <SpotifySyncButton />
@@ -178,6 +225,7 @@ const Index = () => {
             )}
           </TabsContent>
 
+          {/* Tab 2: Local Files */}
           <TabsContent value="local" className="space-y-8">
             <FileUploadScanner onScanComplete={() => setRefreshTrigger(prev => prev + 1)} />
             <LocalTracksTable
@@ -203,7 +251,7 @@ const Index = () => {
                       </p>
                     </div>
                   </div>
-                  
+
                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-3">
                      <div>
                        <span className="text-xs text-gray-400 block">BPM</span>
@@ -230,7 +278,7 @@ const Index = () => {
                        </span>
                      </div>
                    </div>
-                   
+
                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-3">
                      <div>
                        <span className="text-xs text-gray-400 block">Year</span>
@@ -239,14 +287,14 @@ const Index = () => {
                      <div>
                        <span className="text-xs text-gray-400 block">File Size</span>
                        <span className="text-sm text-white">
-                         {selectedLocalTrack.file_size ? 
+                         {selectedLocalTrack.file_size ?
                            `${(selectedLocalTrack.file_size / (1024 * 1024)).toFixed(1)} MB` : 'Unknown'}
                        </span>
                      </div>
                      <div>
                        <span className="text-xs text-gray-400 block">Last Modified</span>
                        <span className="text-sm text-white">
-                         {selectedLocalTrack.last_modified ? 
+                         {selectedLocalTrack.last_modified ?
                            new Date(selectedLocalTrack.last_modified).toLocaleDateString() : 'Unknown'}
                        </span>
                      </div>
@@ -265,6 +313,25 @@ const Index = () => {
                 </div>
               </div>
             )}
+          </TabsContent>
+
+          {/* Tab 3: Missing Tracks */}
+          <TabsContent value="missing" className="space-y-6">
+            <MissingTracksAnalyzer
+              selectedGenre={selectedGenre}
+              setSelectedGenre={setSelectedGenre}
+              superGenres={superGenres}
+            />
+          </TabsContent>
+
+          {/* Tab 4: No Genre Tracks */}
+          <TabsContent value="nogenre">
+            <TrackLevelProcessor />
+          </TabsContent>
+
+          {/* Tab 5: Process Downloads */}
+          <TabsContent value="downloads">
+            <DownloadProcessingSection />
           </TabsContent>
         </Tabs>
       </main>
