@@ -547,6 +547,10 @@ async function writeSuperGenreTag(file: File, superGenre: string): Promise<Blob>
     language: 'eng',
   });
 
+  // Also write SuperGenre to Grouping field (TIT1) for Serato DJ compatibility
+  // Serato can display the Grouping column but cannot read custom COMM descriptors
+  writer.setFrame('TIT1', superGenre);
+
   writer.addTag();
   return writer.getBlob();
 }

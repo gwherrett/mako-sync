@@ -28,7 +28,9 @@
       "Bash(do basename \"$file\")",
       "Bash(done)",
       "Bash(xargs basename:*)",
-      "Read(//tmp/**)"
+      "Read(//tmp/**)",
+      "Bash(kid3-cli:*)",
+      "Bash(node -e:*)"
     ]
   }
 }

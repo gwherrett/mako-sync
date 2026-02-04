@@ -22,3 +22,6 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# One-time utility scripts
+sync-grouping.mjs
