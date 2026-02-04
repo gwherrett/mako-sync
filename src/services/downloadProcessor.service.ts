@@ -35,6 +35,39 @@ const PARSE_TIMEOUT_MS = 30000;
 const DEFAULT_BATCH_SIZE = 5;
 
 /**
+ * Read the existing Grouping (TIT1) tag from a file
+ * Used to check if we need to write or can skip
+ */
+async function getExistingGroupingTag(file: File): Promise<string | null> {
+  try {
+    const metadata = await withTimeout(
+      parseBlob(file, {
+        includeChapters: false,
+        skipCovers: true,
+      }),
+      PARSE_TIMEOUT_MS,
+      `Metadata parsing timed out for ${file.name}`
+    );
+
+    // Check native ID3v2 tags for TIT1 (Grouping)
+    const id3v23 = metadata.native['ID3v2.3'] || [];
+    const id3v24 = metadata.native['ID3v2.4'] || [];
+    const id3v2Native = [...id3v23, ...id3v24];
+
+    for (const tag of id3v2Native) {
+      if (tag.id === 'TIT1' && tag.value) {
+        return typeof tag.value === 'string' ? tag.value : String(tag.value);
+      }
+    }
+
+    return null;
+  } catch {
+    // If we can't read metadata, assume we need to write
+    return null;
+  }
+}
+
+/**
  * Extract metadata from a single MP3 file
  *
  * Looks for genres in multiple locations:
@@ -551,34 +584,55 @@ async function writeSuperGenreTag(file: File, superGenre: string): Promise<Blob>
 /**
  * Write SuperGenre tags to all mapped files in place using File System Access API
  *
+ * Optimized to skip files where the existing Grouping tag already matches
+ * the target SuperGenre, avoiding unnecessary writes.
+ *
  * @param files - Array of processed files to write tags to (must have fileHandle)
  * @param onProgress - Optional callback for progress updates
- * @returns Object with success count and any errors
+ * @returns Object with success count, skipped count, and any errors
  */
 export async function writeTagsInPlace(
   files: ProcessedFile[],
-  onProgress?: (progress: { current: number; total: number; filename: string }) => void
-): Promise<{ success: number; errors: Array<{ filename: string; error: string }> }> {
+  onProgress?: (progress: { current: number; total: number; filename: string; skipped?: boolean }) => void
+): Promise<{ success: number; skipped: number; errors: Array<{ filename: string; error: string }> }> {
   const mappedFiles = files.filter(
     (f) => f.status === 'mapped' && f.superGenre && f.fileHandle
   );
   const errors: Array<{ filename: string; error: string }> = [];
   let success = 0;
+  let skipped = 0;
 
-  console.log(`📝 Writing tags to ${mappedFiles.length} files in place...`);
+  console.log(`📝 Processing ${mappedFiles.length} mapped files for tag writing...`);
 
   for (let i = 0; i < mappedFiles.length; i++) {
     const file = mappedFiles[i];
 
-    if (onProgress) {
-      onProgress({
-        current: i + 1,
-        total: mappedFiles.length,
-        filename: file.filename,
-      });
-    }
-
     try {
+      // Check if existing grouping tag matches target - skip if so
+      const existingGrouping = await getExistingGroupingTag(file.file);
+
+      if (existingGrouping === file.superGenre) {
+        skipped++;
+        if (onProgress) {
+          onProgress({
+            current: i + 1,
+            total: mappedFiles.length,
+            filename: file.filename,
+            skipped: true,
+          });
+        }
+        continue;
+      }
+
+      if (onProgress) {
+        onProgress({
+          current: i + 1,
+          total: mappedFiles.length,
+          filename: file.filename,
+          skipped: false,
+        });
+      }
+
       // Create tagged blob
       const taggedBlob = await writeSuperGenreTag(file.file, file.superGenre!);
 
@@ -597,9 +651,9 @@ export async function writeTagsInPlace(
     }
   }
 
-  console.log(`✅ Tag writing complete: ${success} success, ${errors.length} errors`);
+  console.log(`✅ Tag writing complete: ${success} written, ${skipped} skipped (already correct), ${errors.length} errors`);
 
-  return { success, errors };
+  return { success, skipped, errors };
 }
 
 /**
@@ -678,6 +732,7 @@ export const _testExports = {
   processFile,
   filterMp3Files,
   writeSuperGenreTag,
+  getExistingGroupingTag,
 };
 
 // Re-export for convenience

@@ -85,6 +85,8 @@ export function DownloadProcessingSection() {
     current: number;
     total: number;
     filename: string;
+    written: number;
+    skipped: number;
   } | null>(null);
 
   // Inline mapping state
@@ -303,17 +305,42 @@ export function DownloadProcessingSection() {
     setIsWritingTags(true);
     setWriteProgress(null);
 
+    // Track cumulative written/skipped counts
+    let writtenCount = 0;
+    let skippedCount = 0;
+
     try {
-      const { success, errors } = await writeTagsInPlace(
+      const { success, skipped, errors } = await writeTagsInPlace(
         result.files,
-        (prog) => setWriteProgress(prog)
+        (prog) => {
+          if (prog.skipped) {
+            skippedCount++;
+          } else {
+            writtenCount++;
+          }
+          setWriteProgress({
+            ...prog,
+            written: writtenCount,
+            skipped: skippedCount,
+          });
+        }
       );
 
       if (errors.length > 0) {
         toast({
           title: 'Tag Writing Complete (with errors)',
-          description: `${success} files updated, ${errors.length} failed`,
+          description: `${success} written, ${skipped} skipped (already correct), ${errors.length} failed`,
           variant: 'destructive',
+        });
+      } else if (skipped > 0 && success === 0) {
+        toast({
+          title: 'All Tags Already Correct',
+          description: `${skipped} files already have the correct SuperGenre tag`,
+        });
+      } else if (skipped > 0) {
+        toast({
+          title: 'Tags Written Successfully',
+          description: `${success} updated, ${skipped} skipped (already correct)`,
         });
       } else {
         toast({
@@ -566,7 +593,11 @@ export function DownloadProcessingSection() {
                 <div className="flex items-center gap-2">
                   <Loader2 className="h-4 w-4 animate-spin" />
                   <span className="text-sm">
-                    Writing tags: {writeProgress.current} of {writeProgress.total}...
+                    Processing {writeProgress.current} of {writeProgress.total}...
+                    {' '}
+                    <span className="text-muted-foreground">
+                      ({writeProgress.written} writing, {writeProgress.skipped} skipped)
+                    </span>
                   </span>
                 </div>
                 <Progress
