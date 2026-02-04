@@ -337,8 +337,7 @@ describe('downloadProcessor.service', () => {
             'ID3v2.3': [
               { id: 'TXXX', value: { description: 'EXISTING_CUSTOM', text: 'existing value' } },
               { id: 'COMM', value: { description: 'Other Comment', text: 'other comment text', language: 'eng' } },
-              // Existing Songs-DB_Custom1 should be skipped (we'll overwrite it)
-              { id: 'COMM', value: { description: 'Songs-DB_Custom1', text: 'old supergenre', language: 'eng' } },
+              { id: 'COMM', value: { description: '', text: 'default comment', language: 'eng' } },
             ],
           },
           format: {},
@@ -346,7 +345,7 @@ describe('downloadProcessor.service', () => {
       }));
     });
 
-    it('writes SuperGenre to COMM frame with Songs-DB_Custom1 description (MediaMonkey format)', async () => {
+    it('writes SuperGenre to Grouping (TIT1) field', async () => {
       // Create a minimal valid MP3 file buffer (ID3v2 header + minimal frame data)
       const id3Header = new Uint8Array([
         0x49, 0x44, 0x33, // "ID3"
@@ -365,27 +364,18 @@ describe('downloadProcessor.service', () => {
         // May fail in test environment due to mocking complexity
       }
 
-      // Verify COMM frame was called with correct MediaMonkey format
-      const commCalls = mockSetFrame.mock.calls.filter(
-        (call: [string, unknown]) => call[0] === 'COMM'
+      // Verify TIT1 (Grouping) frame was called with SuperGenre value
+      const tit1Calls = mockSetFrame.mock.calls.filter(
+        (call: [string, unknown]) => call[0] === 'TIT1'
       );
 
-      // Should have at least one COMM call for Songs-DB_Custom1
-      const superGenreCommCall = commCalls.find(
-        (call: [string, { description: string; text: string; language: string }]) =>
-          call[1]?.description === 'Songs-DB_Custom1'
-      );
-
-      if (superGenreCommCall) {
-        expect(superGenreCommCall[1]).toEqual({
-          description: 'Songs-DB_Custom1',
-          text: 'House',
-          language: 'eng',
-        });
+      // Should have a TIT1 call with the SuperGenre value
+      if (tit1Calls.length > 0) {
+        expect(tit1Calls[0][1]).toBe('House');
       }
     });
 
-    it('does NOT write to TXXX:CUSTOM1 (old incorrect format)', async () => {
+    it('does NOT write to COMM:Songs-DB_Custom1 (legacy format)', async () => {
       const id3Header = new Uint8Array([
         0x49, 0x44, 0x33, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0x0a,
       ]);
@@ -400,21 +390,21 @@ describe('downloadProcessor.service', () => {
         // May fail in test environment
       }
 
-      // Verify NO TXXX frame was written with CUSTOM1 description
-      const txxxCalls = mockSetFrame.mock.calls.filter(
-        (call: [string, unknown]) => call[0] === 'TXXX'
+      // Verify NO COMM frame was written with Songs-DB_Custom1 description
+      const commCalls = mockSetFrame.mock.calls.filter(
+        (call: [string, unknown]) => call[0] === 'COMM'
       );
 
-      const custom1TxxxCall = txxxCalls.find(
+      const songDbCustomCall = commCalls.find(
         (call: [string, { description: string }]) =>
-          call[1]?.description?.toUpperCase() === 'CUSTOM1'
+          call[1]?.description === 'Songs-DB_Custom1'
       );
 
-      // Should NOT find any TXXX:CUSTOM1 - we use COMM:Songs-DB_Custom1 now
-      expect(custom1TxxxCall).toBeUndefined();
+      // Should NOT find any COMM:Songs-DB_Custom1 - we use TIT1 (Grouping) now
+      expect(songDbCustomCall).toBeUndefined();
     });
 
-    it('preserves existing COMM frames except Songs-DB_Custom1', async () => {
+    it('preserves all existing COMM frames', async () => {
       const id3Header = new Uint8Array([
         0x49, 0x44, 0x33, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0x0a,
       ]);
@@ -447,16 +437,18 @@ describe('downloadProcessor.service', () => {
         });
       }
 
-      // Should NOT preserve old Songs-DB_Custom1 (it gets overwritten with new value)
-      const songDbCalls = commCalls.filter(
-        (call: [string, { description: string; text: string }]) =>
-          call[1]?.description === 'Songs-DB_Custom1'
+      // Should preserve default comment (empty description)
+      const defaultCommentCall = commCalls.find(
+        (call: [string, { description: string }]) =>
+          call[1]?.description === ''
       );
 
-      // Should only have ONE Songs-DB_Custom1 call (the new one, not the old one)
-      if (songDbCalls.length > 0) {
-        expect(songDbCalls.length).toBe(1);
-        expect(songDbCalls[0][1].text).toBe('Drum & Bass');
+      if (defaultCommentCall) {
+        expect(defaultCommentCall[1]).toEqual({
+          description: '',
+          text: 'default comment',
+          language: 'eng',
+        });
       }
     });
 

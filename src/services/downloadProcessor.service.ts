@@ -4,8 +4,11 @@
  * Processes downloaded MP3 files from slskd:
  * - Extracts metadata (artist, title, album, genre) using music-metadata-browser
  * - Maps ID3 genre tags to SuperGenre using the effective genre map
- * - Writes SuperGenre to COMM:Songs-DB_Custom1 ID3 tag (MediaMonkey format) using browser-id3-writer
+ * - Writes SuperGenre to Grouping (TIT1) ID3 tag using browser-id3-writer
  * - Uses File System Access API to write tags back to original files in place
+ *
+ * Grouping (TIT1) is a standard ID3 field supported by all major DJ software
+ * (Serato, Rekordbox, Traktor) and media players (MediaMonkey, iTunes).
  */
 
 import { parseBlob } from 'music-metadata-browser';
@@ -430,15 +433,15 @@ export function reprocessWithUpdatedMap(
 }
 
 /**
- * Write SuperGenre to COMM:Songs-DB_Custom1 ID3 tag while preserving existing tags
+ * Write SuperGenre to Grouping (TIT1) ID3 tag while preserving existing tags
  *
- * MediaMonkey uses COMM frames with "Songs-DB_CustomX" descriptions for custom fields,
- * not TXXX frames. This ensures compatibility when files are read back into MediaMonkey.
+ * Grouping (TIT1) is a standard ID3 field supported by all major DJ software
+ * (Serato, Rekordbox, Traktor) and media players (MediaMonkey, iTunes).
  *
  * ID3Writer replaces all tags by default, so we need to:
  * 1. Read existing metadata
  * 2. Re-write all important tags
- * 3. Add our Songs-DB_Custom1 comment tag
+ * 3. Add SuperGenre to Grouping field
  *
  * @param file - The original MP3 file
  * @param superGenre - The SuperGenre to write
@@ -501,12 +504,11 @@ async function writeSuperGenreTag(file: File, superGenre: string): Promise<Blob>
         });
       }
     }
-    // Preserve COMM frames (except Songs-DB_Custom1 which we'll overwrite)
+    // Preserve all COMM frames
     if (tag.id === 'COMM' && tag.value) {
       const comm = tag.value as { description?: string; text?: string; language?: string };
       const desc = comm.description || '';
-      // Skip Songs-DB_Custom1 - we'll write our own SuperGenre value
-      if (desc !== 'Songs-DB_Custom1' && comm.text) {
+      if (comm.text) {
         writer.setFrame('COMM', {
           description: desc,
           text: comm.text,
@@ -538,17 +540,8 @@ async function writeSuperGenreTag(file: File, superGenre: string): Promise<Blob>
     });
   }
 
-  // Add SuperGenre to COMM frame with description "Songs-DB_Custom1"
-  // MediaMonkey uses COMM:Songs-DB_CustomX format for custom fields (not TXXX)
-  // See: https://www.mediamonkey.com/sw/webhelp/frame/abouttrackproperties.htm
-  writer.setFrame('COMM', {
-    description: 'Songs-DB_Custom1',
-    text: superGenre,
-    language: 'eng',
-  });
-
-  // Also write SuperGenre to Grouping field (TIT1) for Serato DJ compatibility
-  // Serato can display the Grouping column but cannot read custom COMM descriptors
+  // Write SuperGenre to Grouping field (TIT1)
+  // Standard ID3 field supported by Serato, Rekordbox, Traktor, MediaMonkey, iTunes
   writer.setFrame('TIT1', superGenre);
 
   writer.addTag();

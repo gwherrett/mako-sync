@@ -75,9 +75,9 @@ Compare your Spotify library against local files to find what's missing. Select 
 **What you get:** A list of gaps, grouped by artist, with one-click Slskd integration.
 
 ### Step 5: Process Downloads
-After Slskd downloads your tracks, scan the downloads folder. Map genres and write the Supergenre to the `COMM:Songs-DB_Custom1` tag for MediaMonkey organization.
+After Slskd downloads your tracks, scan the downloads folder. Map genres and write the Supergenre to the Grouping (TIT1) tag, which is supported by all major DJ software and media players.
 
-**What you get:** Tagged files ready for MediaMonkey to sort into `Supercrates/[genre]/` folders.
+**What you get:** Tagged files ready for organization, visible in Serato, Rekordbox, Traktor, MediaMonkey, and iTunes.
 
 ## Key Concepts
 
@@ -109,7 +109,7 @@ Matching uses normalized text comparison:
 |---------|---------|---------------|
 | **Spotify** | Source library, genre data | OAuth via Settings |
 | **Slskd** | P2P download automation | API endpoint + key in Settings |
-| **MediaMonkey** | File organization | Reads `COMM:Songs-DB_Custom1` tag |
+| **MediaMonkey** | File organization | Reads Grouping (TIT1) tag |
 
 ## Quick Start
 

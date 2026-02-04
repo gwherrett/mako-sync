@@ -223,7 +223,7 @@ The integration is intentionally simple, resilient, and user-controlled. It avoi
    Push *missing tracks* from Mako Sync → slskd wishlist. slskd handles downloading automatically.
 
 2. **Download processing in Mako Sync**
-   TypeScript-based processing reads genre tags, maps to SuperGenre, and writes `COMM:Songs-DB_Custom1` tag (MediaMonkey Custom 1 field) directly to files in place using File System Access API.
+   TypeScript-based processing reads genre tags, maps to SuperGenre, and writes to the Grouping (TIT1) ID3 tag directly to files in place using File System Access API. Grouping is a standard ID3 field supported by all major DJ software (Serato, Rekordbox, Traktor) and media players (MediaMonkey, iTunes).
 
 3. **File organization via MediaMonkey**
    MediaMonkey handles moving files to Supercrates folders. Mako Sync only tags files.
@@ -308,7 +308,7 @@ The integration is intentionally simple, resilient, and user-controlled. It avoi
 │ - Read ID3 genre tags            │
 │ - Map to SuperGenre              │
 │ - Inline mapping for unknown     │
-│ - Write COMM:Songs-DB_Custom1 tag│
+│ - Write Grouping (TIT1) tag     │
 │ - Files written in place         │
 └──────────┬────────────────────────┘
            │
@@ -1107,15 +1107,14 @@ Process downloaded MP3s: read genres, map to SuperGenre, write `TXXX:CUSTOM1` ta
 
 ### SuperGenre ID3 Field
 
-MediaMonkey stores SuperGenre in **Custom 1** field using the COMM frame format:
+SuperGenre is stored in the **Grouping** field (TIT1), a standard ID3 tag:
 
 | Property | Value |
 |----------|-------|
-| MediaMonkey Field | Custom 1 (Classification tab) |
-| ID3v2 Frame | `COMM` with description `Songs-DB_Custom1` |
-| Language | `eng` |
+| ID3v2 Frame | `TIT1` (Grouping) |
+| Supported By | Serato, Rekordbox, Traktor, MediaMonkey, iTunes |
 
-**Note:** MediaMonkey uses `COMM:Songs-DB_CustomX` frames for custom fields, NOT `TXXX` frames. This ensures proper bidirectional compatibility with MediaMonkey.
+**Note:** Grouping is a standard ID3 field with universal support across DJ software and media players. This replaces the previous MediaMonkey-specific `COMM:Songs-DB_Custom1` approach.
 
 ### Persistent Directory Access
 
@@ -1214,7 +1213,7 @@ export async function processDownloadsWithHandles(
 ): Promise<ProcessingResult>;
 
 /**
- * Write SuperGenre to COMM:Songs-DB_Custom1 ID3 tag while preserving existing tags
+ * Write SuperGenre to Grouping (TIT1) ID3 tag while preserving existing tags
  * Uses browser-id3-writer to write back to original files
  */
 export async function writeTagsInPlace(
@@ -1238,7 +1237,7 @@ export async function getFileDebugMetadata(file: File): Promise<FileDebugMetadat
 - Reads existing metadata with music-metadata-browser
 - Re-writes all important tags (TIT2, TPE1, TALB, etc.)
 - Preserves existing TXXX and COMM frames
-- Writes SuperGenre to `COMM:Songs-DB_Custom1`
+- Writes SuperGenre to Grouping (TIT1)
 
 ### Phase 4 Completion Checklist
 
@@ -1250,7 +1249,7 @@ export async function getFileDebugMetadata(file: File): Promise<FileDebugMetadat
 - [x] Collects unmapped genres for inline mapping
 - [x] File System Access API integration
 - [x] IndexedDB persistence for directory handle
-- [x] COMM:Songs-DB_Custom1 tag writing (MediaMonkey compatible)
+- [x] Grouping (TIT1) tag writing (universal DJ software support)
 - [x] Preserves existing tags during write
 - [x] Commit: `feat(slskd): add download processing service with genre mapping`
 
@@ -1270,7 +1269,7 @@ Extend the **Missing Tracks page** with download processing functionality. This 
 - Download processing is a **section/tab** within Missing Tracks, not a separate page
 - Uses **File System Access API** with persistent folder selection in Options page
 - Inline genre mapping for unknown genres saves to `spotify_genre_map_overrides`
-- **MediaMonkey handles file organization** - Mako Sync writes the `COMM:Songs-DB_Custom1` tag
+- **MediaMonkey handles file organization** - Mako Sync writes the Grouping (TIT1) tag
 - Files are written **in place** to their original locations (no download/re-upload)
 
 ### Directory Selection in Options Page
@@ -1576,7 +1575,7 @@ const navItems = [
 - [x] Inline SuperGenre selection for files with no genres
 - [x] Re-check Mappings preserves manual assignments
 - [x] New mappings saved to `spotify_genre_map_overrides`
-- [x] Tags written in place using `COMM:Songs-DB_Custom1`
+- [x] Tags written in place using Grouping (TIT1)
 - [x] Debug metadata modal for troubleshooting
 - [x] Options link added to main navigation
 - [x] Commit: `feat(slskd): add download processing UI integrated into missing tracks`
@@ -1729,12 +1728,10 @@ Uses complete artist field from Spotify.
 
 | Property | Value |
 |----------|-------|
-| Frame | `COMM` (Comment) |
-| Description | `Songs-DB_Custom1` |
-| Language | `eng` |
-| MediaMonkey | Custom 1 (Classification tab) |
+| Frame | `TIT1` (Grouping) |
+| Supported By | Serato, Rekordbox, Traktor, MediaMonkey, iTunes |
 
-**Important:** MediaMonkey uses `COMM:Songs-DB_CustomX` format, NOT `TXXX` frames.
+**Note:** Grouping is a standard ID3 field with universal support across DJ software and media players.
 
 ### Responsibility Split
 
@@ -1746,7 +1743,7 @@ Uses complete artist field from Spotify.
 | Download files | slskd (auto-download) |
 | Review downloads | MediaMonkey |
 | Read ID3 genres, map to SuperGenre | Mako Sync |
-| Write COMM:Songs-DB_Custom1 tag | Mako Sync |
+| Write Grouping (TIT1) tag | Mako Sync |
 | Move files to Supercrates/[genre]/ | MediaMonkey |
 | Re-scan library | Mako Sync |
 
