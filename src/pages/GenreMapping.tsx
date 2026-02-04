@@ -85,7 +85,7 @@ export const GenreMapping = () => {
             </Link>
           </Button>
           <div>
-            <h1 className="text-3xl font-bold">Genre Map</h1>
+            <h1 className="text-3xl font-bold">Genre Mapper</h1>
             <p className="text-muted-foreground">Map Spotify genres to Supergenres</p>
           </div>
         </div>

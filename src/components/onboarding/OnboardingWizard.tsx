@@ -282,13 +282,13 @@ const LocalFilesStep = () => (
         Scan Your Local Music Files
       </h4>
       <p className="text-gray-400 max-w-md mx-auto">
-        Upload your local MP3 files so we can compare them with your Spotify library.
+        Scan your local music files so we can compare them with your Spotify library.
         Files are processed locally in your browser - nothing is uploaded to our servers.
       </p>
       <div className="border-2 border-dashed border-white/20 rounded-lg p-8 hover:border-white/40 transition-colors cursor-pointer">
         <Upload className="w-8 h-8 text-gray-400 mx-auto mb-2" />
         <div className="text-sm text-gray-400">
-          Click to select MP3 files or drag and drop
+          Click to select music files or drag and drop
         </div>
       </div>
     </div>

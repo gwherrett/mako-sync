@@ -154,8 +154,8 @@ export function DownloadProcessingSection() {
 
       if (filesWithHandles.length === 0) {
         toast({
-          title: 'No MP3 Files Found',
-          description: 'No MP3 files were found in the selected folder',
+          title: 'No Audio Files Found',
+          description: 'No audio files were found in the selected folder',
           variant: 'destructive',
         });
         setIsProcessing(false);
@@ -464,7 +464,7 @@ export function DownloadProcessingSection() {
             ) : (
               <FolderSync className="h-4 w-4 mr-2" />
             )}
-            Scan for MP3 Files
+            Scan for Audio Files
           </Button>
         )}
 
@@ -725,7 +725,7 @@ export function DownloadProcessingSection() {
         {directoryHandle && !result && !isProcessing && (
           <div className="text-center py-8 text-muted-foreground">
             <FolderSync className="h-12 w-12 mx-auto mb-4 opacity-50" />
-            <p>Click "Scan for MP3 Files" to process your downloads.</p>
+            <p>Click "Scan for Audio Files" to process your downloads.</p>
           </div>
         )}
 

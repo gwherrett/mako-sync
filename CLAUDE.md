@@ -117,3 +117,19 @@ See [AGENTS.md](AGENTS.md) for additional critical non-obvious patterns includin
 - Supabase 1000-row pagination limits
 - SpotifyAuthManager singleton usage
 - Session cache direct access requirements
+
+## Documentation
+
+All general documentation should be placed in the `docs/` folder, not the repository root.
+
+**File naming convention:** Use lowercase with dash separators (e.g., `setup-guide.md`, `test-improvement-plan.md`).
+
+**Key documentation:**
+- [docs/mako-sync-overview.md](docs/mako-sync-overview.md) - Product overview and 5-step workflow
+- [docs/architecture-mako-sync.md](docs/architecture-mako-sync.md) - System architecture
+- [docs/setup-guide.md](docs/setup-guide.md) - Configuration and deployment
+
+**Root-level files only:**
+- `README.md` - Project introduction
+- `CLAUDE.md` - AI assistant guidance (this file)
+- `AGENTS.md` - Critical coding patterns

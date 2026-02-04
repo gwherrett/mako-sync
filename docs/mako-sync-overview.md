@@ -121,36 +121,3 @@ Matching uses normalized text comparison:
 6. **Configure Slskd** - Settings → Add API endpoint and key
 7. **Push to Wishlist** - Select artists → "Push to Slskd"
 8. **Process Downloads** - Dashboard → Downloads tab → Scan and write tags
-
-## Future UI Polish Recommendations
-
-These enhancements are planned for future releases:
-
-### Visual Workflow Progress Indicator
-- Horizontal stepper showing workflow completion (1-5)
-- Highlight current/completed steps
-- Show checkmarks for completed workflows
-
-### Tab Enhancements
-- Badge counts on tabs (e.g., "Missing (42)", "No Genre (15)")
-- Visual indicator for "recommended next step"
-- Color-coding tabs by completion status
-
-### Onboarding Overlay
-- First-time user tour pointing to each tab
-- Brief 1-sentence explanation per step
-- "Don't show again" option
-
-### Empty State Improvements
-- Clear call-to-action when a tab has no data
-- Guidance like "Sync Spotify and scan local files first"
-- Helpful next-step prompts for new users
-
-### Slskd Integration Visibility
-- Connection status indicator in header
-- "Configure Slskd" prompt when pushing without config
-
-### Mobile Optimization
-- Responsive table designs
-- Touch-friendly interactions
-- Optimized layouts for small screens

@@ -224,7 +224,7 @@ export const NoGenreTracksProcessor = () => {
           <p className="text-muted-foreground">All tracks have been assigned genres!</p>
           <Button onClick={() => navigate('/genre-mapping')}>
             <ArrowLeft className="w-4 h-4 mr-2" />
-            Back to Genre Mapping
+            Back to Genre Mapper
           </Button>
         </div>
       </div>

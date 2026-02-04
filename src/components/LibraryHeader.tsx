@@ -27,7 +27,7 @@ const LibraryHeader = ({ isDashboardCollapsed, onToggleDashboard }: LibraryHeade
 
   const navItems = [
     { path: '/', label: 'Dashboard', icon: Home },
-    { path: '/genre-mapping', label: 'Genre Mapping', icon: Database },
+    { path: '/genre-mapping', label: 'Genre Mapper', icon: Database },
     { path: '/security', label: 'Settings', icon: Settings },
   ];
 
