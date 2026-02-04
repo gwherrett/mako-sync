@@ -407,7 +407,7 @@ export function DownloadProcessingSection() {
           Process Downloads
         </CardTitle>
         <CardDescription>
-          Map ID3 genres to Supergenres and write tags for MediaMonkey collection management.
+          Map ID3 genres to Supergenres and write to the Grouping tag (supported by Serato, Rekordbox, MediaMonkey, and more).
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -715,8 +715,8 @@ export function DownloadProcessingSection() {
 
             {/* Instructions */}
             <p className="text-sm text-muted-foreground">
-              Click "Write Tags" to save SuperGenre to TXXX:CUSTOM1 tag directly in your files.
-              Then use MediaMonkey to organize files into Supercrates/[genre]/ folders.
+              Click "Write Tags" to save SuperGenre to the Grouping tag directly in your files.
+              Visible in Serato, Rekordbox, Traktor, MediaMonkey, and iTunes.
             </p>
           </>
         )}

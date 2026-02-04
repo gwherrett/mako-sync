@@ -30,9 +30,9 @@
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">31.64% </span>
+                <span class="strong">32.05% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>50/158</span>
+                <span class='fraction'>50/156</span>
             </div>
         
             
@@ -747,10 +747,10 @@
 <a name='L682'></a><a href='#L682'>682</a>
 <a name='L683'></a><a href='#L683'>683</a>
 <a name='L684'></a><a href='#L684'>684</a>
-<a name='L685'></a><a href='#L685'>685</a>
-<a name='L686'></a><a href='#L686'>686</a>
-<a name='L687'></a><a href='#L687'>687</a>
-<a name='L688'></a><a href='#L688'>688</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<a name='L685'></a><a href='#L685'>685</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -1257,7 +1257,6 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -1292,12 +1291,7 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -1443,8 +1437,11 @@
  * Processes downloaded MP3 files from slskd:
  * - Extracts metadata (artist, title, album, genre) using music-metadata-browser
  * - Maps ID3 genre tags to SuperGenre using the effective genre map
- * - Writes SuperGenre to COMM:Songs-DB_Custom1 ID3 tag (MediaMonkey format) using browser-id3-writer
+ * - Writes SuperGenre to Grouping (TIT1) ID3 tag using browser-id3-writer
  * - Uses File System Access API to write tags back to original files in place
+ *
+ * Grouping (TIT1) is a standard ID3 field supported by all major DJ software
+ * (Serato, Rekordbox, Traktor) and media players (MediaMonkey, iTunes).
  */
 &nbsp;
 import { parseBlob } from 'music-metadata-browser';
@@ -1869,15 +1866,15 @@ export function reprocessWithUpdatedMap(
 }
 &nbsp;
 /**
- * Write SuperGenre to COMM:Songs-DB_Custom1 ID3 tag while preserving existing tags
+ * Write SuperGenre to Grouping (TIT1) ID3 tag while preserving existing tags
  *
- * MediaMonkey uses COMM frames with "Songs-DB_CustomX" descriptions for custom fields,
- * not TXXX frames. This ensures compatibility when files are read back into MediaMonkey.
+ * Grouping (TIT1) is a standard ID3 field supported by all major DJ software
+ * (Serato, Rekordbox, Traktor) and media players (MediaMonkey, iTunes).
  *
  * ID3Writer replaces all tags by default, so we need to:
  * 1. Read existing metadata
  * 2. Re-write all important tags
- * 3. Add our Songs-DB_Custom1 comment tag
+ * 3. Add SuperGenre to Grouping field
  *
  * @param file - The original MP3 file
  * @param superGenre - The SuperGenre to write
@@ -1940,12 +1937,11 @@ async function writeSuperGenreTag(file: File, superGenre: string): Promise&lt;Bl
         });
       }
     }
-    // Preserve COMM frames (except Songs-DB_Custom1 which we'll overwrite)
+    // Preserve all COMM frames
 <span class="cstat-no" title="statement not covered" >    if (tag.id === 'COMM' &amp;&amp; tag.value) {</span>
       const comm = <span class="cstat-no" title="statement not covered" >tag.value </span>as { description?: string; text?: string; language?: string };
       const desc = <span class="cstat-no" title="statement not covered" >comm.description || '';</span>
-      // Skip Songs-DB_Custom1 - we'll write our own SuperGenre value
-<span class="cstat-no" title="statement not covered" >      if (desc !== 'Songs-DB_Custom1' &amp;&amp; comm.text) {</span>
+<span class="cstat-no" title="statement not covered" >      if (comm.text) {</span>
 <span class="cstat-no" title="statement not covered" >        writer.setFrame('COMM', {</span>
           description: desc,
           text: comm.text,
@@ -1977,14 +1973,9 @@ async function writeSuperGenreTag(file: File, superGenre: string): Promise&lt;Bl
     });
   }
 &nbsp;
-  // Add SuperGenre to COMM frame with description "Songs-DB_Custom1"
-  // MediaMonkey uses COMM:Songs-DB_CustomX format for custom fields (not TXXX)
-  // See: https://www.mediamonkey.com/sw/webhelp/frame/abouttrackproperties.htm
-<span class="cstat-no" title="statement not covered" >  writer.setFrame('COMM', {</span>
-    description: 'Songs-DB_Custom1',
-    text: superGenre,
-    language: 'eng',
-  });
+  // Write SuperGenre to Grouping field (TIT1)
+  // Standard ID3 field supported by Serato, Rekordbox, Traktor, MediaMonkey, iTunes
+<span class="cstat-no" title="statement not covered" >  writer.setFrame('TIT1', superGenre);</span>
 &nbsp;
 <span class="cstat-no" title="statement not covered" >  writer.addTag();</span>
 <span class="cstat-no" title="statement not covered" >  return writer.getBlob();</span>
@@ -2131,7 +2122,7 @@ export { processDownloadsWithHandles as processDownloadsFromDirectory };
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-02-04T01:25:52.507Z
+                at 2026-02-04T21:25:04.963Z
             </div>
         <script src="../prettify.js"></script>
         <script>

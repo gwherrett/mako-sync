@@ -437,5 +437,165 @@ describe('TrackMatchingService', () => {
 
       expect(result).toHaveLength(1);
     });
+
+    it('should use core title matching for different mix versions', async () => {
+      const localTracks = [
+        { id: '1', title: 'Track Name (Original Mix)', artist: 'Artist', primary_artist: 'Artist', album: 'Album', genre: 'House', file_path: '/track.mp3' },
+      ];
+
+      const spotifyTracks = [
+        { id: 's1', title: 'Track Name (Extended Mix)', artist: 'Artist', primary_artist: 'Artist', album: 'Album', genre: 'house', super_genre: 'House' },
+      ];
+
+      vi.mocked(supabase.from).mockImplementation((table: string) => {
+        if (table === 'local_mp3s') {
+          const rangeMock = vi.fn()
+            .mockResolvedValueOnce({ data: localTracks, error: null })
+            .mockResolvedValueOnce({ data: [], error: null });
+          return {
+            select: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                range: rangeMock
+              })
+            })
+          } as any;
+        }
+        if (table === 'spotify_liked') {
+          return {
+            select: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                limit: vi.fn().mockResolvedValue({ data: spotifyTracks, error: null })
+              })
+            })
+          } as any;
+        }
+        return {} as any;
+      });
+
+      const result = await TrackMatchingService.findMissingTracks('user-123');
+
+      // Should match via core title (Tier 2) since both are "Track Name" with different mixes
+      expect(result).toHaveLength(0);
+    });
+
+    it('should use fuzzy matching for minor typos', async () => {
+      const localTracks = [
+        { id: '1', title: 'Track Nme', artist: 'Artist', primary_artist: 'Artist', album: 'Album', genre: 'House', file_path: '/track.mp3' }, // typo
+      ];
+
+      const spotifyTracks = [
+        { id: 's1', title: 'Track Name', artist: 'Artist', primary_artist: 'Artist', album: 'Album', genre: 'house', super_genre: 'House' },
+      ];
+
+      vi.mocked(supabase.from).mockImplementation((table: string) => {
+        if (table === 'local_mp3s') {
+          const rangeMock = vi.fn()
+            .mockResolvedValueOnce({ data: localTracks, error: null })
+            .mockResolvedValueOnce({ data: [], error: null });
+          return {
+            select: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                range: rangeMock
+              })
+            })
+          } as any;
+        }
+        if (table === 'spotify_liked') {
+          return {
+            select: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                limit: vi.fn().mockResolvedValue({ data: spotifyTracks, error: null })
+              })
+            })
+          } as any;
+        }
+        return {} as any;
+      });
+
+      const result = await TrackMatchingService.findMissingTracks('user-123');
+
+      // Should match via fuzzy matching (Tier 3) - high similarity
+      expect(result).toHaveLength(0);
+    });
+
+    it('should strip "The" prefix from artist names', async () => {
+      const localTracks = [
+        { id: '1', title: 'Song', artist: 'The Beatles', primary_artist: 'The Beatles', album: 'Album', genre: 'Rock', file_path: '/track.mp3' },
+      ];
+
+      const spotifyTracks = [
+        { id: 's1', title: 'Song', artist: 'Beatles', primary_artist: 'Beatles', album: 'Album', genre: 'rock', super_genre: 'Rock' },
+      ];
+
+      vi.mocked(supabase.from).mockImplementation((table: string) => {
+        if (table === 'local_mp3s') {
+          const rangeMock = vi.fn()
+            .mockResolvedValueOnce({ data: localTracks, error: null })
+            .mockResolvedValueOnce({ data: [], error: null });
+          return {
+            select: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                range: rangeMock
+              })
+            })
+          } as any;
+        }
+        if (table === 'spotify_liked') {
+          return {
+            select: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                limit: vi.fn().mockResolvedValue({ data: spotifyTracks, error: null })
+              })
+            })
+          } as any;
+        }
+        return {} as any;
+      });
+
+      const result = await TrackMatchingService.findMissingTracks('user-123');
+
+      // Should match because "The Beatles" normalized = "Beatles" normalized
+      expect(result).toHaveLength(0);
+    });
+
+    it('should handle primary_artist being null and fall back to artist', async () => {
+      const localTracks = [
+        { id: '1', title: 'Song', artist: 'Artist Name', primary_artist: null, album: 'Album', genre: 'Rock', file_path: '/track.mp3' },
+      ];
+
+      const spotifyTracks = [
+        { id: 's1', title: 'Song', artist: 'Artist Name', primary_artist: null, album: 'Album', genre: 'rock', super_genre: 'Rock' },
+      ];
+
+      vi.mocked(supabase.from).mockImplementation((table: string) => {
+        if (table === 'local_mp3s') {
+          const rangeMock = vi.fn()
+            .mockResolvedValueOnce({ data: localTracks, error: null })
+            .mockResolvedValueOnce({ data: [], error: null });
+          return {
+            select: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                range: rangeMock
+              })
+            })
+          } as any;
+        }
+        if (table === 'spotify_liked') {
+          return {
+            select: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                limit: vi.fn().mockResolvedValue({ data: spotifyTracks, error: null })
+              })
+            })
+          } as any;
+        }
+        return {} as any;
+      });
+
+      const result = await TrackMatchingService.findMissingTracks('user-123');
+
+      // Should match using fallback to artist field
+      expect(result).toHaveLength(0);
+    });
   });
 });
