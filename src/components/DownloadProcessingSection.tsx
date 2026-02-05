@@ -81,6 +81,7 @@ export function DownloadProcessingSection() {
 
   // Tag writing state
   const [isWritingTags, setIsWritingTags] = useState(false);
+  const [tagsHaveBeenWritten, setTagsHaveBeenWritten] = useState(false);
   const [writeProgress, setWriteProgress] = useState<{
     current: number;
     total: number;
@@ -129,6 +130,12 @@ export function DownloadProcessingSection() {
       const handle = await requestDirectoryAccess();
       if (handle) {
         setDirectoryHandle(handle);
+        // Reset to scan state if tags have been written (new folder = new files)
+        if (tagsHaveBeenWritten) {
+          setResult(null);
+          setTagsHaveBeenWritten(false);
+          setStatusFilter('all');
+        }
       }
     } catch (error) {
       console.error('Failed to select directory:', error);
@@ -140,6 +147,7 @@ export function DownloadProcessingSection() {
     await clearStoredDirectoryHandle();
     setDirectoryHandle(null);
     setResult(null);
+    setTagsHaveBeenWritten(false);
   };
 
   // Process files from the directory
@@ -326,6 +334,9 @@ export function DownloadProcessingSection() {
         }
       );
 
+      // Mark that tags have been written (or verified as already correct)
+      setTagsHaveBeenWritten(true);
+
       if (errors.length > 0) {
         toast({
           title: 'Tag Writing Complete (with errors)',
@@ -366,6 +377,7 @@ export function DownloadProcessingSection() {
     setResult(null);
     setProgress(null);
     setStatusFilter('all');
+    setTagsHaveBeenWritten(false);
   };
 
   // Filter files based on status
