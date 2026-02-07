@@ -124,7 +124,34 @@ describe('fileScanner', () => {
       expect(result).toContain(mockFile2);
     });
 
-    it('should ignore non-MP3 files', async () => {
+    it('should collect FLAC and M4A files alongside MP3', async () => {
+      const self = {};
+      const mockMp3 = new File(['content'], 'song.mp3', { type: 'audio/mpeg' });
+      const mockFlac = new File(['content'], 'song.flac', { type: 'audio/flac' });
+      const mockM4a = new File(['content'], 'song.m4a', { type: 'audio/mp4' });
+
+      vi.stubGlobal('window', {
+        showDirectoryPicker: vi.fn().mockResolvedValue({
+          name: 'test-dir',
+          values: vi.fn().mockImplementation(function* () {
+            yield { kind: 'file', name: 'song.mp3', getFile: vi.fn().mockResolvedValue(mockMp3) };
+            yield { kind: 'file', name: 'song.flac', getFile: vi.fn().mockResolvedValue(mockFlac) };
+            yield { kind: 'file', name: 'song.m4a', getFile: vi.fn().mockResolvedValue(mockM4a) };
+          })
+        }),
+        self: self,
+        top: self
+      });
+
+      const result = await scanDirectoryForLocalFiles();
+
+      expect(result).toHaveLength(3);
+      expect(result).toContain(mockMp3);
+      expect(result).toContain(mockFlac);
+      expect(result).toContain(mockM4a);
+    });
+
+    it('should ignore unsupported file types', async () => {
       const self = {};
       const mockMp3 = new File(['content'], 'song.mp3', { type: 'audio/mpeg' });
 
@@ -139,9 +166,9 @@ describe('fileScanner', () => {
         name: 'notes.txt'
       };
 
-      const mockPdfEntry = {
+      const mockWavEntry = {
         kind: 'file',
-        name: 'document.pdf'
+        name: 'audio.wav'
       };
 
       vi.stubGlobal('window', {
@@ -150,7 +177,7 @@ describe('fileScanner', () => {
           values: vi.fn().mockImplementation(function* () {
             yield mockMp3Entry;
             yield mockTxtEntry;
-            yield mockPdfEntry;
+            yield mockWavEntry;
           })
         }),
         self: self,

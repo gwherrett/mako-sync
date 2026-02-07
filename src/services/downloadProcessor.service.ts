@@ -22,6 +22,7 @@ import type {
   ProcessedFileStatus,
 } from '@/types/slskd';
 import type { FileWithHandle } from './directoryHandle.service';
+import { isSupportedAudioFile, stripAudioExtension } from './fileScanner';
 
 // Make Buffer available globally for music-metadata-browser
 if (typeof window !== 'undefined') {
@@ -157,7 +158,7 @@ async function extractFileMetadata(file: File): Promise<{
 
   return {
     artist: metadata.common.artist || 'Unknown Artist',
-    title: metadata.common.title || file.name.replace(/\.mp3$/i, ''),
+    title: metadata.common.title || stripAudioExtension(file.name),
     album: metadata.common.album || null,
     genres: Array.from(genresSet).filter(Boolean),
   };
@@ -235,7 +236,7 @@ async function processFile(
       filename: file.name,
       relativePath: path,
       artist: 'Unknown',
-      title: file.name.replace(/\.mp3$/i, ''),
+      title: stripAudioExtension(file.name),
       album: null,
       genres: [],
       superGenre: null,
@@ -248,14 +249,11 @@ async function processFile(
 }
 
 /**
- * Filter files to only include MP3s
+ * Filter files to only include supported audio formats (MP3, FLAC, M4A)
  */
-function filterMp3Files(files: FileList | File[]): File[] {
+function filterAudioFiles(files: FileList | File[]): File[] {
   const fileArray = Array.from(files);
-  return fileArray.filter((file) => {
-    const name = file.name.toLowerCase();
-    return name.endsWith('.mp3');
-  });
+  return fileArray.filter((file) => isSupportedAudioFile(file.name));
 }
 
 /**
@@ -272,15 +270,15 @@ export async function processDownloads(
   onProgress?: (progress: ProcessingProgress) => void,
   batchSize: number = DEFAULT_BATCH_SIZE
 ): Promise<ProcessingResult> {
-  const mp3Files = filterMp3Files(files);
+  const audioFiles = filterAudioFiles(files);
   const processedFiles: ProcessedFile[] = [];
   const unmappedGenresSet = new Set<string>();
 
-  console.log(`🎵 Processing ${mp3Files.length} MP3 files...`);
+  console.log(`🎵 Processing ${audioFiles.length} audio files...`);
 
   // Process files in batches
-  for (let i = 0; i < mp3Files.length; i += batchSize) {
-    const batch = mp3Files.slice(i, i + batchSize);
+  for (let i = 0; i < audioFiles.length; i += batchSize) {
+    const batch = audioFiles.slice(i, i + batchSize);
 
     const batchResults = await Promise.all(
       batch.map(async (file, index) => {
@@ -290,7 +288,7 @@ export async function processDownloads(
         if (onProgress) {
           onProgress({
             current: i + index + 1,
-            total: mp3Files.length,
+            total: audioFiles.length,
             currentFile: file.name,
           });
         }
@@ -345,7 +343,7 @@ export async function processDownloadsWithHandles(
   const processedFiles: ProcessedFile[] = [];
   const unmappedGenresSet = new Set<string>();
 
-  console.log(`🎵 Processing ${filesWithHandles.length} MP3 files with handles...`);
+  console.log(`🎵 Processing ${filesWithHandles.length} audio files with handles...`);
 
   // Process files in batches
   for (let i = 0; i < filesWithHandles.length; i += batchSize) {
@@ -730,7 +728,7 @@ export const _testExports = {
   extractFileMetadata,
   mapToSuperGenre,
   processFile,
-  filterMp3Files,
+  filterAudioFiles,
   writeSuperGenreTag,
   getExistingGroupingTag,
 };

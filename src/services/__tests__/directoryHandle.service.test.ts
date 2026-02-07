@@ -7,7 +7,7 @@ import {
   verifyPermission,
   requestDirectoryAccess,
   getDownloadsDirectory,
-  getAllMp3Files,
+  getAllAudioFiles,
   writeFileWithHandle
 } from '../directoryHandle.service';
 
@@ -397,8 +397,8 @@ describe('directoryHandle.service', () => {
     });
   });
 
-  describe('getAllMp3Files', () => {
-    it('should return MP3 files from directory', async () => {
+  describe('getAllAudioFiles', () => {
+    it('should return audio files from directory', async () => {
       const mockFile = new File(['content'], 'song.mp3', { type: 'audio/mpeg' });
 
       const mockFileHandle = {
@@ -413,7 +413,7 @@ describe('directoryHandle.service', () => {
         })
       } as unknown as FileSystemDirectoryHandle;
 
-      const result = await getAllMp3Files(mockDirHandle);
+      const result = await getAllAudioFiles(mockDirHandle);
 
       expect(result).toHaveLength(1);
       expect(result[0].file).toEqual(mockFile);
@@ -444,13 +444,13 @@ describe('directoryHandle.service', () => {
         })
       } as unknown as FileSystemDirectoryHandle;
 
-      const result = await getAllMp3Files(mockDirHandle);
+      const result = await getAllAudioFiles(mockDirHandle);
 
       expect(result).toHaveLength(1);
       expect(result[0].relativePath).toBe('subdir/nested.mp3');
     });
 
-    it('should ignore non-MP3 files', async () => {
+    it('should ignore unsupported file types', async () => {
       const mockFileHandle = {
         kind: 'file',
         name: 'document.pdf'
@@ -462,7 +462,7 @@ describe('directoryHandle.service', () => {
         })
       } as unknown as FileSystemDirectoryHandle;
 
-      const result = await getAllMp3Files(mockDirHandle);
+      const result = await getAllAudioFiles(mockDirHandle);
 
       expect(result).toHaveLength(0);
     });
@@ -482,7 +482,7 @@ describe('directoryHandle.service', () => {
         })
       } as unknown as FileSystemDirectoryHandle;
 
-      const result = await getAllMp3Files(mockDirHandle, 'base/path');
+      const result = await getAllAudioFiles(mockDirHandle, 'base/path');
 
       expect(result[0].relativePath).toBe('base/path/song.mp3');
     });

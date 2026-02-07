@@ -59,7 +59,7 @@ import {
 import {
   isFileSystemAccessSupported,
   getDownloadsDirectory,
-  getAllMp3Files,
+  getAllAudioFiles,
   requestDirectoryAccess,
   clearStoredDirectoryHandle,
 } from '@/services/directoryHandle.service';
@@ -159,8 +159,8 @@ export function DownloadProcessingSection() {
     setResult(null);
 
     try {
-      // Get all MP3 files with their handles
-      const filesWithHandles = await getAllMp3Files(directoryHandle);
+      // Get all audio files with their handles
+      const filesWithHandles = await getAllAudioFiles(directoryHandle);
 
       if (filesWithHandles.length === 0) {
         toast({
