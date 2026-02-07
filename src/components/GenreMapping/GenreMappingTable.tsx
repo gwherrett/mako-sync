@@ -166,27 +166,27 @@ export const GenreMappingTable: React.FC<GenreMappingTableProps> = ({
   }
   return <Card>
       <CardHeader>
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
           <div>
             <CardTitle>Summary</CardTitle>
-            <p className="text-sm text-muted-foreground mt-1">
-              {mappings.length} total genres • {overriddenCount} overridden • {unmappedCount} unmapped • {reviewedCount} reviewed
+            <p className="text-xs sm:text-sm text-muted-foreground mt-1">
+              {mappings.length} total • {overriddenCount} overridden • {unmappedCount} unmapped • {reviewedCount} reviewed
             </p>
           </div>
-          <Button onClick={onExport} variant="outline" size="sm">
+          <Button onClick={onExport} variant="outline" size="sm" className="self-start sm:self-auto min-h-[44px] sm:min-h-0">
             <Download className="w-4 h-4 mr-2" />
             Export CSV
           </Button>
         </div>
         
-        <div className="flex gap-4 items-center">
+        <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 sm:items-center">
           <div className="relative flex-1 max-w-sm">
             <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
             <Input placeholder="Search genres..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="pl-10" />
           </div>
-          
+
           <Select value={filterSuperGenre} onValueChange={setFilterSuperGenre}>
-            <SelectTrigger className="w-48">
+            <SelectTrigger className="w-full sm:w-48">
               <SelectValue placeholder="Filter by Supergenre" />
             </SelectTrigger>
             <SelectContent>
@@ -199,89 +199,91 @@ export const GenreMappingTable: React.FC<GenreMappingTableProps> = ({
       </CardHeader>
 
       <CardContent>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="w-12">
-                <input type="checkbox" checked={selectedRows.size === paginatedMappings.length && paginatedMappings.length > 0} onChange={e => handleSelectAll(e.target.checked)} className="rounded" />
-              </TableHead>
-              <TableHead>
-                <Button variant="ghost" size="sm" onClick={() => toggleSort('spotify_genre')} className="font-semibold -ml-3">
-                  Spotify Genre
-                  <ArrowUpDown className="ml-2 h-4 w-4" />
-                </Button>
-              </TableHead>
-              <TableHead>
-                <Button variant="ghost" size="sm" onClick={() => toggleSort('super_genre')} className="font-semibold -ml-3">
-                  Supergenre
-                  <ArrowUpDown className="ml-2 h-4 w-4" />
-                </Button>
-              </TableHead>
-              <TableHead>Source</TableHead>
-              <TableHead className="w-12">
-                <Button variant="ghost" size="sm" onClick={() => toggleSort('reviewed')} className="font-semibold -ml-3">
-                  Reviewed
-                  <ArrowUpDown className="ml-2 h-4 w-4" />
-                </Button>
-              </TableHead>
-              <TableHead className="w-24">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {paginatedMappings.map(mapping => <TableRow key={mapping.spotify_genre} className={mapping.is_overridden ? 'bg-accent/50' : ''}>
-                <TableCell>
-                  <input type="checkbox" checked={selectedRows.has(mapping.spotify_genre)} onChange={e => handleRowSelect(mapping.spotify_genre, e.target.checked)} className="rounded" />
-                </TableCell>
-                <TableCell className="font-medium">{mapping.spotify_genre}</TableCell>
-                 <TableCell>
-                   {editingRow === mapping.spotify_genre ? <Select value={mapping.super_genre || ''} onValueChange={value => handleInlineEdit(mapping.spotify_genre, value as SuperGenre)}>
-                       <SelectTrigger className="w-40">
-                         <SelectValue />
-                       </SelectTrigger>
-                       <SelectContent>
-                          {[...SUPER_GENRES].sort().map(genre => <SelectItem key={genre} value={genre}>{genre}</SelectItem>)}
-                       </SelectContent>
-                     </Select> : <span>
-                         {mapping.super_genre ? mapping.super_genre : <span className="text-muted-foreground italic">Unmapped</span>}
-                       </span>}
-                 </TableCell>
-                 <TableCell>
-                   <Badge variant={!mapping.super_genre ? 'destructive' : mapping.is_overridden ? 'secondary' : 'outline'}>
-                     {!mapping.super_genre ? 'Unmapped' : mapping.is_overridden ? 'Override' : 'Base'}
-                   </Badge>
-                 </TableCell>
-                <TableCell>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => toggleReviewed(mapping.spotify_genre)}
-                    className="p-0 h-auto"
-                  >
-                    {reviewedGenres.has(mapping.spotify_genre) ? (
-                      <CheckCircle2 className="w-5 h-5 text-green-600" />
-                    ) : (
-                      <Circle className="w-5 h-5 text-muted-foreground" />
-                    )}
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="hidden sm:table-cell w-12">
+                  <input type="checkbox" checked={selectedRows.size === paginatedMappings.length && paginatedMappings.length > 0} onChange={e => handleSelectAll(e.target.checked)} className="rounded" />
+                </TableHead>
+                <TableHead>
+                  <Button variant="ghost" size="sm" onClick={() => toggleSort('spotify_genre')} className="font-semibold -ml-3">
+                    Spotify Genre
+                    <ArrowUpDown className="ml-2 h-4 w-4" />
                   </Button>
-                </TableCell>
-                <TableCell>
-                  <div className="flex gap-1">
-                    <Button size="sm" variant="ghost" onClick={() => setEditingRow(editingRow === mapping.spotify_genre ? null : mapping.spotify_genre)}>
-                      <Edit3 className="w-3 h-3" />
+                </TableHead>
+                <TableHead>
+                  <Button variant="ghost" size="sm" onClick={() => toggleSort('super_genre')} className="font-semibold -ml-3">
+                    Supergenre
+                    <ArrowUpDown className="ml-2 h-4 w-4" />
+                  </Button>
+                </TableHead>
+                <TableHead className="hidden md:table-cell">Source</TableHead>
+                <TableHead className="hidden md:table-cell w-12">
+                  <Button variant="ghost" size="sm" onClick={() => toggleSort('reviewed')} className="font-semibold -ml-3">
+                    Reviewed
+                    <ArrowUpDown className="ml-2 h-4 w-4" />
+                  </Button>
+                </TableHead>
+                <TableHead className="w-20 md:w-24">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {paginatedMappings.map(mapping => <TableRow key={mapping.spotify_genre} className={mapping.is_overridden ? 'bg-accent/50' : ''}>
+                  <TableCell className="hidden sm:table-cell">
+                    <input type="checkbox" checked={selectedRows.has(mapping.spotify_genre)} onChange={e => handleRowSelect(mapping.spotify_genre, e.target.checked)} className="rounded" />
+                  </TableCell>
+                  <TableCell className="font-medium text-sm">{mapping.spotify_genre}</TableCell>
+                  <TableCell>
+                    {editingRow === mapping.spotify_genre ? <Select value={mapping.super_genre || ''} onValueChange={value => handleInlineEdit(mapping.spotify_genre, value as SuperGenre)}>
+                        <SelectTrigger className="w-32 md:w-40">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {[...SUPER_GENRES].sort().map(genre => <SelectItem key={genre} value={genre}>{genre}</SelectItem>)}
+                        </SelectContent>
+                      </Select> : <span className="text-sm">
+                          {mapping.super_genre ? mapping.super_genre : <span className="text-muted-foreground italic">Unmapped</span>}
+                        </span>}
+                  </TableCell>
+                  <TableCell className="hidden md:table-cell">
+                    <Badge variant={!mapping.super_genre ? 'destructive' : mapping.is_overridden ? 'secondary' : 'outline'}>
+                      {!mapping.super_genre ? 'Unmapped' : mapping.is_overridden ? 'Override' : 'Base'}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="hidden md:table-cell">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => toggleReviewed(mapping.spotify_genre)}
+                      className="p-0 h-auto min-h-[44px] min-w-[44px] sm:min-h-0 sm:min-w-0 flex items-center justify-center"
+                    >
+                      {reviewedGenres.has(mapping.spotify_genre) ? (
+                        <CheckCircle2 className="w-5 h-5 text-green-600" />
+                      ) : (
+                        <Circle className="w-5 h-5 text-muted-foreground" />
+                      )}
                     </Button>
-                    {mapping.is_overridden && <Button size="sm" variant="ghost" onClick={() => handleResetToDefault(mapping)} className="text-muted-foreground hover:text-foreground">
-                        Reset
-                      </Button>}
-                  </div>
-                </TableCell>
-              </TableRow>)}
-          </TableBody>
-        </Table>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex gap-1">
+                      <Button size="sm" variant="ghost" className="min-h-[44px] min-w-[44px] sm:min-h-0 sm:min-w-0" onClick={() => setEditingRow(editingRow === mapping.spotify_genre ? null : mapping.spotify_genre)}>
+                        <Edit3 className="w-4 h-4 sm:w-3 sm:h-3" />
+                      </Button>
+                      {mapping.is_overridden && <Button size="sm" variant="ghost" onClick={() => handleResetToDefault(mapping)} className="text-muted-foreground hover:text-foreground hidden sm:inline-flex">
+                          Reset
+                        </Button>}
+                    </div>
+                  </TableCell>
+                </TableRow>)}
+            </TableBody>
+          </Table>
+        </div>
 
         {/* Pagination */}
         {totalPages > 1 && (
-          <div className="mt-4 flex items-center justify-between">
-            <p className="text-sm text-muted-foreground">
+          <div className="mt-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+            <p className="text-xs sm:text-sm text-muted-foreground">
               Showing {(currentPage - 1) * PAGE_SIZE + 1}-{Math.min(currentPage * PAGE_SIZE, filteredMappings.length)} of {filteredMappings.length}
             </p>
             <Pagination>
@@ -359,18 +361,18 @@ export const GenreMappingTable: React.FC<GenreMappingTableProps> = ({
             <p className="text-sm font-medium mb-2">
               {selectedRows.size} genre{selectedRows.size !== 1 ? 's' : ''} selected
             </p>
-            <div className="flex gap-2">
+            <div className="flex flex-col sm:flex-row gap-2">
               <Select onValueChange={handleBulkSetGenre} disabled={isBulkUpdating}>
-                <SelectTrigger className="w-48">
+                <SelectTrigger className="w-full sm:w-48">
                   <SelectValue placeholder="Set Supergenre for selected" />
                 </SelectTrigger>
                 <SelectContent>
                   {[...SUPER_GENRES].sort().map(genre => <SelectItem key={genre} value={genre}>{genre}</SelectItem>)}
                 </SelectContent>
               </Select>
-              <Button 
-                variant="outline" 
-                size="sm" 
+              <Button
+                variant="outline"
+                size="sm"
                 onClick={() => setSelectedRows(new Set())}
                 disabled={isBulkUpdating}
               >

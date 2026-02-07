@@ -706,7 +706,7 @@ const LocalTracksTable = ({ onTrackSelect, selectedTrack, refreshTrigger, isActi
           </CollapsibleContent>
         </Collapsible>
 
-        <div className="rounded-md border">
+        <div className="rounded-md border overflow-x-auto">
           <Table>
             <TableHeader>
               <TableRow>
@@ -717,7 +717,7 @@ const LocalTracksTable = ({ onTrackSelect, selectedTrack, refreshTrigger, isActi
                   />
                 </TableHead>
                 <TableHead
-                  className="w-[250px] cursor-pointer hover:bg-muted/50 select-none"
+                  className="min-w-[150px] md:w-[250px] cursor-pointer hover:bg-muted/50 select-none"
                   onClick={() => handleSort('title')}
                 >
                   <div className="flex items-center gap-1">
@@ -728,7 +728,7 @@ const LocalTracksTable = ({ onTrackSelect, selectedTrack, refreshTrigger, isActi
                   </div>
                 </TableHead>
                 <TableHead
-                  className="cursor-pointer hover:bg-muted/50 select-none"
+                  className="hidden md:table-cell cursor-pointer hover:bg-muted/50 select-none"
                   onClick={() => handleSort('artist')}
                 >
                   <div className="flex items-center gap-1">
@@ -738,9 +738,9 @@ const LocalTracksTable = ({ onTrackSelect, selectedTrack, refreshTrigger, isActi
                     )}
                   </div>
                 </TableHead>
-                <TableHead>Mix</TableHead>
+                <TableHead className="hidden xl:table-cell">Mix</TableHead>
                 <TableHead
-                  className="cursor-pointer hover:bg-muted/50 select-none"
+                  className="hidden lg:table-cell cursor-pointer hover:bg-muted/50 select-none"
                   onClick={() => handleSort('album')}
                 >
                   <div className="flex items-center gap-1">
@@ -762,7 +762,7 @@ const LocalTracksTable = ({ onTrackSelect, selectedTrack, refreshTrigger, isActi
                   </div>
                 </TableHead>
                 <TableHead
-                  className="cursor-pointer hover:bg-muted/50 select-none"
+                  className="hidden md:table-cell cursor-pointer hover:bg-muted/50 select-none"
                   onClick={() => handleSort('year')}
                 >
                   <div className="flex items-center gap-1">
@@ -772,9 +772,9 @@ const LocalTracksTable = ({ onTrackSelect, selectedTrack, refreshTrigger, isActi
                     )}
                   </div>
                 </TableHead>
-                <TableHead>BPM</TableHead>
+                <TableHead className="hidden xl:table-cell">BPM</TableHead>
                 <TableHead
-                  className="cursor-pointer hover:bg-muted/50 select-none"
+                  className="hidden xl:table-cell cursor-pointer hover:bg-muted/50 select-none"
                   onClick={() => handleSort('bitrate')}
                 >
                   <div className="flex items-center gap-1">
@@ -785,7 +785,7 @@ const LocalTracksTable = ({ onTrackSelect, selectedTrack, refreshTrigger, isActi
                   </div>
                 </TableHead>
                 <TableHead
-                  className="cursor-pointer hover:bg-muted/50 select-none"
+                  className="hidden xl:table-cell cursor-pointer hover:bg-muted/50 select-none"
                   onClick={() => handleSort('file_size')}
                 >
                   <div className="flex items-center gap-1">
@@ -795,14 +795,14 @@ const LocalTracksTable = ({ onTrackSelect, selectedTrack, refreshTrigger, isActi
                     )}
                   </div>
                 </TableHead>
-                <TableHead>Status</TableHead>
+                <TableHead className="hidden lg:table-cell">Status</TableHead>
                 <TableHead className="w-[50px]"></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {tracks.map((track) => (
-                <TableRow 
-                  key={track.id} 
+                <TableRow
+                  key={track.id}
                   className={`cursor-pointer ${selectedTrack?.id === track.id ? 'bg-muted' : ''}`}
                   onClick={() => onTrackSelect(track)}
                 >
@@ -813,52 +813,56 @@ const LocalTracksTable = ({ onTrackSelect, selectedTrack, refreshTrigger, isActi
                     />
                   </TableCell>
                   <TableCell className="font-medium">
-                    <div className="max-w-[230px] truncate" title={track.title || track.file_path}>
+                    <div className="max-w-[180px] md:max-w-[230px] truncate" title={track.title || track.file_path}>
                       {track.title || <span className="text-muted-foreground">No title</span>}
                     </div>
-                    <div className="text-[10px] text-muted-foreground/40 max-w-[230px] truncate mt-0.5" title={track.file_path}>
+                    {/* Show artist below title on mobile since Artist column is hidden */}
+                    <div className="md:hidden text-xs text-muted-foreground truncate max-w-[180px]" title={track.artist || 'Unknown'}>
+                      {track.artist || 'Unknown'}
+                    </div>
+                    <div className="text-[10px] text-muted-foreground/40 max-w-[180px] md:max-w-[230px] truncate mt-0.5" title={track.file_path}>
                       {track.file_path.split('/').pop()}
                     </div>
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="hidden md:table-cell">
                     <div className="max-w-[150px] truncate" title={track.artist || 'Unknown'}>
                       {track.artist || <span className="text-muted-foreground">Unknown</span>}
                     </div>
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="hidden xl:table-cell">
                     {track.mix || <span className="text-muted-foreground">—</span>}
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="hidden lg:table-cell">
                     <div className="max-w-[150px] truncate" title={track.album || 'Unknown'}>
                       {track.album || <span className="text-muted-foreground">Unknown</span>}
                     </div>
                   </TableCell>
                   <TableCell>
-                    {track.genre || <span className="text-muted-foreground">Unknown</span>}
+                    <span className="text-xs md:text-sm">{track.genre || <span className="text-muted-foreground">Unknown</span>}</span>
                   </TableCell>
-                   <TableCell>
-                     {track.year || <span className="text-muted-foreground">—</span>}
-                   </TableCell>
-                   <TableCell>
-                     {track.bpm ? (
-                       <Badge variant="secondary" className="bg-blue-500/10 text-blue-400 border-blue-500/30">
-                         {track.bpm} BPM
-                       </Badge>
-                     ) : (
-                       <span className="text-muted-foreground">—</span>
-                     )}
-                   </TableCell>
-                   <TableCell>
-                      {track.bitrate ? (
-                        <span className="text-sm">{track.bitrate}</span>
-                      ) : (
-                        <span className="text-muted-foreground">—</span>
-                      )}
-                   </TableCell>
-                   <TableCell>
-                     {formatFileSize(track.file_size)}
-                   </TableCell>
-                  <TableCell>
+                  <TableCell className="hidden md:table-cell">
+                    {track.year || <span className="text-muted-foreground">—</span>}
+                  </TableCell>
+                  <TableCell className="hidden xl:table-cell">
+                    {track.bpm ? (
+                      <Badge variant="secondary" className="bg-blue-500/10 text-blue-400 border-blue-500/30">
+                        {track.bpm} BPM
+                      </Badge>
+                    ) : (
+                      <span className="text-muted-foreground">—</span>
+                    )}
+                  </TableCell>
+                  <TableCell className="hidden xl:table-cell">
+                    {track.bitrate ? (
+                      <span className="text-sm">{track.bitrate}</span>
+                    ) : (
+                      <span className="text-muted-foreground">—</span>
+                    )}
+                  </TableCell>
+                  <TableCell className="hidden xl:table-cell">
+                    {formatFileSize(track.file_size)}
+                  </TableCell>
+                  <TableCell className="hidden lg:table-cell">
                     {getMissingMetadataCount(track) === 0 ? (
                       <Badge variant="default" className="bg-green-500/10 text-green-400 border-green-500/30">
                         <FileCheck className="h-3 w-3 mr-1" />
@@ -874,7 +878,7 @@ const LocalTracksTable = ({ onTrackSelect, selectedTrack, refreshTrigger, isActi
                   <TableCell>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="sm">
+                        <Button variant="ghost" size="sm" className="min-h-[44px] min-w-[44px] sm:min-h-0 sm:min-w-0">
                           <MoreHorizontal className="h-4 w-4" />
                         </Button>
                       </DropdownMenuTrigger>
@@ -906,7 +910,10 @@ const LocalTracksTable = ({ onTrackSelect, selectedTrack, refreshTrigger, isActi
         )}
 
         {totalPages > 1 && (
-          <div className="mt-4">
+          <div className="mt-4 flex flex-col sm:flex-row items-center justify-between gap-2">
+            <p className="text-xs sm:text-sm text-muted-foreground">
+              Page {currentPage} of {totalPages}
+            </p>
             <Pagination>
               <PaginationContent>
                 <PaginationItem>
@@ -917,7 +924,7 @@ const LocalTracksTable = ({ onTrackSelect, selectedTrack, refreshTrigger, isActi
                 </PaginationItem>
 
                 {(() => {
-                  const maxVisiblePages = 5;
+                  const maxVisiblePages = typeof window !== 'undefined' && window.innerWidth < 640 ? 3 : 5;
                   const startPage = Math.max(1, Math.min(currentPage - Math.floor(maxVisiblePages / 2), totalPages - maxVisiblePages + 1));
                   const endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
 
