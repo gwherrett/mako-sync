@@ -728,7 +728,7 @@ const LocalTracksTable = ({ onTrackSelect, selectedTrack, refreshTrigger, isActi
                   </div>
                 </TableHead>
                 <TableHead
-                  className="hidden md:table-cell cursor-pointer hover:bg-muted/50 select-none"
+                  className="cursor-pointer hover:bg-muted/50 select-none"
                   onClick={() => handleSort('artist')}
                 >
                   <div className="flex items-center gap-1">
@@ -751,7 +751,7 @@ const LocalTracksTable = ({ onTrackSelect, selectedTrack, refreshTrigger, isActi
                   </div>
                 </TableHead>
                 <TableHead
-                  className="cursor-pointer hover:bg-muted/50 select-none"
+                  className="hidden md:table-cell cursor-pointer hover:bg-muted/50 select-none"
                   onClick={() => handleSort('genre')}
                 >
                   <div className="flex items-center gap-1">
@@ -816,16 +816,12 @@ const LocalTracksTable = ({ onTrackSelect, selectedTrack, refreshTrigger, isActi
                     <div className="max-w-[180px] md:max-w-[230px] truncate" title={track.title || track.file_path}>
                       {track.title || <span className="text-muted-foreground">No title</span>}
                     </div>
-                    {/* Show artist below title on mobile since Artist column is hidden */}
-                    <div className="md:hidden text-xs text-muted-foreground truncate max-w-[180px]" title={track.artist || 'Unknown'}>
-                      {track.artist || 'Unknown'}
-                    </div>
                     <div className="text-[10px] text-muted-foreground/40 max-w-[180px] md:max-w-[230px] truncate mt-0.5" title={track.file_path}>
                       {track.file_path.split('/').pop()}
                     </div>
                   </TableCell>
-                  <TableCell className="hidden md:table-cell">
-                    <div className="max-w-[150px] truncate" title={track.artist || 'Unknown'}>
+                  <TableCell>
+                    <div className="max-w-[120px] md:max-w-[150px] truncate" title={track.artist || 'Unknown'}>
                       {track.artist || <span className="text-muted-foreground">Unknown</span>}
                     </div>
                   </TableCell>
@@ -837,8 +833,8 @@ const LocalTracksTable = ({ onTrackSelect, selectedTrack, refreshTrigger, isActi
                       {track.album || <span className="text-muted-foreground">Unknown</span>}
                     </div>
                   </TableCell>
-                  <TableCell>
-                    <span className="text-xs md:text-sm">{track.genre || <span className="text-muted-foreground">Unknown</span>}</span>
+                  <TableCell className="hidden md:table-cell">
+                    {track.genre || <span className="text-muted-foreground">Unknown</span>}
                   </TableCell>
                   <TableCell className="hidden md:table-cell">
                     {track.year || <span className="text-muted-foreground">—</span>}

@@ -461,7 +461,7 @@ const TracksTable = ({ onTrackSelect, selectedTrack, sharedSearchQuery = '', sha
                     </div>
                   </TableHead>
                   <TableHead
-                    className="hidden md:table-cell cursor-pointer hover:bg-muted/50 select-none"
+                    className="cursor-pointer hover:bg-muted/50 select-none"
                     onClick={() => handleSort('artist')}
                   >
                     <div className="flex items-center gap-1">
@@ -484,7 +484,7 @@ const TracksTable = ({ onTrackSelect, selectedTrack, sharedSearchQuery = '', sha
                     </div>
                   </TableHead>
                   <TableHead
-                    className="cursor-pointer hover:bg-muted/50 select-none"
+                    className="hidden md:table-cell cursor-pointer hover:bg-muted/50 select-none"
                     onClick={() => handleSort('super_genre')}
                   >
                     <div className="flex items-center gap-1">
@@ -541,13 +541,9 @@ const TracksTable = ({ onTrackSelect, selectedTrack, sharedSearchQuery = '', sha
                       <div className="max-w-[180px] md:max-w-[280px] truncate" title={track.title}>
                         {track.title}
                       </div>
-                      {/* Show artist below title on mobile since Artist column is hidden */}
-                      <div className="md:hidden text-xs text-muted-foreground truncate max-w-[180px]" title={track.artist}>
-                        {track.artist}
-                      </div>
                     </TableCell>
-                    <TableCell className="hidden md:table-cell">
-                      <div className="max-w-[150px] truncate" title={track.artist}>
+                    <TableCell>
+                      <div className="max-w-[120px] md:max-w-[150px] truncate" title={track.artist}>
                         {track.artist}
                       </div>
                     </TableCell>
@@ -559,11 +555,11 @@ const TracksTable = ({ onTrackSelect, selectedTrack, sharedSearchQuery = '', sha
                         {track.album || <span className="text-muted-foreground">Unknown</span>}
                       </div>
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="hidden md:table-cell">
                       {track.super_genre ? (
-                        <Badge variant="default" className="bg-blue-500/10 text-blue-400 border-blue-500/30 text-xs md:text-sm">{track.super_genre}</Badge>
+                        <Badge variant="default" className="bg-blue-500/10 text-blue-400 border-blue-500/30">{track.super_genre}</Badge>
                       ) : (
-                        <Badge variant="outline" className="bg-gray-500/10 text-gray-400 border-gray-500/30 text-xs md:text-sm">Unmapped</Badge>
+                        <Badge variant="outline" className="bg-gray-500/10 text-gray-400 border-gray-500/30">Unmapped</Badge>
                       )}
                     </TableCell>
                     <TableCell className="hidden lg:table-cell">
