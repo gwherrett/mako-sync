@@ -445,12 +445,12 @@ const TracksTable = ({ onTrackSelect, selectedTrack, sharedSearchQuery = '', sha
         />
         
         {tracks.length > 0 ? (
-          <div className="rounded-md border">
+          <div className="rounded-md border overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>
                   <TableHead
-                    className="w-[300px] cursor-pointer hover:bg-muted/50 select-none"
+                    className="min-w-[150px] md:w-[300px] cursor-pointer hover:bg-muted/50 select-none"
                     onClick={() => handleSort('title')}
                   >
                     <div className="flex items-center gap-1">
@@ -471,9 +471,9 @@ const TracksTable = ({ onTrackSelect, selectedTrack, sharedSearchQuery = '', sha
                       )}
                     </div>
                   </TableHead>
-                  <TableHead>Mix</TableHead>
+                  <TableHead className="hidden lg:table-cell">Mix</TableHead>
                   <TableHead
-                    className="cursor-pointer hover:bg-muted/50 select-none"
+                    className="hidden lg:table-cell cursor-pointer hover:bg-muted/50 select-none"
                     onClick={() => handleSort('album')}
                   >
                     <div className="flex items-center gap-1">
@@ -484,7 +484,7 @@ const TracksTable = ({ onTrackSelect, selectedTrack, sharedSearchQuery = '', sha
                     </div>
                   </TableHead>
                   <TableHead
-                    className="cursor-pointer hover:bg-muted/50 select-none"
+                    className="hidden md:table-cell cursor-pointer hover:bg-muted/50 select-none"
                     onClick={() => handleSort('super_genre')}
                   >
                     <div className="flex items-center gap-1">
@@ -495,7 +495,7 @@ const TracksTable = ({ onTrackSelect, selectedTrack, sharedSearchQuery = '', sha
                     </div>
                   </TableHead>
                   <TableHead
-                    className="cursor-pointer hover:bg-muted/50 select-none"
+                    className="hidden lg:table-cell cursor-pointer hover:bg-muted/50 select-none"
                     onClick={() => handleSort('genre')}
                   >
                     <div className="flex items-center gap-1">
@@ -506,7 +506,7 @@ const TracksTable = ({ onTrackSelect, selectedTrack, sharedSearchQuery = '', sha
                     </div>
                   </TableHead>
                   <TableHead
-                    className="cursor-pointer hover:bg-muted/50 select-none"
+                    className="hidden md:table-cell cursor-pointer hover:bg-muted/50 select-none"
                     onClick={() => handleSort('year')}
                   >
                     <div className="flex items-center gap-1">
@@ -517,7 +517,7 @@ const TracksTable = ({ onTrackSelect, selectedTrack, sharedSearchQuery = '', sha
                     </div>
                   </TableHead>
                   <TableHead
-                    className="cursor-pointer hover:bg-muted/50 select-none"
+                    className="hidden lg:table-cell cursor-pointer hover:bg-muted/50 select-none"
                     onClick={() => handleSort('added_at')}
                   >
                     <div className="flex items-center gap-1">
@@ -532,37 +532,37 @@ const TracksTable = ({ onTrackSelect, selectedTrack, sharedSearchQuery = '', sha
               </TableHeader>
               <TableBody>
                 {tracks.map((track) => (
-                  <TableRow 
-                    key={track.id} 
+                  <TableRow
+                    key={track.id}
                     className={`cursor-pointer ${selectedTrack?.id === track.id ? 'bg-muted' : ''}`}
                     onClick={() => onTrackSelect(track)}
                   >
                     <TableCell className="font-medium">
-                      <div className="max-w-[280px] truncate" title={track.title}>
+                      <div className="max-w-[180px] md:max-w-[280px] truncate" title={track.title}>
                         {track.title}
                       </div>
                     </TableCell>
                     <TableCell>
-                      <div className="max-w-[150px] truncate" title={track.artist}>
+                      <div className="max-w-[120px] md:max-w-[150px] truncate" title={track.artist}>
                         {track.artist}
                       </div>
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="hidden lg:table-cell">
                       {track.mix || <span className="text-muted-foreground">—</span>}
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="hidden lg:table-cell">
                       <div className="max-w-[150px] truncate" title={track.album || 'Unknown'}>
                         {track.album || <span className="text-muted-foreground">Unknown</span>}
                       </div>
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="hidden md:table-cell">
                       {track.super_genre ? (
                         <Badge variant="default" className="bg-blue-500/10 text-blue-400 border-blue-500/30">{track.super_genre}</Badge>
                       ) : (
                         <Badge variant="outline" className="bg-gray-500/10 text-gray-400 border-gray-500/30">Unmapped</Badge>
                       )}
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="hidden lg:table-cell">
                       <div className="flex items-center gap-2">
                         {track.genre ? (
                           <Badge variant="secondary" className="bg-purple-500/10 text-purple-400 border-purple-500/30">{track.genre}</Badge>
@@ -576,10 +576,10 @@ const TracksTable = ({ onTrackSelect, selectedTrack, sharedSearchQuery = '', sha
                         )}
                       </div>
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="hidden md:table-cell">
                       {track.year || <span className="text-muted-foreground">—</span>}
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="hidden lg:table-cell">
                       {track.added_at ? (
                         <span className="text-sm">{format(new Date(track.added_at), 'MMM d, yyyy')}</span>
                       ) : (
@@ -588,10 +588,11 @@ const TracksTable = ({ onTrackSelect, selectedTrack, sharedSearchQuery = '', sha
                     </TableCell>
                     <TableCell>
                       {track.spotify_id ? (
-                        <div className="flex items-center gap-2">
-                          <Button 
-                            variant="ghost" 
+                        <div className="flex items-center gap-1">
+                          <Button
+                            variant="ghost"
                             size="sm"
+                            className="min-h-[44px] min-w-[44px] sm:min-h-0 sm:min-w-0"
                             asChild
                           >
                             <a
@@ -607,6 +608,7 @@ const TracksTable = ({ onTrackSelect, selectedTrack, sharedSearchQuery = '', sha
                           <Button
                             variant="ghost"
                             size="sm"
+                            className="hidden sm:inline-flex"
                             onClick={() => handleCopySpotifyLink(track.spotify_id)}
                             title="Copy Spotify link"
                           >
@@ -619,10 +621,11 @@ const TracksTable = ({ onTrackSelect, selectedTrack, sharedSearchQuery = '', sha
                       ) : (
                         <Tooltip>
                           <TooltipTrigger asChild>
-                            <Button 
-                              variant="ghost" 
+                            <Button
+                              variant="ghost"
                               size="sm"
                               disabled
+                              className="min-h-[44px] min-w-[44px] sm:min-h-0 sm:min-w-0"
                               onClick={(e: React.MouseEvent) => e.stopPropagation()}
                             >
                               <ExternalLink className="h-4 w-4" />
@@ -646,21 +649,24 @@ const TracksTable = ({ onTrackSelect, selectedTrack, sharedSearchQuery = '', sha
         )}
 
         {totalPages > 1 && (
-          <div className="mt-4">
+          <div className="mt-4 flex flex-col sm:flex-row items-center justify-between gap-2">
+            <p className="text-xs sm:text-sm text-muted-foreground">
+              Page {currentPage} of {totalPages}
+            </p>
             <Pagination>
               <PaginationContent>
                 <PaginationItem>
-                  <PaginationPrevious 
+                  <PaginationPrevious
                     onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
                     className={currentPage === 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
                   />
                 </PaginationItem>
-                
+
                 {(() => {
-                  const maxVisiblePages = 5;
+                  const maxVisiblePages = typeof window !== 'undefined' && window.innerWidth < 640 ? 3 : 5;
                   const startPage = Math.max(1, Math.min(currentPage - Math.floor(maxVisiblePages / 2), totalPages - maxVisiblePages + 1));
                   const endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
-                  
+
                   return Array.from({ length: endPage - startPage + 1 }, (_, i) => {
                     const page = startPage + i;
                     return (
@@ -676,9 +682,9 @@ const TracksTable = ({ onTrackSelect, selectedTrack, sharedSearchQuery = '', sha
                     );
                   });
                 })()}
-                
+
                 <PaginationItem>
-                  <PaginationNext 
+                  <PaginationNext
                     onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
                     className={currentPage === totalPages ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
                   />
