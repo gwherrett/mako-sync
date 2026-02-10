@@ -485,6 +485,14 @@ async function writeSuperGenreTag(file: File, superGenre: string): Promise<Blob>
     skipCovers: false, // We want to preserve cover art
   });
 
+  return writeSuperGenreTagFromMetadata(file, superGenre, metadata);
+}
+
+/**
+ * Write SuperGenre tag using pre-parsed metadata (avoids re-parsing the file)
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function writeSuperGenreTagFromMetadata(file: File, superGenre: string, metadata: any): Promise<Blob> {
   const arrayBuffer = await file.arrayBuffer();
   const writer = new ID3Writer(arrayBuffer);
 
@@ -579,11 +587,59 @@ async function writeSuperGenreTag(file: File, superGenre: string): Promise<Blob>
   return writer.getBlob();
 }
 
+// Batch size for parallel tag writing
+const TAG_WRITE_BATCH_SIZE = 5;
+
+/**
+ * Process a single file for tag writing: parse once, check if skip needed, write if not.
+ * Returns 'skipped' | 'written' | error string.
+ */
+async function writeTagForSingleFile(
+  file: ProcessedFile
+): Promise<'skipped' | 'written'> {
+  // Single parse: read metadata (with covers for preservation) and check existing TIT1
+  const metadata = await withTimeout(
+    parseBlob(file.file, {
+      includeChapters: false,
+      skipCovers: false,
+    }),
+    PARSE_TIMEOUT_MS,
+    `Metadata parsing timed out for ${file.filename}`
+  );
+
+  // Check existing grouping tag from the already-parsed metadata
+  const id3v23 = metadata.native['ID3v2.3'] || [];
+  const id3v24 = metadata.native['ID3v2.4'] || [];
+  const id3v2Native = [...id3v23, ...id3v24];
+
+  for (const tag of id3v2Native) {
+    if (tag.id === 'TIT1' && tag.value) {
+      const existingGrouping = typeof tag.value === 'string' ? tag.value : String(tag.value);
+      if (existingGrouping === file.superGenre) {
+        return 'skipped';
+      }
+      break;
+    }
+  }
+
+  // Write tag using the already-parsed metadata (no second parse)
+  const taggedBlob = await writeSuperGenreTagFromMetadata(file.file, file.superGenre!, metadata);
+
+  // Write back to original file using the handle
+  const writable = await file.fileHandle!.createWritable();
+  await writable.write(taggedBlob);
+  await writable.close();
+
+  return 'written';
+}
+
 /**
  * Write SuperGenre tags to all mapped files in place using File System Access API
  *
- * Optimized to skip files where the existing Grouping tag already matches
- * the target SuperGenre, avoiding unnecessary writes.
+ * Optimized with:
+ * - Single parse per file (check existing tag + read metadata in one pass)
+ * - Parallel batching (processes TAG_WRITE_BATCH_SIZE files concurrently)
+ * - Skip files where existing Grouping tag already matches target
  *
  * @param files - Array of processed files to write tags to (must have fileHandle)
  * @param onProgress - Optional callback for progress updates
@@ -602,50 +658,50 @@ export async function writeTagsInPlace(
 
   console.log(`📝 Processing ${mappedFiles.length} mapped files for tag writing...`);
 
-  for (let i = 0; i < mappedFiles.length; i++) {
-    const file = mappedFiles[i];
+  // Process in parallel batches
+  for (let i = 0; i < mappedFiles.length; i += TAG_WRITE_BATCH_SIZE) {
+    const batch = mappedFiles.slice(i, i + TAG_WRITE_BATCH_SIZE);
 
-    try {
-      // Check if existing grouping tag matches target - skip if so
-      const existingGrouping = await getExistingGroupingTag(file.file);
+    const batchResults = await Promise.all(
+      batch.map(async (file, index) => {
+        try {
+          const result = await writeTagForSingleFile(file);
 
-      if (existingGrouping === file.superGenre) {
-        skipped++;
-        if (onProgress) {
-          onProgress({
-            current: i + 1,
-            total: mappedFiles.length,
+          if (onProgress) {
+            onProgress({
+              current: i + index + 1,
+              total: mappedFiles.length,
+              filename: file.filename,
+              skipped: result === 'skipped',
+            });
+          }
+
+          return { filename: file.filename, result };
+        } catch (error) {
+          console.error(`Failed to write tag to ${file.filename}:`, error);
+
+          if (onProgress) {
+            onProgress({
+              current: i + index + 1,
+              total: mappedFiles.length,
+              filename: file.filename,
+              skipped: false,
+            });
+          }
+
+          return {
             filename: file.filename,
-            skipped: true,
-          });
+            result: 'error' as const,
+            error: error instanceof Error ? error.message : 'Unknown error',
+          };
         }
-        continue;
-      }
+      })
+    );
 
-      if (onProgress) {
-        onProgress({
-          current: i + 1,
-          total: mappedFiles.length,
-          filename: file.filename,
-          skipped: false,
-        });
-      }
-
-      // Create tagged blob
-      const taggedBlob = await writeSuperGenreTag(file.file, file.superGenre!);
-
-      // Write back to original file using the handle
-      const writable = await file.fileHandle!.createWritable();
-      await writable.write(taggedBlob);
-      await writable.close();
-
-      success++;
-    } catch (error) {
-      console.error(`Failed to write tag to ${file.filename}:`, error);
-      errors.push({
-        filename: file.filename,
-        error: error instanceof Error ? error.message : 'Unknown error',
-      });
+    for (const res of batchResults) {
+      if (res.result === 'written') success++;
+      else if (res.result === 'skipped') skipped++;
+      else if (res.result === 'error') errors.push({ filename: res.filename, error: (res as any).error });
     }
   }
 
