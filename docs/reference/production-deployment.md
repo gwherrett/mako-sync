@@ -1,13 +1,63 @@
 # Production Deployment Guide
 
-> **Reference Guide**: Complete production deployment checklist for Spotify integration and Supabase configuration.
+> **Reference**: Complete deployment guide covering environment setup, Spotify configuration, Supabase configuration, and troubleshooting.
+
+**Status**: Active
+**Last Updated**: February 2026
 
 ## Table of Contents
+- [Quick Setup](#quick-setup)
 - [Environment Variables](#environment-variables)
 - [Spotify App Configuration](#spotify-app-configuration)
 - [Supabase Configuration](#supabase-configuration)
+- [Database Verification](#database-verification)
 - [Deployment Checklist](#deployment-checklist)
 - [Troubleshooting](#troubleshooting)
+
+---
+
+## Quick Setup
+
+### Automated Deployment
+```bash
+# One-command setup (applies migrations, deploys functions, validates)
+./scripts/deploy-phase4.sh
+```
+
+### Manual CLI Setup
+```bash
+# 1. Authenticate with Supabase
+supabase login
+supabase link --project-ref your-project-id
+
+# 2. Apply database migrations
+supabase db push
+
+# 3. Enable vault extension (if not already enabled)
+# Supabase Dashboard → Database → Extensions → Enable "vault"
+
+# 4. Set edge function secrets
+supabase secrets set SPOTIFY_CLIENT_ID=your_client_id
+supabase secrets set SPOTIFY_CLIENT_SECRET=your_client_secret
+supabase secrets set SUPABASE_DB_URL=your_connection_string
+
+# 5. Deploy edge functions
+supabase functions deploy spotify-sync-liked
+supabase functions deploy spotify-auth
+supabase functions deploy spotify-callback
+```
+
+### How to Get Credentials
+
+**Spotify Client ID & Secret:**
+1. Go to [Spotify Developer Dashboard](https://developer.spotify.com/dashboard)
+2. Create or select your app
+3. Copy **Client ID** and click "Show Client Secret" for the secret
+
+**Supabase Database URL:**
+1. [Supabase Dashboard](https://supabase.com/dashboard) → Select project
+2. **Settings → Database → Connection String** → Select "URI" tab
+3. Format: `postgresql://postgres:PASSWORD@db.PROJECT_ID.supabase.co:5432/postgres`
 
 ---
 
@@ -172,6 +222,36 @@ postgresql://postgres:YOUR_DATABASE_PASSWORD@db.your-project-id.supabase.co:5432
 - Frontend only has access to client ID (public)
 - Backend edge functions have access to client secret (private)
 - Database credentials restricted to edge function environment only
+
+---
+
+## Database Verification
+
+Run these queries in **Supabase Dashboard → SQL Editor** to verify configuration:
+
+```sql
+-- Check user_roles table exists
+SELECT * FROM information_schema.tables WHERE table_name = 'user_roles';
+
+-- Check has_role security function exists
+SELECT * FROM information_schema.routines WHERE routine_name = 'has_role';
+
+-- Check sync_progress has cached_genres column
+SELECT column_name FROM information_schema.columns
+WHERE table_name = 'sync_progress' AND column_name = 'cached_genres';
+
+-- Check vault extension is enabled
+SELECT * FROM pg_extension WHERE extname = 'vault';
+
+-- Test vault is working
+SELECT vault.create_secret('test-secret', 'test-value');
+```
+
+You can also run the automated validation script:
+```bash
+# In Supabase SQL Editor
+\i scripts/validate-phase4-config.sql
+```
 
 ---
 
@@ -402,5 +482,7 @@ vercel logs <deployment-url>
 
 ---
 
-**Last Updated**: January 10, 2026
-**Consolidates**: spotify-oauth-production-config.md, production-spotify-credentials.md, spotify-configuration-checklist.md, supabase-db-url-guide.md
+**See also**: [Spotify Reference](spotify-reference.md) | [Authentication Reference](authentication-reference.md) | [Architecture](../architecture-mako-sync.md)
+
+**Last Updated**: February 2026
+**Consolidates**: spotify-oauth-production-config.md, production-spotify-credentials.md, spotify-configuration-checklist.md, supabase-db-url-guide.md, setup-guide.md, supabase-phase4-configuration.md, final-production-configuration.md, env-variables-template.md

@@ -20,7 +20,7 @@ The download processor writes the SuperGenre value to the **Grouping (TIT1)** ID
 
 ### 1. Detect file format before writing
 
-In `writeTagsInPlace()` ([downloadProcessor.service.ts:594](../src/services/downloadProcessor.service.ts#L594)), detect the file extension to route to the correct tag writer:
+In `writeTagsInPlace()` ([downloadProcessor.service.ts:594](../../src/services/downloadProcessor.service.ts#L594)), detect the file extension to route to the correct tag writer:
 
 ```typescript
 function getFileFormat(filename: string): 'mp3' | 'flac' | 'm4a' | 'unknown' {

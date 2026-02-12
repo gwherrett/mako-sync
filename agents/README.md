@@ -18,7 +18,7 @@ Full documentation available in [`docs/agents/`](../docs/agents/):
 
 - **[README.md](../docs/agents/README.md)** - Complete usage guide, installation, CLI options
 - **[ARCHITECTURE.md](../docs/agents/ARCHITECTURE.md)** - System architecture, data flow, extension points
-- **[PHASE1_COMPLETE.md](../docs/agents/PHASE1_COMPLETE.md)** - Implementation summary and deliverables
+- **[QUICK_REFERENCE.md](../docs/agents/QUICK_REFERENCE.md)** - All rules at a glance
 
 ## Structure
 

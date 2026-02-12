@@ -120,16 +120,23 @@ See [AGENTS.md](AGENTS.md) for additional critical non-obvious patterns includin
 
 ## Documentation
 
-All general documentation should be placed in the `docs/` folder, not the repository root.
+All documentation lives in the `docs/` folder. See [docs/README.md](docs/README.md) for the full navigation hub and documentation template.
 
-**File naming convention:** Use lowercase with dash separators (e.g., `setup-guide.md`, `test-improvement-plan.md`).
+**File naming**: lowercase with dashes (e.g., `setup-guide.md`).
 
 **Key documentation:**
 - [docs/mako-sync-overview.md](docs/mako-sync-overview.md) - Product overview and 5-step workflow
 - [docs/architecture-mako-sync.md](docs/architecture-mako-sync.md) - System architecture
-- [docs/setup-guide.md](docs/setup-guide.md) - Configuration and deployment
+- [docs/reference/production-deployment.md](docs/reference/production-deployment.md) - Deployment and configuration
 
-**Root-level files only:**
-- `README.md` - Project introduction
-- `CLAUDE.md` - AI assistant guidance (this file)
-- `AGENTS.md` - Critical coding patterns
+**Documentation locations:**
+
+| Location | Purpose |
+|----------|---------|
+| Root (`README.md`, `CLAUDE.md`, `AGENTS.md`) | Short, high-signal entry points |
+| `docs/` (root level) | Product vision and architecture |
+| `docs/reference/` | Implementation guides, debugging, deployment |
+| `docs/plans/` | Active feature implementation plans |
+| `docs/agents/` | Validation framework documentation |
+| `docs/archive/` | Historical docs (read-only, not maintained) |
+| `agents/README.md` | Framework quick start (points to docs/agents/) |

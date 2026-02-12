@@ -1,9 +1,13 @@
 # Authentication Reference Guide
 
-> **Living Documentation Reference**: This document consolidates implementation details, debugging procedures, and testing strategies. For the current system state, see [systems/authentication.md](../systems/authentication.md).
+> **Reference**: Authentication implementation details, status, debugging procedures, and testing strategies.
+
+**Status**: Active
+**Last Updated**: February 2026
 
 ## Table of Contents
 - [Implementation Overview](#implementation-overview)
+- [Decision Log](#decision-log)
 - [Debugging Procedures](#debugging-procedures)
 - [Testing Guide](#testing-guide)
 - [Common Issues & Solutions](#common-issues--solutions)
@@ -71,6 +75,23 @@
 | Security Dashboard | [src/components/spotify/SpotifySecurityDashboard.tsx](../src/components/spotify/SpotifySecurityDashboard.tsx) | Security monitoring |
 | Session Cache | [src/services/sessionCache.service.ts](../src/services/sessionCache.service.ts) | Session validation |
 | Auth Service | [src/services/auth.service.ts](../src/services/auth.service.ts) | Core auth operations |
+
+---
+
+## Decision Log
+
+Key architecture and technical decisions made during implementation:
+
+- **2025-12-12**: Enhanced session validation to fix false "Token Status: expired" errors
+  - Separated network errors from auth failures; added 10-second timeout protection
+- **2025-12-05**: Implemented separate `user_roles` table for security
+  - Prevents privilege escalation attacks; uses SECURITY DEFINER function
+- **2025-11-20**: Chose React Hook Form over custom validation
+  - Better performance and developer experience; reduced form bugs by 80%
+- **2025-11-15**: Consolidated to single `NewAuthContext` provider
+  - Eliminated race conditions and context conflicts from legacy auth providers
+- **2025-12-02**: Adopted Supabase Vault for token storage
+  - Enterprise-grade security compliance; all tokens encrypted at rest
 
 ---
 
@@ -374,14 +395,9 @@ When reporting authentication issues, include:
 
 ---
 
-## Related Documentation
-
-- **Current System State**: [systems/authentication.md](../systems/authentication.md)
-- **Product Requirements**: [prd-mako-sync.md](../prd-mako-sync.md)
-- **Architecture Overview**: [architecture-mako-sync.md](../architecture-mako-sync.md)
-- **Task Strategy**: [debugging-task-strategy.md](../debugging-task-strategy.md)
-
 ---
 
-**Last Updated**: January 10, 2026
-**Consolidates**: auth-implementation-plan.md, auth-debugging-instructions.md, auth-flow-testing-guide.md, auth-testing-completion-summary.md
+**See also**: [Architecture Overview](../architecture-mako-sync.md) | [Product Requirements](../prd-mako-sync.md) | [Spotify Reference](spotify-reference.md)
+
+**Last Updated**: February 2026
+**Consolidates**: auth-implementation-plan.md, auth-debugging-instructions.md, auth-flow-testing-guide.md, auth-testing-completion-summary.md, systems/authentication.md

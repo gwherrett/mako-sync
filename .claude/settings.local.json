@@ -34,7 +34,9 @@
       "Bash(find:*)",
       "Bash(npm run agents:validate:*)",
       "Bash(npx ts-node:*)",
-      "Bash(npm run eval:matching:*)"
+      "Bash(npm run eval:matching:*)",
+      "Bash(git rm:*)",
+      "Bash(git mv:*)"
     ]
   }
 }

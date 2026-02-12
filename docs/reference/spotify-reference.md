@@ -1,9 +1,13 @@
 # Spotify Integration Reference Guide
 
-> **Living Documentation Reference**: This document consolidates implementation details and troubleshooting for Spotify integration. For the current system state, see [systems/spotify-integration.md](../systems/spotify-integration.md).
+> **Reference**: Spotify integration implementation details, status, configuration, and troubleshooting.
+
+**Status**: Active
+**Last Updated**: February 2026
 
 ## Table of Contents
 - [Implementation Status](#implementation-status)
+- [Decision Log](#decision-log)
 - [OAuth Configuration](#oauth-configuration)
 - [Migration Guide](#migration-guide)
 - [Troubleshooting](#troubleshooting)
@@ -81,6 +85,23 @@
 - Enhanced progress indicators
 - Better empty/loading states
 - Mobile responsiveness optimization
+
+---
+
+## Decision Log
+
+Key architecture and technical decisions:
+
+- **2025-12-09**: Implemented unified authentication manager with singleton pattern
+  - Consolidated fragmented auth services; improved reliability and DX
+- **2025-11-25**: Adopted Supabase Vault for token storage
+  - Enterprise-grade security; 100% token encryption
+- **2025-11-01**: Built comprehensive genre mapping system (27 super genres)
+  - Bridges Spotify's granular genres to DJ-friendly categories; 95% accuracy
+- **2025-10-15**: Used edge functions for OAuth token exchange
+  - Secure server-side handling; client secrets never exposed to browser
+- **2025-11-15**: Implemented exponential backoff for token refresh
+  - Handles Spotify API rate limits gracefully; 99.2% refresh success rate
 
 ---
 
@@ -327,13 +348,9 @@ Connection works when:
 
 ---
 
-## Related Documentation
-
-- **Current System State**: [systems/spotify-integration.md](../systems/spotify-integration.md)
-- **Product Requirements**: [prd-mako-sync.md](../prd-mako-sync.md)
-- **Architecture Overview**: [architecture-mako-sync.md](../architecture-mako-sync.md)
-
 ---
 
-**Last Updated**: January 10, 2026
-**Consolidates**: spotify-implementation-plan.md, spotify-authentication-migration-guide.md, root-cause-analysis.md
+**See also**: [Architecture Overview](../architecture-mako-sync.md) | [Product Requirements](../prd-mako-sync.md) | [Authentication Reference](authentication-reference.md) | [Production Deployment](production-deployment.md)
+
+**Last Updated**: February 2026
+**Consolidates**: spotify-implementation-plan.md, spotify-authentication-migration-guide.md, root-cause-analysis.md, systems/spotify-integration.md
