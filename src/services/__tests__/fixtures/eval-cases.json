@@ -1,0 +1,124 @@
+{
+  "exportedAt": "2026-02-11T00:00:00Z",
+  "description": "Starter eval set with representative examples of each failure category. Populate with real data using scripts/export-eval-cases.sql.",
+  "totalCases": 5,
+  "cases": [
+    {
+      "id": "eval-001",
+      "spotifyTrack": {
+        "id": "sp-001",
+        "title": "Insomnia (Monster Mix)",
+        "artist": "Faithless",
+        "primary_artist": "Faithless",
+        "album": "Sunday 8PM",
+        "genre": "progressive house",
+        "super_genre": "House"
+      },
+      "expectedLocalMatch": {
+        "id": "local-001",
+        "title": "Insomnia",
+        "artist": "Faithless",
+        "primary_artist": "Faithless",
+        "album": "Sunday 8PM",
+        "genre": "House",
+        "file_path": "/music/Faithless/Insomnia.mp3"
+      },
+      "verdict": "false-negative",
+      "failureCategory": "title-version-confusion",
+      "notes": "Spotify has '(Monster Mix)' suffix, local has bare title. Core title extraction should make both 'insomnia' -> should match at Tier 2.",
+      "superGenre": "House"
+    },
+    {
+      "id": "eval-002",
+      "spotifyTrack": {
+        "id": "sp-002",
+        "title": "Finally",
+        "artist": "Kings of Tomorrow feat. Julie McKnight",
+        "primary_artist": "Kings of Tomorrow",
+        "album": "Finally",
+        "genre": "deep house",
+        "super_genre": "House"
+      },
+      "expectedLocalMatch": {
+        "id": "local-002",
+        "title": "Finally",
+        "artist": "Kings Of Tomorrow",
+        "primary_artist": "Kings Of Tomorrow",
+        "album": "Finally",
+        "genre": "House",
+        "file_path": "/music/Kings Of Tomorrow/Finally.mp3"
+      },
+      "verdict": "false-negative",
+      "failureCategory": "artist-featuring",
+      "notes": "Spotify artist has 'feat. Julie McKnight', local does not. primary_artist fields match after normalization, so this should work if primary_artist is populated correctly.",
+      "superGenre": "House"
+    },
+    {
+      "id": "eval-003",
+      "spotifyTrack": {
+        "id": "sp-003",
+        "title": "Cafe Del Mar - Original Mix",
+        "artist": "Energy 52",
+        "primary_artist": "Energy 52",
+        "album": "Cafe Del Mar",
+        "genre": "trance",
+        "super_genre": "House"
+      },
+      "expectedLocalMatch": {
+        "id": "local-003",
+        "title": "Cafe Del Mar",
+        "artist": "Energy 52",
+        "primary_artist": "Energy 52",
+        "album": "Cafe Del Mar",
+        "genre": "Trance",
+        "file_path": "/music/Energy 52/Cafe Del Mar.mp3"
+      },
+      "verdict": "false-negative",
+      "failureCategory": "title-remaster-suffix",
+      "notes": "Spotify title has ' - Original Mix' hyphen-separated suffix. extractVersionInfo should strip this via hyphen extraction pattern.",
+      "superGenre": "House"
+    },
+    {
+      "id": "eval-004",
+      "spotifyTrack": {
+        "id": "sp-004",
+        "title": "Promised Land",
+        "artist": "Joe Smooth",
+        "primary_artist": "Joe Smooth",
+        "album": "Promised Land",
+        "genre": "chicago house",
+        "super_genre": "House"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "Not in local collection. Confirmed missing.",
+      "superGenre": "House"
+    },
+    {
+      "id": "eval-005",
+      "spotifyTrack": {
+        "id": "sp-005",
+        "title": "Str8 Outta Mumbai",
+        "artist": "Foreign Beggars & Noisia",
+        "primary_artist": "Foreign Beggars",
+        "album": "I Am Legion",
+        "genre": "drum and bass",
+        "super_genre": "Drum & Bass"
+      },
+      "expectedLocalMatch": {
+        "id": "local-005",
+        "title": "Str8 Outta Mumbai",
+        "artist": "Foreign Beggars and Noisia",
+        "primary_artist": "Foreign Beggars",
+        "album": "I Am Legion",
+        "genre": "Drum & Bass",
+        "file_path": "/music/Foreign Beggars/Str8 Outta Mumbai.mp3"
+      },
+      "verdict": "false-negative",
+      "failureCategory": "artist-ampersand",
+      "notes": "Spotify uses '&' in artist, local uses 'and'. primary_artist fields match so this should work if primary_artist is used for matching.",
+      "superGenre": "Drum & Bass"
+    }
+  ]
+}

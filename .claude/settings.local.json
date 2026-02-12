@@ -30,7 +30,9 @@
       "Bash(xargs basename:*)",
       "Read(//tmp/**)",
       "Bash(kid3-cli:*)",
-      "Bash(node -e:*)"
+      "Bash(node -e:*)",
+      "Bash(find:*)",
+      "Bash(npm run agents:validate:*)"
     ]
   }
 }
