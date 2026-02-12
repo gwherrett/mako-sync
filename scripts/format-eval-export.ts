@@ -84,11 +84,28 @@ function parseArgs(): { input: string; output: string } {
   return { input, output };
 }
 
+function extractRawExport(parsed: unknown): RawExport {
+  // Supabase SQL Editor wraps results as [{ "export_data": { ... } }]
+  let data = parsed;
+  if (Array.isArray(data)) {
+    data = data[0];
+  }
+  if (data && typeof data === 'object' && 'export_data' in data) {
+    data = (data as Record<string, unknown>).export_data;
+  }
+  const raw = data as RawExport;
+  // Handle null arrays from SQL coalesce
+  raw.spotify_tracks = raw.spotify_tracks || [];
+  raw.candidate_local_matches = raw.candidate_local_matches || [];
+  return raw;
+}
+
 function main() {
   const { input, output } = parseArgs();
 
   const rawContent = fs.readFileSync(path.resolve(input), 'utf-8');
-  const raw: RawExport = JSON.parse(rawContent);
+  const parsed = JSON.parse(rawContent);
+  const raw = extractRawExport(parsed);
 
   // Group candidate local matches by spotify_id
   const candidatesBySpotifyId = new Map<string, typeof raw.candidate_local_matches>();

@@ -32,7 +32,9 @@
       "Bash(kid3-cli:*)",
       "Bash(node -e:*)",
       "Bash(find:*)",
-      "Bash(npm run agents:validate:*)"
+      "Bash(npm run agents:validate:*)",
+      "Bash(npx ts-node:*)",
+      "Bash(npm run eval:matching:*)"
     ]
   }
 }
