@@ -72,6 +72,10 @@ export function normalize(str: string | null): string {
   if (!str) return '';
   // Use NormalizationService for NFKC + diacritics + punctuation unification
   let normalized = normalizationService.normalize(str);
+  // Strip URL-like junk (e.g., "www.djsoundtop.com")
+  normalized = normalized.replace(/\bwww\.\S+/gi, '');
+  // Strip trailing standalone BPM numbers (e.g., " 131" at end after mix info)
+  normalized = normalized.replace(/\s+\d{2,3}\s*$/, '');
   // Strip remaining punctuation for comparison keys (keep only word chars + spaces)
   normalized = normalized.replace(/[^\w\s]/g, '');
   return normalized.replace(/\s+/g, ' ').trim();

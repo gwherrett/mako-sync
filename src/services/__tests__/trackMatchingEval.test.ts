@@ -180,6 +180,19 @@ describe('Track Matching Eval', () => {
         }
       }
 
+      // Log any false positives (true-missing tracks that matched something)
+      if (metrics.falsePositives > 0) {
+        console.log('\n--- FALSE POSITIVES (investigate) ---');
+        for (const evalCase of fixture.cases) {
+          if (evalCase.verdict === 'true-missing' && results.get(evalCase.id)) {
+            const result = matchTrack(evalCase.spotifyTrack, localIndex);
+            console.log(`  ${evalCase.id}: "${evalCase.spotifyTrack.title}" by "${evalCase.spotifyTrack.artist}"`);
+            console.log(`    Matched tier ${result.tier}, local: "${result.matchedLocalTrack?.title}" by "${result.matchedLocalTrack?.artist}"`);
+            console.log(`    -> This track is marked true-missing but matched a local track from another eval case`);
+          }
+        }
+      }
+
       console.log('=================================\n');
 
       // Ratchet: tighten this as matching improves

@@ -36,7 +36,9 @@
       "Bash(npx ts-node:*)",
       "Bash(npm run eval:matching:*)",
       "Bash(git rm:*)",
-      "Bash(git mv:*)"
+      "Bash(git mv:*)",
+      "Bash(npm run eval:from-csv:*)",
+      "Bash(npx tsx:*)"
     ]
   }
 }

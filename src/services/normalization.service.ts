@@ -179,18 +179,33 @@ export class NormalizationService {
 
     if (bestMix) {
       mix = bestMix.content;
-      
-      // Remove the mix piece from title to get core
+
+      // Remove ONLY the specific mix piece, not all parens/brackets
       if (bestMix.type === 'parentheses') {
-        core = core.replace(/\([^)]*\)/g, '').trim();
+        // Escape the content for regex and remove only this specific parenthetical
+        const escaped = bestMix.content.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        core = core.replace(new RegExp(`\\(${escaped}\\)`, ''), '').trim();
       } else if (bestMix.type === 'brackets') {
-        core = core.replace(/\[[^\]]*\]/g, '').trim();
+        const escaped = bestMix.content.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        core = core.replace(new RegExp(`\\[${escaped}\\]`, ''), '').trim();
       } else if (bestMix.type === 'hyphen') {
         core = core.replace(/\s+-\s+[^-]+$/, '').trim();
       }
     } else {
-      // No good mix candidate found, remove all metadata but keep as core
-      core = core.replace(/\([^)]*\)/g, '').replace(/\[[^\]]*\]/g, '').replace(/\s+-\s+[^-]+$/, '').trim();
+      // No good mix candidate found — only strip pieces that scored zero (neutral),
+      // keep pieces with negative scores (artist features, subtitles)
+      const neutralPieces = scoredPieces.filter(p => p.score === 0);
+      for (const piece of neutralPieces) {
+        if (piece.type === 'parentheses') {
+          const escaped = piece.content.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+          core = core.replace(new RegExp(`\\(${escaped}\\)`, ''), '').trim();
+        } else if (piece.type === 'brackets') {
+          const escaped = piece.content.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+          core = core.replace(new RegExp(`\\[${escaped}\\]`, ''), '').trim();
+        } else if (piece.type === 'hyphen') {
+          core = core.replace(/\s+-\s+[^-]+$/, '').trim();
+        }
+      }
     }
 
     // Clean up whitespace
