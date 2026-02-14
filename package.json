@@ -19,7 +19,9 @@
     "agents:fix:auto": "ts-node agents/cli/fix.ts --auto",
     "agents:fix:dry-run": "ts-node agents/cli/fix.ts --dry-run",
     "agents:test": "cd agents && npm test",
-    "eval:matching": "vitest run src/services/__tests__/trackMatchingEval.test.ts --reporter=verbose"
+    "eval:matching": "vitest run src/services/__tests__/trackMatchingEval.test.ts --reporter=verbose",
+    "eval:to-csv": "ts-node scripts/eval-to-csv.ts",
+    "eval:from-csv": "ts-node scripts/csv-to-eval.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.0",
