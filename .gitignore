@@ -28,3 +28,6 @@ vite.config.ts.timestamp-*
 
 # One-time utility scripts
 sync-grouping.mjs
+
+# Eval review working files
+# eval-review.csv
