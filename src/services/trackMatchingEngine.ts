@@ -64,13 +64,17 @@ const normalizationService = new NormalizationService();
 
 // ---- Pure functions ----
 
-/** Normalize a string for comparison: lowercase, strip special chars, collapse whitespace */
+/**
+ * Normalize a string for comparison using the full NormalizationService pipeline:
+ * NFKC unicode normalization, diacritics removal, then strip remaining punctuation.
+ */
 export function normalize(str: string | null): string {
   if (!str) return '';
-  return str.toLowerCase()
-    .replace(/[^\w\s]/g, '')
-    .replace(/\s+/g, ' ')
-    .trim();
+  // Use NormalizationService for NFKC + diacritics + punctuation unification
+  let normalized = normalizationService.normalize(str);
+  // Strip remaining punctuation for comparison keys (keep only word chars + spaces)
+  normalized = normalized.replace(/[^\w\s]/g, '');
+  return normalized.replace(/\s+/g, ' ').trim();
 }
 
 /** Extract core title without mix/version info */
@@ -80,14 +84,13 @@ export function extractCoreTitle(title: string | null): string {
   return normalize(core);
 }
 
-/** Normalize an artist name: lowercase, strip special chars, remove "The " prefix */
+/**
+ * Normalize an artist name: full normalization pipeline + strip "The " prefix.
+ */
 export function normalizeArtist(artist: string | null): string {
   if (!artist) return '';
 
-  let normalized = artist.toLowerCase()
-    .replace(/[^\w\s]/g, '')
-    .replace(/\s+/g, ' ')
-    .trim();
+  let normalized = normalize(artist);
 
   if (normalized.startsWith('the ')) {
     normalized = normalized.slice(4);
