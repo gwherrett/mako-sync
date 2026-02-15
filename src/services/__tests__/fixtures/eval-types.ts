@@ -11,12 +11,17 @@ export type FailureCategory =
   | 'artist-mismatch'           // Artist names differ after normalization
   | 'artist-featuring'          // "Artist feat. X" vs "Artist"
   | 'artist-ampersand'          // "A & B" vs "A and B" vs "A, B"
+  | 'artist-in-title'           // Artist name embedded in local title metadata
   | 'title-mismatch'            // Titles differ after normalization
   | 'title-version-confusion'   // Mix/version info not correctly stripped
   | 'title-punctuation'         // Punctuation differences ("dont" vs "don't")
   | 'title-diacritics'          // Accent/diacritic differences
   | 'title-remaster-suffix'     // "- Remastered 2023" appended to title
   | 'title-abbreviation'        // "Pt." vs "Part", "Vol." vs "Volume"
+  | 'version-notation'          // Dash vs parentheses for mix/version info
+  | 'core-strip'                // Core title extraction strips too much or too little
+  | 'album-track-mismatch'      // Track matched to wrong album version
+  | 'fuzzy-miss'                // Below fuzzy threshold but should match
   | 'primary-artist-extraction' // primary_artist field disagrees between sources
   | 'unknown';
 

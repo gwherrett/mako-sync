@@ -1,7 +1,7 @@
 {
   "exportedAt": "2026-02-12T00:23:48Z",
   "description": "Unmatched tracks for House - exported for eval review",
-  "totalCases": 320,
+  "totalCases": 257,
   "cases": [
     {
       "id": "eval-001",
@@ -72,31 +72,6 @@
       "superGenre": "House"
     },
     {
-      "id": "eval-005",
-      "spotifyTrack": {
-        "id": "7389664f-d104-48b5-80a1-7860a0e6bb01",
-        "title": "900 Degrees - Pooley's Cool Down Mix",
-        "artist": "Ian Pooley",
-        "primary_artist": null,
-        "album": "Since Then. 2017",
-        "genre": "french house",
-        "super_genre": "House"
-      },
-      "expectedLocalMatch": {
-        "id": "83061297-56cc-4071-8c77-7a0b9a584609",
-        "title": "Bay of Plenty",
-        "artist": "Ian Pooley",
-        "primary_artist": "ian pooley",
-        "album": "Since Then",
-        "genre": "House",
-        "file_path": "Ian Pooley - Bay of Plenty.mp3"
-      },
-      "verdict": "false-negative",
-      "failureCategory": "unknown",
-      "notes": "",
-      "superGenre": "House"
-    },
-    {
       "id": "eval-006",
       "spotifyTrack": {
         "id": "41facff7-5cbe-4ca5-b5b4-e32d200a6d42",
@@ -151,7 +126,7 @@
         "file_path": "Hardfloor - Housemaster Boyz - Housenation.mp3"
       },
       "verdict": "false-negative",
-      "failureCategory": "unknown",
+      "failureCategory": null,
       "notes": "",
       "superGenre": "House"
     },
@@ -244,7 +219,7 @@
         "file_path": "St. Germain - Alabama Blues (Todd Edwards Dub Mix).mp3"
       },
       "verdict": "false-negative",
-      "failureCategory": "unknown",
+      "failureCategory": null,
       "notes": "",
       "superGenre": "House"
     },
@@ -371,32 +346,7 @@
         "file_path": "Jayda G - Are U Down (Remix).mp3"
       },
       "verdict": "false-negative",
-      "failureCategory": "unknown",
-      "notes": "",
-      "superGenre": "House"
-    },
-    {
-      "id": "eval-021",
-      "spotifyTrack": {
-        "id": "efb8212a-1bb5-46b9-b0f5-abe1a9f718e0",
-        "title": "Ask Me",
-        "artist": "Duck Sauce, A-Trak, Armand Van Helden",
-        "primary_artist": null,
-        "album": "Ask Me / Mesmerize",
-        "genre": "disco house",
-        "super_genre": "House"
-      },
-      "expectedLocalMatch": {
-        "id": "bc59d01e-0bc9-4e09-8086-e074c7d5b99f",
-        "title": "Fallin In Love (Butch Extended Remix)",
-        "artist": "Duck Sauce, A-Trak, Armand Van Helden",
-        "primary_artist": "duck sauce a-trak armand van helden",
-        "album": "Fallin In Love - Butch Extended Remix",
-        "genre": "House",
-        "file_path": "Duck Sauce, A-Trak, Armand Van Helden - Fallin In Love (Butch Extended Remix).mp3"
-      },
-      "verdict": "false-negative",
-      "failureCategory": "unknown",
+      "failureCategory": "version-notation",
       "notes": "",
       "superGenre": "House"
     },
@@ -463,7 +413,7 @@
         "file_path": "Miguel Migs, Martin Luther - Back Tonight (feat. Martin Luther) (Extended Mix).mp3"
       },
       "verdict": "false-negative",
-      "failureCategory": "unknown",
+      "failureCategory": "version-notation",
       "notes": "",
       "superGenre": "House"
     },
@@ -505,7 +455,7 @@
         "file_path": "Session Victim - Glow in the Dark.mp3"
       },
       "verdict": "false-negative",
-      "failureCategory": "album-track-mismatch",
+      "failureCategory": null,
       "notes": "",
       "superGenre": "House"
     },
@@ -530,32 +480,7 @@
         "file_path": "Kerri Chandler - Bar A Thym (Original Mix).mp3"
       },
       "verdict": "false-negative",
-      "failureCategory": "unknown",
-      "notes": "",
-      "superGenre": "House"
-    },
-    {
-      "id": "eval-028",
-      "spotifyTrack": {
-        "id": "de2d1cf9-c31a-403d-be01-46e8a32bb00d",
-        "title": "Barbra Streisand",
-        "artist": "Duck Sauce, A-Trak, Armand Van Helden",
-        "primary_artist": null,
-        "album": "Quack",
-        "genre": "disco house",
-        "super_genre": "House"
-      },
-      "expectedLocalMatch": {
-        "id": "bc59d01e-0bc9-4e09-8086-e074c7d5b99f",
-        "title": "Fallin In Love (Butch Extended Remix)",
-        "artist": "Duck Sauce, A-Trak, Armand Van Helden",
-        "primary_artist": "duck sauce a-trak armand van helden",
-        "album": "Fallin In Love - Butch Extended Remix",
-        "genre": "House",
-        "file_path": "Duck Sauce, A-Trak, Armand Van Helden - Fallin In Love (Butch Extended Remix).mp3"
-      },
-      "verdict": "false-negative",
-      "failureCategory": "unknown",
+      "failureCategory": "version-notation",
       "notes": "",
       "superGenre": "House"
     },
@@ -590,56 +515,6 @@
       "expectedLocalMatch": null,
       "verdict": "true-missing",
       "failureCategory": null,
-      "notes": "",
-      "superGenre": "House"
-    },
-    {
-      "id": "eval-031",
-      "spotifyTrack": {
-        "id": "3236109e-3ef0-40ac-a98e-19660e46e01a",
-        "title": "Before Today",
-        "artist": "Everything But The Girl",
-        "primary_artist": null,
-        "album": "Walking Wounded (Deluxe Edition)",
-        "genre": null,
-        "super_genre": "House"
-      },
-      "expectedLocalMatch": {
-        "id": "99c0a5f7-adca-46e8-a789-e88961b409fc",
-        "title": "Low Tide of the Night",
-        "artist": "Everything But The Girl",
-        "primary_artist": "everything but the girl",
-        "album": "Temperamental",
-        "genre": "Electronic",
-        "file_path": "Everything But The Girl - Low Tide of the Night.mp3"
-      },
-      "verdict": "false-negative",
-      "failureCategory": "unknown",
-      "notes": "",
-      "superGenre": "House"
-    },
-    {
-      "id": "eval-032",
-      "spotifyTrack": {
-        "id": "1f2b7f3a-8448-4945-a545-e951ca052eeb",
-        "title": "Before Today - 2015 Remaster",
-        "artist": "Everything But The Girl",
-        "primary_artist": null,
-        "album": "Walking Wounded (Deluxe Edition)",
-        "genre": null,
-        "super_genre": "House"
-      },
-      "expectedLocalMatch": {
-        "id": "99c0a5f7-adca-46e8-a789-e88961b409fc",
-        "title": "Low Tide of the Night",
-        "artist": "Everything But The Girl",
-        "primary_artist": "everything but the girl",
-        "album": "Temperamental",
-        "genre": "Electronic",
-        "file_path": "Everything But The Girl - Low Tide of the Night.mp3"
-      },
-      "verdict": "false-negative",
-      "failureCategory": "unknown",
       "notes": "",
       "superGenre": "House"
     },
@@ -740,32 +615,7 @@
         "file_path": "Negrocan - Cada Vez (Grant Nelson Vocal Remix).mp3"
       },
       "verdict": "false-negative",
-      "failureCategory": "unknown",
-      "notes": "",
-      "superGenre": "House"
-    },
-    {
-      "id": "eval-038",
-      "spotifyTrack": {
-        "id": "495ace13-8d63-425e-a33f-5f4d829ddc99",
-        "title": "Can't You See",
-        "artist": "Rick Wade",
-        "primary_artist": null,
-        "album": "Players Theme",
-        "genre": "jazz house",
-        "super_genre": "House"
-      },
-      "expectedLocalMatch": {
-        "id": "140f9441-401b-43a4-9da3-ca732da8d647",
-        "title": "Shinjuku Strut",
-        "artist": "Rick Wade",
-        "primary_artist": "rick wade",
-        "album": "Hustler's Lullaby",
-        "genre": "House",
-        "file_path": "Rick Wade - Shinjuku Strut.mp3"
-      },
-      "verdict": "false-negative",
-      "failureCategory": "unknown",
+      "failureCategory": "version-notation",
       "notes": "",
       "superGenre": "House"
     },
@@ -858,7 +708,7 @@
         "file_path": "Robert Armani - Circus Bells (Hardfloor Remix).mp3"
       },
       "verdict": "false-negative",
-      "failureCategory": "unknown",
+      "failureCategory": null,
       "notes": "",
       "superGenre": "House"
     },
@@ -951,7 +801,7 @@
         "file_path": "Tee Mango - Come a Little Closer (Original Mix).mp3"
       },
       "verdict": "false-negative",
-      "failureCategory": "unknown",
+      "failureCategory": "version-notation",
       "notes": "",
       "superGenre": "House"
     },
@@ -990,81 +840,6 @@
       "superGenre": "House"
     },
     {
-      "id": "eval-051",
-      "spotifyTrack": {
-        "id": "999f8129-c6f5-45a9-8151-c403ad59a75a",
-        "title": "Coração Tambor",
-        "artist": "Ian Pooley",
-        "primary_artist": null,
-        "album": "Since Then. 2017",
-        "genre": "french house",
-        "super_genre": "House"
-      },
-      "expectedLocalMatch": {
-        "id": "83061297-56cc-4071-8c77-7a0b9a584609",
-        "title": "Bay of Plenty",
-        "artist": "Ian Pooley",
-        "primary_artist": "ian pooley",
-        "album": "Since Then",
-        "genre": "House",
-        "file_path": "Ian Pooley - Bay of Plenty.mp3"
-      },
-      "verdict": "false-negative",
-      "failureCategory": "unknown",
-      "notes": "",
-      "superGenre": "House"
-    },
-    {
-      "id": "eval-052",
-      "spotifyTrack": {
-        "id": "eb8f6b30-5de9-4a2e-9a79-d711af2c3e64",
-        "title": "Coração Tambor (Intro)",
-        "artist": "Ian Pooley",
-        "primary_artist": null,
-        "album": "Since Then. 2017",
-        "genre": "french house",
-        "super_genre": "House"
-      },
-      "expectedLocalMatch": {
-        "id": "83061297-56cc-4071-8c77-7a0b9a584609",
-        "title": "Bay of Plenty",
-        "artist": "Ian Pooley",
-        "primary_artist": "ian pooley",
-        "album": "Since Then",
-        "genre": "House",
-        "file_path": "Ian Pooley - Bay of Plenty.mp3"
-      },
-      "verdict": "false-negative",
-      "failureCategory": "unknown",
-      "notes": "",
-      "superGenre": "House"
-    },
-    {
-      "id": "eval-053",
-      "spotifyTrack": {
-        "id": "677fa498-88ad-4f2b-9a62-bf7b33efa772",
-        "title": "Coração Tambor - Unreleased Demo Version",
-        "artist": "Ian Pooley",
-        "primary_artist": null,
-        "album": "Since Then. 2017",
-        "genre": "french house",
-        "super_genre": "House"
-      },
-      "expectedLocalMatch": {
-        "id": "83061297-56cc-4071-8c77-7a0b9a584609",
-        "title": "Bay of Plenty",
-        "artist": "Ian Pooley",
-        "primary_artist": "ian pooley",
-        "album": "Since Then",
-        "genre": "House",
-        "file_path": "Ian Pooley - Bay of Plenty.mp3"
-      },
-      "verdict": "false-negative",
-      "failureCategory": "unknown",
-      "notes": "",
-      "superGenre": "House"
-    },
-    {
       "id": "eval-054",
       "spotifyTrack": {
         "id": "fddc8ab4-6ae5-45ae-b776-4e4598a9488f",
@@ -1078,31 +853,6 @@
       "expectedLocalMatch": null,
       "verdict": "true-missing",
       "failureCategory": null,
-      "notes": "",
-      "superGenre": "House"
-    },
-    {
-      "id": "eval-055",
-      "spotifyTrack": {
-        "id": "7e41c3db-f179-4f9b-8310-6760ae051c02",
-        "title": "Crystal Maze",
-        "artist": "Session Victim",
-        "primary_artist": null,
-        "album": "See You When You Get There",
-        "genre": "jazz house",
-        "super_genre": "House"
-      },
-      "expectedLocalMatch": {
-        "id": "bc4dab8b-c52c-4ff8-9a2e-78f72655f412",
-        "title": "Glow in the Dark",
-        "artist": "Session Victim",
-        "primary_artist": "session victim",
-        "album": "See You When You Get There",
-        "genre": "Deep House",
-        "file_path": "Session Victim - Glow in the Dark.mp3"
-      },
-      "verdict": "false-negative",
-      "failureCategory": "unknown",
       "notes": "",
       "superGenre": "House"
     },
@@ -1161,7 +911,7 @@
         "file_path": "Fred again..; Obongjayar - adore u.mp3"
       },
       "verdict": "false-negative",
-      "failureCategory": "unknown",
+      "failureCategory": null,
       "notes": "",
       "superGenre": "House"
     },
@@ -1186,7 +936,7 @@
         "file_path": "Session Victim, Nebraska - Dawn (Original Mix).mp3"
       },
       "verdict": "false-negative",
-      "failureCategory": "unknown",
+      "failureCategory": "version-notation",
       "notes": "",
       "superGenre": "House"
     },
@@ -1310,56 +1060,6 @@
       "superGenre": "House"
     },
     {
-      "id": "eval-067",
-      "spotifyTrack": {
-        "id": "c7993dfc-7e9c-43cb-85f7-a5b9a0ab7cfb",
-        "title": "Dionne",
-        "artist": "Osunlade",
-        "primary_artist": null,
-        "album": "Dionne / What Gets You High?",
-        "genre": "deep house",
-        "super_genre": "House"
-      },
-      "expectedLocalMatch": {
-        "id": "c33b7450-50fa-4fbf-99cc-29528f502428",
-        "title": "Momma's Groove (Jimpster’s Hip Replacement Mix)",
-        "artist": "Osunlade",
-        "primary_artist": "osunlade",
-        "album": "Momma's Groove",
-        "genre": "Deep House",
-        "file_path": "Osunlade - Momma's Groove (Jimpster’s Hip Replacement Mix).mp3"
-      },
-      "verdict": "false-negative",
-      "failureCategory": "unknown",
-      "notes": "",
-      "superGenre": "House"
-    },
-    {
-      "id": "eval-068",
-      "spotifyTrack": {
-        "id": "18138b5a-06cf-4c3e-9dff-59d68438668c",
-        "title": "Dionne",
-        "artist": "Osunlade",
-        "primary_artist": null,
-        "album": "Dionne / What Gets You High?",
-        "genre": "deep house",
-        "super_genre": "House"
-      },
-      "expectedLocalMatch": {
-        "id": "c33b7450-50fa-4fbf-99cc-29528f502428",
-        "title": "Momma's Groove (Jimpster’s Hip Replacement Mix)",
-        "artist": "Osunlade",
-        "primary_artist": "osunlade",
-        "album": "Momma's Groove",
-        "genre": "Deep House",
-        "file_path": "Osunlade - Momma's Groove (Jimpster’s Hip Replacement Mix).mp3"
-      },
-      "verdict": "false-negative",
-      "failureCategory": "unknown",
-      "notes": "",
-      "superGenre": "House"
-    },
-    {
       "id": "eval-069",
       "spotifyTrack": {
         "id": "352fe75a-d85d-45f9-9d10-0bd98fe26410",
@@ -1381,31 +1081,6 @@
       },
       "verdict": "false-negative",
       "failureCategory": "Core-strip",
-      "notes": "",
-      "superGenre": "House"
-    },
-    {
-      "id": "eval-070",
-      "spotifyTrack": {
-        "id": "4f846d49-dca4-40a9-82da-95a51be9ac8b",
-        "title": "Disco's Revenge - Mole Hole Radio Edit",
-        "artist": "Gusto",
-        "primary_artist": null,
-        "album": "Disco's Revenge",
-        "genre": "disco house",
-        "super_genre": "House"
-      },
-      "expectedLocalMatch": {
-        "id": "818c1357-2645-4bb0-98c9-d9bb7016638f",
-        "title": "Disco's Revenge",
-        "artist": "Gusto",
-        "primary_artist": "gusto",
-        "album": "Best Of 538 Dance Smash - Summer Edition",
-        "genre": "French House",
-        "file_path": "Gusto - Disco's Revenge.mp3"
-      },
-      "verdict": "false-negative",
-      "failureCategory": "unknown",
       "notes": "",
       "superGenre": "House"
     },
@@ -1447,7 +1122,7 @@
         "file_path": "Dubtribe Sound System - Do It Now (Original Edit).mp3"
       },
       "verdict": "false-negative",
-      "failureCategory": "unknown",
+      "failureCategory": "version-notation",
       "notes": "",
       "superGenre": "House"
     },
@@ -1511,31 +1186,6 @@
       "superGenre": "House"
     },
     {
-      "id": "eval-076",
-      "spotifyTrack": {
-        "id": "d6a81846-010a-420d-9ecc-011f7dd6e44b",
-        "title": "Dreams of You",
-        "artist": "Kevin Yost",
-        "primary_artist": null,
-        "album": "One Starry Night",
-        "genre": "jazz house",
-        "super_genre": "House"
-      },
-      "expectedLocalMatch": {
-        "id": "ec9806d7-30af-4c74-9e68-62bcb9670cea",
-        "title": "7th Heaven",
-        "artist": "Kevin Yost",
-        "primary_artist": "kevin yost",
-        "album": "Road Less Traveled",
-        "genre": "House",
-        "file_path": "Kevin Yost - 7th Heaven.mp3"
-      },
-      "verdict": "false-negative",
-      "failureCategory": "unknown",
-      "notes": "",
-      "superGenre": "House"
-    },
-    {
       "id": "eval-077",
       "spotifyTrack": {
         "id": "7ba4c4cf-9c5b-4cff-9a4e-4fb06424a6a9",
@@ -1587,56 +1237,6 @@
       "superGenre": "House"
     },
     {
-      "id": "eval-080",
-      "spotifyTrack": {
-        "id": "b6c8b9d1-4052-48dc-8bed-edb1688e2f91",
-        "title": "Emotion",
-        "artist": "Purple Disco Machine",
-        "primary_artist": null,
-        "album": "Emotion",
-        "genre": "disco house",
-        "super_genre": "House"
-      },
-      "expectedLocalMatch": {
-        "id": "7bdd2e4d-597b-4937-acae-92b52feb55f5",
-        "title": "Street Life (Original Mix)",
-        "artist": "Purple Disco Machine",
-        "primary_artist": "purple disco machine",
-        "album": "Move Or Not EP",
-        "genre": "Disco House",
-        "file_path": "Purple Disco Machine - Street Life (Original Mix).mp3"
-      },
-      "verdict": "false-negative",
-      "failureCategory": "unknown",
-      "notes": "",
-      "superGenre": "House"
-    },
-    {
-      "id": "eval-081",
-      "spotifyTrack": {
-        "id": "69f114fa-17d3-4dd4-aa93-e062feca2d58",
-        "title": "Emotion",
-        "artist": "Purple Disco Machine",
-        "primary_artist": null,
-        "album": "Emotion EP",
-        "genre": "disco house",
-        "super_genre": "House"
-      },
-      "expectedLocalMatch": {
-        "id": "7bdd2e4d-597b-4937-acae-92b52feb55f5",
-        "title": "Street Life (Original Mix)",
-        "artist": "Purple Disco Machine",
-        "primary_artist": "purple disco machine",
-        "album": "Move Or Not EP",
-        "genre": "Disco House",
-        "file_path": "Purple Disco Machine - Street Life (Original Mix).mp3"
-      },
-      "verdict": "false-negative",
-      "failureCategory": "unknown",
-      "notes": "",
-      "superGenre": "House"
-    },
-    {
       "id": "eval-082",
       "spotifyTrack": {
         "id": "34772e0b-bf6e-4adf-9aee-2fbbba628b0b",
@@ -1650,31 +1250,6 @@
       "expectedLocalMatch": null,
       "verdict": "true-missing",
       "failureCategory": null,
-      "notes": "",
-      "superGenre": "House"
-    },
-    {
-      "id": "eval-083",
-      "spotifyTrack": {
-        "id": "2b9e4392-d181-4876-b447-0895193a38c4",
-        "title": "Energized",
-        "artist": "Natural Rhythm",
-        "primary_artist": null,
-        "album": "Vinyl Classics One",
-        "genre": "jazz house",
-        "super_genre": "House"
-      },
-      "expectedLocalMatch": {
-        "id": "919cd784-4146-4770-be9f-29f09cfb9ce0",
-        "title": "Grease",
-        "artist": "Natural Rhythm",
-        "primary_artist": "natural rhythm",
-        "album": "Dimensions",
-        "genre": "House",
-        "file_path": "Natural Rhythm - Grease.mp3"
-      },
-      "verdict": "false-negative",
-      "failureCategory": "unknown",
       "notes": "",
       "superGenre": "House"
     },
@@ -1699,7 +1274,7 @@
         "file_path": "Joey Beltram - Energy Flash (Original Mix).mp3"
       },
       "verdict": "false-negative",
-      "failureCategory": "unknown",
+      "failureCategory": "version-notation",
       "notes": "",
       "superGenre": "House"
     },
@@ -1766,7 +1341,7 @@
         "file_path": "Purple Disco Machine, Mind Enterprises - Exotica (Edit).mp3"
       },
       "verdict": "false-negative",
-      "failureCategory": "unknown",
+      "failureCategory": "version-notation",
       "notes": "",
       "superGenre": "House"
     },
@@ -1791,7 +1366,7 @@
         "file_path": "Duck Sauce, A-Trak, Armand Van Helden - Fallin In Love (Butch Extended Remix).mp3"
       },
       "verdict": "false-negative",
-      "failureCategory": "unknown",
+      "failureCategory": null,
       "notes": "",
       "superGenre": "House"
     },
@@ -1850,7 +1425,7 @@
         "file_path": "Green Velvet - Abduction (surgeon Remix).mp3"
       },
       "verdict": "false-negative",
-      "failureCategory": "unknown",
+      "failureCategory": null,
       "notes": "",
       "superGenre": "House"
     },
@@ -1879,31 +1454,6 @@
         "artist": "Yellow Sox",
         "primary_artist": null,
         "album": "Flim Flam (Remixes)",
-        "genre": "lo-fi house",
-        "super_genre": "House"
-      },
-      "expectedLocalMatch": {
-        "id": "f9db6456-12de-4944-918e-6b781613e18c",
-        "title": "Flim Flam (Original Mix)",
-        "artist": "Yellow Sox",
-        "primary_artist": "yellow sox",
-        "album": "My House Vol.1 - A House Music Compilation By DJ Jef K, Paris",
-        "genre": "House",
-        "file_path": "Yellow Sox - Flim Flam (Original Mix).mp3"
-      },
-      "verdict": "false-negative",
-      "failureCategory": "version-notation",
-      "notes": "",
-      "superGenre": "House"
-    },
-    {
-      "id": "eval-094",
-      "spotifyTrack": {
-        "id": "a44c1b34-9cc6-4abf-bbe5-bfe687e49f40",
-        "title": "Flim Flam",
-        "artist": "Yellow Sox",
-        "primary_artist": null,
-        "album": "Flim Flam",
         "genre": "lo-fi house",
         "super_genre": "House"
       },
@@ -2052,7 +1602,7 @@
         "file_path": "Matt Early, Ray Hurley, Abi Flynn - Get To Me Once (Original Mix).mp3"
       },
       "verdict": "false-negative",
-      "failureCategory": "unknown",
+      "failureCategory": "version-notation",
       "notes": "",
       "superGenre": "House"
     },
@@ -2099,31 +1649,6 @@
       "superGenre": "House"
     },
     {
-      "id": "eval-104",
-      "spotifyTrack": {
-        "id": "e8347bf0-4073-4c39-a902-6e7a78a9a2a0",
-        "title": "Give You Love",
-        "artist": "Natural Rhythm",
-        "primary_artist": null,
-        "album": "Vinyl Classics One",
-        "genre": "jazz house",
-        "super_genre": "House"
-      },
-      "expectedLocalMatch": {
-        "id": "919cd784-4146-4770-be9f-29f09cfb9ce0",
-        "title": "Grease",
-        "artist": "Natural Rhythm",
-        "primary_artist": "natural rhythm",
-        "album": "Dimensions",
-        "genre": "House",
-        "file_path": "Natural Rhythm - Grease.mp3"
-      },
-      "verdict": "false-negative",
-      "failureCategory": "unknown",
-      "notes": "",
-      "superGenre": "House"
-    },
-    {
       "id": "eval-105",
       "spotifyTrack": {
         "id": "045fb14f-b32b-46d5-9e9f-780faf19715c",
@@ -2161,7 +1686,7 @@
         "file_path": "Session Victim - Glow in the Dark.mp3"
       },
       "verdict": "false-negative",
-      "failureCategory": "unknown",
+      "failureCategory": "version-notation",
       "notes": "",
       "superGenre": "House"
     },
@@ -2196,56 +1721,6 @@
       "expectedLocalMatch": null,
       "verdict": "true-missing",
       "failureCategory": null,
-      "notes": "",
-      "superGenre": "House"
-    },
-    {
-      "id": "eval-109",
-      "spotifyTrack": {
-        "id": "a8148654-9cbe-4a3e-910e-f12f2d758c6b",
-        "title": "Good Intentions - LP Mix",
-        "artist": "Session Victim",
-        "primary_artist": null,
-        "album": "The Haunted House of House",
-        "genre": "jazz house",
-        "super_genre": "House"
-      },
-      "expectedLocalMatch": {
-        "id": "bc4dab8b-c52c-4ff8-9a2e-78f72655f412",
-        "title": "Glow in the Dark",
-        "artist": "Session Victim",
-        "primary_artist": "session victim",
-        "album": "See You When You Get There",
-        "genre": "Deep House",
-        "file_path": "Session Victim - Glow in the Dark.mp3"
-      },
-      "verdict": "false-negative",
-      "failureCategory": "unknown",
-      "notes": "",
-      "superGenre": "House"
-    },
-    {
-      "id": "eval-110",
-      "spotifyTrack": {
-        "id": "1e551031-379f-4f42-8658-a24b9520b3ec",
-        "title": "Good Intentions - LP Mix",
-        "artist": "Session Victim",
-        "primary_artist": null,
-        "album": "The Haunted House of House",
-        "genre": "jazz house",
-        "super_genre": "House"
-      },
-      "expectedLocalMatch": {
-        "id": "bc4dab8b-c52c-4ff8-9a2e-78f72655f412",
-        "title": "Glow in the Dark",
-        "artist": "Session Victim",
-        "primary_artist": "session victim",
-        "album": "See You When You Get There",
-        "genre": "Deep House",
-        "file_path": "Session Victim - Glow in the Dark.mp3"
-      },
-      "verdict": "false-negative",
-      "failureCategory": "unknown",
       "notes": "",
       "superGenre": "House"
     },
@@ -2304,7 +1779,7 @@
         "file_path": "Spiller - Cry Baby (Royksopp Remix).mp3"
       },
       "verdict": "false-negative",
-      "failureCategory": "unknown",
+      "failureCategory": null,
       "notes": "",
       "superGenre": "House"
     },
@@ -2351,31 +1826,6 @@
       "superGenre": "House"
     },
     {
-      "id": "eval-116",
-      "spotifyTrack": {
-        "id": "c0566575-4c1b-40f9-84ef-b8fd92ded3df",
-        "title": "Gymnastics",
-        "artist": "HNNY",
-        "primary_artist": null,
-        "album": "Tears",
-        "genre": "jazz house",
-        "super_genre": "House"
-      },
-      "expectedLocalMatch": {
-        "id": "fdb51553-ff2e-4660-85f9-3589394e0c95",
-        "title": "By",
-        "artist": "HNNY",
-        "primary_artist": "hnny",
-        "album": "Hosoi",
-        "genre": "Downtempo",
-        "file_path": "HNNY - By.mp3"
-      },
-      "verdict": "false-negative",
-      "failureCategory": "unknown",
-      "notes": "",
-      "superGenre": "House"
-    },
-    {
       "id": "eval-117",
       "spotifyTrack": {
         "id": "8629f052-067b-4634-bfcb-bd89bfd6feb3",
@@ -2413,7 +1863,7 @@
         "file_path": "Session Victim, Iron Curtis - Hear The Sun (Original Mix).mp3"
       },
       "verdict": "false-negative",
-      "failureCategory": "unknown",
+      "failureCategory": "version-notation",
       "notes": "",
       "superGenre": "House"
     },
@@ -2455,32 +1905,7 @@
         "file_path": "Jitwam - Hey Papi.mp3"
       },
       "verdict": "false-negative",
-      "failureCategory": "unknown",
-      "notes": "",
-      "superGenre": "House"
-    },
-    {
-      "id": "eval-121",
-      "spotifyTrack": {
-        "id": "cc0b4782-6edf-40a3-86f1-9f3375355c0c",
-        "title": "Hey Stranger",
-        "artist": "Session Victim",
-        "primary_artist": null,
-        "album": "See You When You Get There",
-        "genre": "jazz house",
-        "super_genre": "House"
-      },
-      "expectedLocalMatch": {
-        "id": "bc4dab8b-c52c-4ff8-9a2e-78f72655f412",
-        "title": "Glow in the Dark",
-        "artist": "Session Victim",
-        "primary_artist": "session victim",
-        "album": "See You When You Get There",
-        "genre": "Deep House",
-        "file_path": "Session Victim - Glow in the Dark.mp3"
-      },
-      "verdict": "false-negative",
-      "failureCategory": "unknown",
+      "failureCategory": "version-notation",
       "notes": "",
       "superGenre": "House"
     },
@@ -2505,32 +1930,7 @@
         "file_path": "Josh Wink - Higher State of Consciousness (Tweekin Acid Funk Mix).mp3"
       },
       "verdict": "false-negative",
-      "failureCategory": "unknown",
-      "notes": "",
-      "superGenre": "House"
-    },
-    {
-      "id": "eval-123",
-      "spotifyTrack": {
-        "id": "ec042795-30ae-48a3-a2aa-b78c33e801f4",
-        "title": "Higher State of Consciousness (Tweekin Acid Funk)",
-        "artist": "Josh Wink",
-        "primary_artist": null,
-        "album": "Higher State of Consciousness",
-        "genre": "acid house",
-        "super_genre": "House"
-      },
-      "expectedLocalMatch": {
-        "id": "e97d06bf-7696-4aa9-810e-92ec845a8334",
-        "title": "Higher State of Consciousness (Tweekin Acid Funk Mix)",
-        "artist": "Josh Wink",
-        "primary_artist": "josh wink",
-        "album": "Strictly Club Cuts, Vol. 4",
-        "genre": "Breakbeat",
-        "file_path": "Josh Wink - Higher State of Consciousness (Tweekin Acid Funk Mix).mp3"
-      },
-      "verdict": "false-negative",
-      "failureCategory": "unknown",
+      "failureCategory": "version-notation",
       "notes": "",
       "superGenre": "House"
     },
@@ -2869,7 +2269,7 @@
         "file_path": "Mark Farina, Homero Espinosa, Kid Enigma, King Kooba - I'm Lovin' It (Kooba's Percussive Kapp) [Moulton Music].mp3"
       },
       "verdict": "false-negative",
-      "failureCategory": "unknown",
+      "failureCategory": "version-notation",
       "notes": "",
       "superGenre": "House"
     },
@@ -2908,31 +2308,6 @@
       "superGenre": "House"
     },
     {
-      "id": "eval-145",
-      "spotifyTrack": {
-        "id": "feccfdd6-d840-4d9f-9a97-2a178fcbb5df",
-        "title": "Instant Salsa",
-        "artist": "Natural Rhythm",
-        "primary_artist": null,
-        "album": "Vinyl Classics One",
-        "genre": "jazz house",
-        "super_genre": "House"
-      },
-      "expectedLocalMatch": {
-        "id": "919cd784-4146-4770-be9f-29f09cfb9ce0",
-        "title": "Grease",
-        "artist": "Natural Rhythm",
-        "primary_artist": "natural rhythm",
-        "album": "Dimensions",
-        "genre": "House",
-        "file_path": "Natural Rhythm - Grease.mp3"
-      },
-      "verdict": "false-negative",
-      "failureCategory": "unknown",
-      "notes": "",
-      "superGenre": "House"
-    },
-    {
       "id": "eval-146",
       "spotifyTrack": {
         "id": "b74af979-cb00-4a32-9247-3ab5d0af5832",
@@ -2953,7 +2328,7 @@
         "file_path": "Lovebirds - In the Shadows (Lovebirds Reprise).mp3"
       },
       "verdict": "false-negative",
-      "failureCategory": "unknown",
+      "failureCategory": null,
       "notes": "",
       "superGenre": "House"
     },
@@ -2978,7 +2353,7 @@
         "file_path": "Intro - Nickel & Dime Ass Nigga.mp3"
       },
       "verdict": "false-negative",
-      "failureCategory": "unknown",
+      "failureCategory": null,
       "notes": "",
       "superGenre": "House"
     },
@@ -3020,7 +2395,7 @@
         "file_path": "Peggy Gou - It Makes You Forget (Itgehane) (Edit).mp3"
       },
       "verdict": "false-negative",
-      "failureCategory": "unknown",
+      "failureCategory": "version-notation",
       "notes": "",
       "superGenre": "House"
     },
@@ -3076,31 +2451,6 @@
       "superGenre": "House"
     },
     {
-      "id": "eval-153",
-      "spotifyTrack": {
-        "id": "ff6006fc-b1aa-4b1a-a05a-06ac32f9cc36",
-        "title": "I Wanna Know - Original Raw Mix",
-        "artist": "The Bucketheads",
-        "primary_artist": null,
-        "album": "Henry Street Music The Playlist Vol. 2",
-        "genre": null,
-        "super_genre": "House"
-      },
-      "expectedLocalMatch": {
-        "id": "ec8aa01d-f781-4326-a0be-926c2aa374c2",
-        "title": "The Bomb (These Sounds Fall into My Mind) (Armand Van Helden Re-Edit)",
-        "artist": "The Bucketheads",
-        "primary_artist": "the bucketheads",
-        "album": "The Bomb (These Sounds Fall into My Mind) (Armand Van Helden Re",
-        "genre": "UK Garage",
-        "file_path": "The Bucketheads - The Bomb (These Sounds Fall into My Mind) (Armand Van Helden Re-Edit).mp3"
-      },
-      "verdict": "false-negative",
-      "failureCategory": "unknown",
-      "notes": "",
-      "superGenre": "House"
-    },
-    {
       "id": "eval-154",
       "spotifyTrack": {
         "id": "e4a12d6f-e8a3-48a6-aede-709498844b94",
@@ -3152,31 +2502,6 @@
       "superGenre": "House"
     },
     {
-      "id": "eval-157",
-      "spotifyTrack": {
-        "id": "e8de242b-e8ff-4632-8a06-8699db65dc13",
-        "title": "Jive",
-        "artist": "Natural Rhythm",
-        "primary_artist": null,
-        "album": "Vinyl Classics One",
-        "genre": "jazz house",
-        "super_genre": "House"
-      },
-      "expectedLocalMatch": {
-        "id": "919cd784-4146-4770-be9f-29f09cfb9ce0",
-        "title": "Grease",
-        "artist": "Natural Rhythm",
-        "primary_artist": "natural rhythm",
-        "album": "Dimensions",
-        "genre": "House",
-        "file_path": "Natural Rhythm - Grease.mp3"
-      },
-      "verdict": "false-negative",
-      "failureCategory": "unknown",
-      "notes": "",
-      "superGenre": "House"
-    },
-    {
       "id": "eval-158",
       "spotifyTrack": {
         "id": "e4ee4182-876a-458e-8e3f-9e89a03b6ceb",
@@ -3184,23 +2509,6 @@
         "artist": "Harry Romero, Inaya Day",
         "primary_artist": null,
         "album": "We Love House - The Classics, Vol. 1",
-        "genre": "tech house",
-        "super_genre": "House"
-      },
-      "expectedLocalMatch": null,
-      "verdict": "true-missing",
-      "failureCategory": null,
-      "notes": "",
-      "superGenre": "House"
-    },
-    {
-      "id": "eval-159",
-      "spotifyTrack": {
-        "id": "b60ae7bc-65d6-4ded-86b6-78731b22eba1",
-        "title": "Just Can't Get Enough - Choo Choo's Main Vocal Mix",
-        "artist": "Harry Romero, Inaya Day",
-        "primary_artist": null,
-        "album": "Just Can't Get Enough",
         "genre": "tech house",
         "super_genre": "House"
       },
@@ -3241,31 +2549,6 @@
       "expectedLocalMatch": null,
       "verdict": "true-missing",
       "failureCategory": null,
-      "notes": "",
-      "superGenre": "House"
-    },
-    {
-      "id": "eval-162",
-      "spotifyTrack": {
-        "id": "e780d11a-e3ea-4b6f-b84e-d97abeafe32c",
-        "title": "Know Less",
-        "artist": "Session Victim, Viken Arman",
-        "primary_artist": null,
-        "album": "Sidequests Chapter Three",
-        "genre": "jazz house",
-        "super_genre": "House"
-      },
-      "expectedLocalMatch": {
-        "id": "59e6b02c-fb28-4f35-9de2-62a0a9a7b633",
-        "title": "Pulse Of Memory 125",
-        "artist": "Session Victim, Viken Arman",
-        "primary_artist": "session victim viken arman",
-        "album": null,
-        "genre": "House",
-        "file_path": "Session Victim, Viken Arman - Pulse Of Memory 125.mp3"
-      },
-      "verdict": "false-negative",
-      "failureCategory": "unknown",
       "notes": "",
       "superGenre": "House"
     },
@@ -3321,31 +2604,6 @@
       "superGenre": "House"
     },
     {
-      "id": "eval-166",
-      "spotifyTrack": {
-        "id": "2279e97f-2a9a-41d8-a41f-8d1d6f6c210c",
-        "title": "Land Of...",
-        "artist": "St Germain",
-        "primary_artist": null,
-        "album": "Tourist (Remastered)",
-        "genre": "jazz house",
-        "super_genre": "House"
-      },
-      "expectedLocalMatch": {
-        "id": "a67590bd-aef1-478f-8aab-8f4374355c05",
-        "title": "Alabama Blues (Todd Edwards Dub Mix)",
-        "artist": "St. Germain",
-        "primary_artist": "st germain",
-        "album": null,
-        "genre": "UK Garage",
-        "file_path": "St. Germain - Alabama Blues (Todd Edwards Dub Mix).mp3"
-      },
-      "verdict": "false-negative",
-      "failureCategory": "unknown",
-      "notes": "",
-      "superGenre": "House"
-    },
-    {
       "id": "eval-167",
       "spotifyTrack": {
         "id": "1df5530b-f186-4a1a-932d-0914b2e05cc3",
@@ -3366,7 +2624,7 @@
         "file_path": "Kink,Session Victim - Leko - Session Victim Remix 122.mp3"
       },
       "verdict": "false-negative",
-      "failureCategory": "unknown",
+      "failureCategory": "version-notation",
       "notes": "",
       "superGenre": "House"
     },
@@ -3561,58 +2819,8 @@
         "file_path": "Blaze - Lovelee Dae (Beloved Vocal Rmx).mp3"
       },
       "verdict": "false-negative",
-      "failureCategory": "title-version-confusion",
-      "notes": "Same song, different version. Core title 'Lovelee Dae' matches.",
-      "superGenre": "House"
-    },
-    {
-      "id": "eval-179",
-      "spotifyTrack": {
-        "id": "b59d27e3-e585-460b-bec6-59d52691f366",
-        "title": "Lovelee Dae - Beloved Vocal Rmx",
-        "artist": "Blaze",
-        "primary_artist": null,
-        "album": "Lovelee Dae",
-        "genre": "funky house",
-        "super_genre": "House"
-      },
-      "expectedLocalMatch": {
-        "id": "85c9be2c-81db-4811-9eb4-0acb94986e17",
-        "title": "Lovelee Dae (Beloved Vocal Rmx)",
-        "artist": "Blaze",
-        "primary_artist": "blaze",
-        "album": "Lovelee Dae",
-        "genre": "House",
-        "file_path": "Blaze - Lovelee Dae (Beloved Vocal Rmx).mp3"
-      },
-      "verdict": "false-negative",
-      "failureCategory": "version-notation",
+      "failureCategory": null,
       "notes": "",
-      "superGenre": "House"
-    },
-    {
-      "id": "eval-180",
-      "spotifyTrack": {
-        "id": "78fd40cf-ff25-4a1b-bb03-bc65daae42b7",
-        "title": "Lovelee Dae - Original",
-        "artist": "Blaze",
-        "primary_artist": null,
-        "album": "Lovelee Dae",
-        "genre": "funky house",
-        "super_genre": "House"
-      },
-      "expectedLocalMatch": {
-        "id": "85c9be2c-81db-4811-9eb4-0acb94986e17",
-        "title": "Lovelee Dae (Beloved Vocal Rmx)",
-        "artist": "Blaze",
-        "primary_artist": "blaze",
-        "album": "Lovelee Dae",
-        "genre": "House",
-        "file_path": "Blaze - Lovelee Dae (Beloved Vocal Rmx).mp3"
-      },
-      "verdict": "false-negative",
-      "failureCategory": "title-version-confusion",
-      "notes": "Same song, different version. Core title 'Lovelee Dae' matches.",
       "superGenre": "House"
     },
     {
@@ -3712,7 +2920,7 @@
         "file_path": "Mighty Dub Katz - Magic Carpet Ride (RIP Groove Remix).mp3"
       },
       "verdict": "false-negative",
-      "failureCategory": "unknown",
+      "failureCategory": null,
       "notes": "",
       "superGenre": "House"
     },
@@ -3737,7 +2945,7 @@
         "file_path": "Fred again.., The Blessed Madonna - Marea (We’ve Lost Dancing) (Original Mix).mp3"
       },
       "verdict": "false-negative",
-      "failureCategory": "unknown",
+      "failureCategory": "version-notation",
       "notes": "",
       "superGenre": "House"
     },
@@ -3745,23 +2953,6 @@
       "id": "eval-187",
       "spotifyTrack": {
         "id": "33819974-183e-4786-964b-6983f5b8cec2",
-        "title": "Mary Jane Girls All Night Long",
-        "artist": "Micbeatz",
-        "primary_artist": null,
-        "album": "Mary Jane Girls All Night Long",
-        "genre": null,
-        "super_genre": "House"
-      },
-      "expectedLocalMatch": null,
-      "verdict": "true-missing",
-      "failureCategory": null,
-      "notes": "",
-      "superGenre": "House"
-    },
-    {
-      "id": "eval-188",
-      "spotifyTrack": {
-        "id": "9bf930f7-690a-4fef-a97e-b9d4e66415a1",
         "title": "Mary Jane Girls All Night Long",
         "artist": "Micbeatz",
         "primary_artist": null,
@@ -3796,7 +2987,7 @@
         "file_path": "Masters At Work - To Be In Love 99 (MJ Cole Remix).mp3"
       },
       "verdict": "false-negative",
-      "failureCategory": "unknown",
+      "failureCategory": null,
       "notes": "",
       "superGenre": "House"
     },
@@ -3886,51 +3077,9 @@
       "superGenre": "House"
     },
     {
-      "id": "eval-195",
-      "spotifyTrack": {
-        "id": "a37173b4-bc5a-4a68-8006-2fc80bd9ef11",
-        "title": "Missing - 2013 Remaster",
-        "artist": "Everything But The Girl",
-        "primary_artist": null,
-        "album": "Amplified Heart (Deluxe Edition)",
-        "genre": null,
-        "super_genre": "House"
-      },
-      "expectedLocalMatch": {
-        "id": "99c0a5f7-adca-46e8-a789-e88961b409fc",
-        "title": "Low Tide of the Night",
-        "artist": "Everything But The Girl",
-        "primary_artist": "everything but the girl",
-        "album": "Temperamental",
-        "genre": "Electronic",
-        "file_path": "Everything But The Girl - Low Tide of the Night.mp3"
-      },
-      "verdict": "false-negative",
-      "failureCategory": "unknown",
-      "notes": "",
-      "superGenre": "House"
-    },
-    {
       "id": "eval-196",
       "spotifyTrack": {
         "id": "9586e636-9707-4d8d-8aa2-b9bd0e51b173",
-        "title": "Missing - Todd Terry Club Mix / US Radio Edit",
-        "artist": "Everything But The Girl, Todd Terry",
-        "primary_artist": null,
-        "album": "Amplified Heart",
-        "genre": "chicago house",
-        "super_genre": "House"
-      },
-      "expectedLocalMatch": null,
-      "verdict": "true-missing",
-      "failureCategory": null,
-      "notes": "",
-      "superGenre": "House"
-    },
-    {
-      "id": "eval-197",
-      "spotifyTrack": {
-        "id": "4cd57f86-29f0-434c-9b1a-ffa1efeab6d6",
         "title": "Missing - Todd Terry Club Mix / US Radio Edit",
         "artist": "Everything But The Girl, Todd Terry",
         "primary_artist": null,
@@ -3958,31 +3107,6 @@
       "expectedLocalMatch": null,
       "verdict": "true-missing",
       "failureCategory": null,
-      "notes": "",
-      "superGenre": "House"
-    },
-    {
-      "id": "eval-199",
-      "spotifyTrack": {
-        "id": "6b372e10-bedc-4c8f-ae21-64030a8a48ae",
-        "title": "Montego Bay Spleen",
-        "artist": "St Germain",
-        "primary_artist": null,
-        "album": "Tourist (Remastered)",
-        "genre": "jazz house",
-        "super_genre": "House"
-      },
-      "expectedLocalMatch": {
-        "id": "a67590bd-aef1-478f-8aab-8f4374355c05",
-        "title": "Alabama Blues (Todd Edwards Dub Mix)",
-        "artist": "St. Germain",
-        "primary_artist": "st germain",
-        "album": null,
-        "genre": "UK Garage",
-        "file_path": "St. Germain - Alabama Blues (Todd Edwards Dub Mix).mp3"
-      },
-      "verdict": "false-negative",
-      "failureCategory": "unknown",
       "notes": "",
       "superGenre": "House"
     },
@@ -4021,23 +3145,6 @@
       "superGenre": "House"
     },
     {
-      "id": "eval-202",
-      "spotifyTrack": {
-        "id": "5060a3b1-a6db-436f-94ff-f21641bfdd6e",
-        "title": "Most Precious Love - DF's Future 3000 Extended Mix",
-        "artist": "Blaze, UDAUFL, Barbara Tucker, Dennis Ferrer",
-        "primary_artist": null,
-        "album": "Most Precious Love",
-        "genre": "funky house",
-        "super_genre": "House"
-      },
-      "expectedLocalMatch": null,
-      "verdict": "true-missing",
-      "failureCategory": null,
-      "notes": "",
-      "superGenre": "House"
-    },
-    {
       "id": "eval-203",
       "spotifyTrack": {
         "id": "52c49587-f817-438d-8759-3bc98f46af10",
@@ -4051,56 +3158,6 @@
       "expectedLocalMatch": null,
       "verdict": "true-missing",
       "failureCategory": null,
-      "notes": "",
-      "superGenre": "House"
-    },
-    {
-      "id": "eval-204",
-      "spotifyTrack": {
-        "id": "bfe343e6-2624-46c2-939f-e3806afe50c7",
-        "title": "Most Really Pretty Girls Have Pretty Ugly Feet",
-        "artist": "HNNY",
-        "primary_artist": null,
-        "album": "If This Is House I Want My Money Back 3",
-        "genre": "jazz house",
-        "super_genre": "House"
-      },
-      "expectedLocalMatch": {
-        "id": "fdb51553-ff2e-4660-85f9-3589394e0c95",
-        "title": "By",
-        "artist": "HNNY",
-        "primary_artist": "hnny",
-        "album": "Hosoi",
-        "genre": "Downtempo",
-        "file_path": "HNNY - By.mp3"
-      },
-      "verdict": "false-negative",
-      "failureCategory": "unknown",
-      "notes": "",
-      "superGenre": "House"
-    },
-    {
-      "id": "eval-205",
-      "spotifyTrack": {
-        "id": "c936b66d-7ca3-404d-aaf4-d23ba995360c",
-        "title": "Most Really Pretty Girls Have Pretty Ugly Feet",
-        "artist": "HNNY",
-        "primary_artist": null,
-        "album": "If This Is House I Want My Money Back 3",
-        "genre": "jazz house",
-        "super_genre": "House"
-      },
-      "expectedLocalMatch": {
-        "id": "fdb51553-ff2e-4660-85f9-3589394e0c95",
-        "title": "By",
-        "artist": "HNNY",
-        "primary_artist": "hnny",
-        "album": "Hosoi",
-        "genre": "Downtempo",
-        "file_path": "HNNY - By.mp3"
-      },
-      "verdict": "false-negative",
-      "failureCategory": "unknown",
       "notes": "",
       "superGenre": "House"
     },
@@ -4184,7 +3241,7 @@
         "file_path": "Roach Motel - Movin' On.mp3"
       },
       "verdict": "false-negative",
-      "failureCategory": "unknown",
+      "failureCategory": "version-notation",
       "notes": "",
       "superGenre": "House"
     },
@@ -4269,56 +3326,6 @@
       },
       "verdict": "false-negative",
       "failureCategory": "artist-in-title",
-      "notes": "",
-      "superGenre": "House"
-    },
-    {
-      "id": "eval-214",
-      "spotifyTrack": {
-        "id": "6a6e1437-9b34-41e9-b033-f4216081a350",
-        "title": "My Beat - feat. Palmer Brown",
-        "artist": "Blaze, Palmer Brown",
-        "primary_artist": null,
-        "album": "Basic Blaze",
-        "genre": null,
-        "super_genre": "House"
-      },
-      "expectedLocalMatch": {
-        "id": "73823f20-498a-4a4e-a04f-3c65d76c6c79",
-        "title": "My Beat (feat. Palmer Brown)",
-        "artist": "Blaze,Palmer Brown",
-        "primary_artist": "blaze palmer brown",
-        "album": "Basic Blaze",
-        "genre": "Jazz House",
-        "file_path": "Blaze,Palmer Brown - My Beat (feat. Palmer Brown).mp3"
-      },
-      "verdict": "false-negative",
-      "failureCategory": "version-notation",
-      "notes": "",
-      "superGenre": "House"
-    },
-    {
-      "id": "eval-215",
-      "spotifyTrack": {
-        "id": "6c66586f-1f9b-4d63-9a23-27418d27e45e",
-        "title": "Needledrop",
-        "artist": "Session Victim",
-        "primary_artist": null,
-        "album": "Needledrop",
-        "genre": "jazz house",
-        "super_genre": "House"
-      },
-      "expectedLocalMatch": {
-        "id": "bc4dab8b-c52c-4ff8-9a2e-78f72655f412",
-        "title": "Glow in the Dark",
-        "artist": "Session Victim",
-        "primary_artist": "session victim",
-        "album": "See You When You Get There",
-        "genre": "Deep House",
-        "file_path": "Session Victim - Glow in the Dark.mp3"
-      },
-      "verdict": "false-negative",
-      "failureCategory": "unknown",
       "notes": "",
       "superGenre": "House"
     },
@@ -4450,31 +3457,6 @@
       "superGenre": "House"
     },
     {
-      "id": "eval-223",
-      "spotifyTrack": {
-        "id": "01b7f3c7-b459-4f79-b02c-9de3d961c833",
-        "title": "One Starry Night",
-        "artist": "Kevin Yost",
-        "primary_artist": null,
-        "album": "One Starry Night",
-        "genre": "jazz house",
-        "super_genre": "House"
-      },
-      "expectedLocalMatch": {
-        "id": "ec9806d7-30af-4c74-9e68-62bcb9670cea",
-        "title": "7th Heaven",
-        "artist": "Kevin Yost",
-        "primary_artist": "kevin yost",
-        "album": "Road Less Traveled",
-        "genre": "House",
-        "file_path": "Kevin Yost - 7th Heaven.mp3"
-      },
-      "verdict": "false-negative",
-      "failureCategory": "unknown",
-      "notes": "",
-      "superGenre": "House"
-    },
-    {
       "id": "eval-224",
       "spotifyTrack": {
         "id": "1a368091-2a55-469a-9362-d3f1107539d8",
@@ -4512,57 +3494,7 @@
         "file_path": "K-Lone, Wilfy D - On The Down Low (Original Mix) 132.mp3"
       },
       "verdict": "false-negative",
-      "failureCategory": "unknown",
-      "notes": "",
-      "superGenre": "House"
-    },
-    {
-      "id": "eval-226",
-      "spotifyTrack": {
-        "id": "940f3694-cec4-4ee3-b58f-389b5416217c",
-        "title": "Opendoors",
-        "artist": "Jitwam",
-        "primary_artist": null,
-        "album": "Honeycomb",
-        "genre": "jazz house",
-        "super_genre": "House"
-      },
-      "expectedLocalMatch": {
-        "id": "60299b63-84d7-47b3-b138-7cec46e51d68",
-        "title": "Hey Papi",
-        "artist": "Jitwam",
-        "primary_artist": "jitwam",
-        "album": "Third",
-        "genre": "Downtempo",
-        "file_path": "Jitwam - Hey Papi.mp3"
-      },
-      "verdict": "false-negative",
-      "failureCategory": "unknown",
-      "notes": "",
-      "superGenre": "House"
-    },
-    {
-      "id": "eval-227",
-      "spotifyTrack": {
-        "id": "d02f9e8f-17dc-48d1-98b0-d4642b4fc1f6",
-        "title": "Orbits of Dust",
-        "artist": "Session Victim",
-        "primary_artist": null,
-        "album": "Orbits of Dust",
-        "genre": "jazz house",
-        "super_genre": "House"
-      },
-      "expectedLocalMatch": {
-        "id": "bc4dab8b-c52c-4ff8-9a2e-78f72655f412",
-        "title": "Glow in the Dark",
-        "artist": "Session Victim",
-        "primary_artist": "session victim",
-        "album": "See You When You Get There",
-        "genre": "Deep House",
-        "file_path": "Session Victim - Glow in the Dark.mp3"
-      },
-      "verdict": "false-negative",
-      "failureCategory": "unknown",
+      "failureCategory": "version-notation",
       "notes": "",
       "superGenre": "House"
     },
@@ -4596,7 +3528,7 @@
       },
       "expectedLocalMatch": null,
       "verdict": "true-missing",
-      "failureCategory": "different supercategory",
+      "failureCategory": null,
       "notes": "",
       "superGenre": "House"
     },
@@ -4625,31 +3557,6 @@
         "artist": "Afro Medusa, Knee Deep",
         "primary_artist": null,
         "album": "Pasilda (Extended Versions)",
-        "genre": "latin house",
-        "super_genre": "House"
-      },
-      "expectedLocalMatch": {
-        "id": "b8a0df2b-14b5-4725-805a-b39a418c1b7e",
-        "title": "Pasilda (Knee Deep Club Mix)",
-        "artist": "Afro Medusa, Knee Deep",
-        "primary_artist": "afro medusa knee deep",
-        "album": "Pasilda",
-        "genre": "Latin House",
-        "file_path": "Afro Medusa, Knee Deep - Pasilda (Knee Deep Club Mix).mp3"
-      },
-      "verdict": "false-negative",
-      "failureCategory": "version-notation",
-      "notes": "",
-      "superGenre": "House"
-    },
-    {
-      "id": "eval-232",
-      "spotifyTrack": {
-        "id": "d5a2d3c0-7173-48e2-9268-35ad744f1315",
-        "title": "Pasilda - Knee Deep Mix",
-        "artist": "Afro Medusa, Knee Deep",
-        "primary_artist": null,
-        "album": "Pasilda",
         "genre": "latin house",
         "super_genre": "House"
       },
@@ -4705,7 +3612,7 @@
         "file_path": "Moodymann - I Can't Kick This Feeling When It Hits.mp3"
       },
       "verdict": "false-negative",
-      "failureCategory": "unknown",
+      "failureCategory": null,
       "notes": "",
       "superGenre": "House"
     },
@@ -4795,31 +3702,6 @@
       "superGenre": "House"
     },
     {
-      "id": "eval-240",
-      "spotifyTrack": {
-        "id": "de38f501-876c-40fb-8449-52e0715dd8d0",
-        "title": "Pulse Nine (Sleazy Motel Mix)",
-        "artist": "Natural Rhythm",
-        "primary_artist": null,
-        "album": "Vinyl Classics One",
-        "genre": "jazz house",
-        "super_genre": "House"
-      },
-      "expectedLocalMatch": {
-        "id": "919cd784-4146-4770-be9f-29f09cfb9ce0",
-        "title": "Grease",
-        "artist": "Natural Rhythm",
-        "primary_artist": "natural rhythm",
-        "album": "Dimensions",
-        "genre": "House",
-        "file_path": "Natural Rhythm - Grease.mp3"
-      },
-      "verdict": "false-negative",
-      "failureCategory": "unknown",
-      "notes": "",
-      "superGenre": "House"
-    },
-    {
       "id": "eval-241",
       "spotifyTrack": {
         "id": "ff80525f-b094-4eae-9f66-8495f27dec4c",
@@ -4874,7 +3756,7 @@
         "file_path": "Session Victim, EO - Rain or Shine (Original Mix).mp3"
       },
       "verdict": "false-negative",
-      "failureCategory": "unknown",
+      "failureCategory": "version-notation",
       "notes": "",
       "superGenre": "House"
     },
@@ -4930,31 +3812,6 @@
       "superGenre": "House"
     },
     {
-      "id": "eval-247",
-      "spotifyTrack": {
-        "id": "1ce7f6b4-85e2-459f-b288-56f57b01a852",
-        "title": "Rose rouge",
-        "artist": "St Germain",
-        "primary_artist": null,
-        "album": "Tourist (Remastered)",
-        "genre": "jazz house",
-        "super_genre": "House"
-      },
-      "expectedLocalMatch": {
-        "id": "a67590bd-aef1-478f-8aab-8f4374355c05",
-        "title": "Alabama Blues (Todd Edwards Dub Mix)",
-        "artist": "St. Germain",
-        "primary_artist": "st germain",
-        "album": null,
-        "genre": "UK Garage",
-        "file_path": "St. Germain - Alabama Blues (Todd Edwards Dub Mix).mp3"
-      },
-      "verdict": "false-negative",
-      "failureCategory": "unknown",
-      "notes": "",
-      "superGenre": "House"
-    },
-    {
       "id": "eval-248",
       "spotifyTrack": {
         "id": "6ad33819-cfd9-43c3-a970-dc446d89555a",
@@ -4975,7 +3832,7 @@
         "file_path": "SunPalace, Moodymann - Rude Movements (Moodymann Remix Extended Version).mp3"
       },
       "verdict": "false-negative",
-      "failureCategory": "unknown",
+      "failureCategory": "version-notation",
       "notes": "",
       "superGenre": "House"
     },
@@ -5034,7 +3891,7 @@
         "file_path": "Session Victim, Ras Stimulant - Screen Off (feat. Ras Stimulant) Original Mix.mp3"
       },
       "verdict": "false-negative",
-      "failureCategory": "unknown",
+      "failureCategory": "version-notation",
       "notes": "",
       "superGenre": "House"
     },
@@ -5115,31 +3972,6 @@
       "superGenre": "House"
     },
     {
-      "id": "eval-256",
-      "spotifyTrack": {
-        "id": "423e119e-133c-48da-b101-af0ed443d68b",
-        "title": "Seventies",
-        "artist": "Theo Kottis",
-        "primary_artist": null,
-        "album": "Seventies",
-        "genre": "disco house",
-        "super_genre": "House"
-      },
-      "expectedLocalMatch": {
-        "id": "b367aabf-4b8e-45ab-a990-b54eacd0d58a",
-        "title": "Seventies (Extended Mix)",
-        "artist": "Theo Kottis",
-        "primary_artist": "theo kottis",
-        "album": "Seventies",
-        "genre": "House",
-        "file_path": "Theo Kottis - Seventies (Extended Mix).mp3"
-      },
-      "verdict": "false-negative",
-      "failureCategory": "version-notation",
-      "notes": "",
-      "superGenre": "House"
-    },
-    {
       "id": "eval-257",
       "spotifyTrack": {
         "id": "dfd9e597-5fed-4eec-bc03-aee8c3183a4e",
@@ -5177,32 +4009,7 @@
         "file_path": "Honey Dijon, Channel Tres, Sadie Walker - Show Me Some Love (feat. Sadie Walker) (Extended Mix).mp3"
       },
       "verdict": "false-negative",
-      "failureCategory": "unknown",
-      "notes": "",
-      "superGenre": "House"
-    },
-    {
-      "id": "eval-259",
-      "spotifyTrack": {
-        "id": "f0e8eb8f-a8fe-4e1f-a29e-63805ea76046",
-        "title": "Shuffler",
-        "artist": "Herbert",
-        "primary_artist": null,
-        "album": "Part Two",
-        "genre": "jazz house",
-        "super_genre": "House"
-      },
-      "expectedLocalMatch": {
-        "id": "8eba7143-fbc0-4eb0-b517-b047fd08a080",
-        "title": "Suddenly",
-        "artist": "Herbert",
-        "primary_artist": "herbert",
-        "album": "Bodily Functions",
-        "genre": "House",
-        "file_path": "Herbert - Suddenly.mp3"
-      },
-      "verdict": "false-negative",
-      "failureCategory": "unknown",
+      "failureCategory": "version-notation",
       "notes": "",
       "superGenre": "House"
     },
@@ -5220,106 +4027,6 @@
       "expectedLocalMatch": null,
       "verdict": "true-missing",
       "failureCategory": null,
-      "notes": "",
-      "superGenre": "House"
-    },
-    {
-      "id": "eval-261",
-      "spotifyTrack": {
-        "id": "3b179379-6ecd-419a-9a9c-1c1a858b6b30",
-        "title": "Smoldering Island",
-        "artist": "Natural Rhythm",
-        "primary_artist": null,
-        "album": "Vinyl Classics One",
-        "genre": "jazz house",
-        "super_genre": "House"
-      },
-      "expectedLocalMatch": {
-        "id": "919cd784-4146-4770-be9f-29f09cfb9ce0",
-        "title": "Grease",
-        "artist": "Natural Rhythm",
-        "primary_artist": "natural rhythm",
-        "album": "Dimensions",
-        "genre": "House",
-        "file_path": "Natural Rhythm - Grease.mp3"
-      },
-      "verdict": "false-negative",
-      "failureCategory": "unknown",
-      "notes": "",
-      "superGenre": "House"
-    },
-    {
-      "id": "eval-262",
-      "spotifyTrack": {
-        "id": "ec10a225-a870-4fe0-ba6d-169d85af86e6",
-        "title": "So",
-        "artist": "HNNY",
-        "primary_artist": null,
-        "album": "So Sunshine",
-        "genre": "jazz house",
-        "super_genre": "House"
-      },
-      "expectedLocalMatch": {
-        "id": "fdb51553-ff2e-4660-85f9-3589394e0c95",
-        "title": "By",
-        "artist": "HNNY",
-        "primary_artist": "hnny",
-        "album": "Hosoi",
-        "genre": "Downtempo",
-        "file_path": "HNNY - By.mp3"
-      },
-      "verdict": "false-negative",
-      "failureCategory": "unknown",
-      "notes": "",
-      "superGenre": "House"
-    },
-    {
-      "id": "eval-263",
-      "spotifyTrack": {
-        "id": "3ef1e1f8-2de2-4022-bf77-f4f5a72a9ef9",
-        "title": "So Flute",
-        "artist": "St Germain",
-        "primary_artist": null,
-        "album": "Tourist (Remastered)",
-        "genre": "jazz house",
-        "super_genre": "House"
-      },
-      "expectedLocalMatch": {
-        "id": "a67590bd-aef1-478f-8aab-8f4374355c05",
-        "title": "Alabama Blues (Todd Edwards Dub Mix)",
-        "artist": "St. Germain",
-        "primary_artist": "st germain",
-        "album": null,
-        "genre": "UK Garage",
-        "file_path": "St. Germain - Alabama Blues (Todd Edwards Dub Mix).mp3"
-      },
-      "verdict": "false-negative",
-      "failureCategory": "unknown",
-      "notes": "",
-      "superGenre": "House"
-    },
-    {
-      "id": "eval-264",
-      "spotifyTrack": {
-        "id": "5671d4b0-e9c2-4ec8-9d4f-111a35115bed",
-        "title": "Soul On Fire",
-        "artist": "Natural Rhythm",
-        "primary_artist": null,
-        "album": "Vinyl Classics One",
-        "genre": "jazz house",
-        "super_genre": "House"
-      },
-      "expectedLocalMatch": {
-        "id": "919cd784-4146-4770-be9f-29f09cfb9ce0",
-        "title": "Grease",
-        "artist": "Natural Rhythm",
-        "primary_artist": "natural rhythm",
-        "album": "Dimensions",
-        "genre": "House",
-        "file_path": "Natural Rhythm - Grease.mp3"
-      },
-      "verdict": "false-negative",
-      "failureCategory": "unknown",
       "notes": "",
       "superGenre": "House"
     },
@@ -5358,31 +4065,6 @@
       "superGenre": "House"
     },
     {
-      "id": "eval-267",
-      "spotifyTrack": {
-        "id": "708a9c50-120f-4858-8ebc-46405f666110",
-        "title": "Spicy Snapper",
-        "artist": "Ian Pooley",
-        "primary_artist": null,
-        "album": "Since Then. 2017",
-        "genre": "french house",
-        "super_genre": "House"
-      },
-      "expectedLocalMatch": {
-        "id": "83061297-56cc-4071-8c77-7a0b9a584609",
-        "title": "Bay of Plenty",
-        "artist": "Ian Pooley",
-        "primary_artist": "ian pooley",
-        "album": "Since Then",
-        "genre": "House",
-        "file_path": "Ian Pooley - Bay of Plenty.mp3"
-      },
-      "verdict": "false-negative",
-      "failureCategory": "unknown",
-      "notes": "",
-      "superGenre": "House"
-    },
-    {
       "id": "eval-268",
       "spotifyTrack": {
         "id": "4d410755-899c-40cb-956c-49d915aff4f6",
@@ -5403,7 +4085,7 @@
         "file_path": "Humanoid - Stakker Humanoid (12' Original).mp3"
       },
       "verdict": "false-negative",
-      "failureCategory": "unknown",
+      "failureCategory": "version-notation",
       "notes": "",
       "superGenre": "House"
     },
@@ -5479,7 +4161,7 @@
         "file_path": "Kerri Chandler - Bar A Thym (Original Mix).mp3"
       },
       "verdict": "false-negative",
-      "failureCategory": "unknown",
+      "failureCategory": null,
       "notes": "",
       "superGenre": "House"
     },
@@ -5504,7 +4186,7 @@
         "file_path": "Purple Disco Machine - Street Life (Original Mix).mp3"
       },
       "verdict": "false-negative",
-      "failureCategory": "unknown",
+      "failureCategory": "version-notation",
       "notes": "",
       "superGenre": "House"
     },
@@ -5556,31 +4238,6 @@
       "expectedLocalMatch": null,
       "verdict": "true-missing",
       "failureCategory": null,
-      "notes": "",
-      "superGenre": "House"
-    },
-    {
-      "id": "eval-277",
-      "spotifyTrack": {
-        "id": "99293b47-a8e9-4799-9737-9fd1e2523420",
-        "title": "Sunshine",
-        "artist": "HNNY",
-        "primary_artist": null,
-        "album": "Sunshine",
-        "genre": "jazz house",
-        "super_genre": "House"
-      },
-      "expectedLocalMatch": {
-        "id": "fdb51553-ff2e-4660-85f9-3589394e0c95",
-        "title": "By",
-        "artist": "HNNY",
-        "primary_artist": "hnny",
-        "album": "Hosoi",
-        "genre": "Downtempo",
-        "file_path": "HNNY - By.mp3"
-      },
-      "verdict": "false-negative",
-      "failureCategory": "unknown",
       "notes": "",
       "superGenre": "House"
     },
@@ -5681,32 +4338,7 @@
         "file_path": "The Bucketheads - The Bomb (These Sounds Fall into My Mind) (Armand Van Helden Re-Edit).mp3"
       },
       "verdict": "false-negative",
-      "failureCategory": "unknown",
-      "notes": "",
-      "superGenre": "House"
-    },
-    {
-      "id": "eval-283",
-      "spotifyTrack": {
-        "id": "74c5cae5-39db-4269-aa25-ccf40182c470",
-        "title": "The Bomb! (These Sound Fall into My Mind) - Radio Edit",
-        "artist": "The Bucketheads",
-        "primary_artist": null,
-        "album": "All In The Mind",
-        "genre": null,
-        "super_genre": "House"
-      },
-      "expectedLocalMatch": {
-        "id": "ec8aa01d-f781-4326-a0be-926c2aa374c2",
-        "title": "The Bomb (These Sounds Fall into My Mind) (Armand Van Helden Re-Edit)",
-        "artist": "The Bucketheads",
-        "primary_artist": "the bucketheads",
-        "album": "The Bomb (These Sounds Fall into My Mind) (Armand Van Helden Re",
-        "genre": "UK Garage",
-        "file_path": "The Bucketheads - The Bomb (These Sounds Fall into My Mind) (Armand Van Helden Re-Edit).mp3"
-      },
-      "verdict": "false-negative",
-      "failureCategory": "unknown",
+      "failureCategory": "version-notation",
       "notes": "",
       "superGenre": "House"
     },
@@ -5735,23 +4367,6 @@
         "artist": "Deep Dish, Tracey Thorn, Everything But The Girl",
         "primary_artist": null,
         "album": "Junk Science",
-        "genre": null,
-        "super_genre": "House"
-      },
-      "expectedLocalMatch": null,
-      "verdict": "true-missing",
-      "failureCategory": null,
-      "notes": "",
-      "superGenre": "House"
-    },
-    {
-      "id": "eval-286",
-      "spotifyTrack": {
-        "id": "2102f845-238f-4e9e-ad60-3726e75fcf00",
-        "title": "The Future of the Future (Stay Gold) (with Everything But The Girl)",
-        "artist": "Deep Dish, Tracey Thorn, Everything But The Girl",
-        "primary_artist": null,
-        "album": "Ibiza Anthems",
         "genre": null,
         "super_genre": "House"
       },
@@ -5821,81 +4436,6 @@
       "superGenre": "House"
     },
     {
-      "id": "eval-290",
-      "spotifyTrack": {
-        "id": "80a3175e-70eb-4304-bfb5-7113b2d1e54e",
-        "title": "The Pain",
-        "artist": "Session Victim",
-        "primary_artist": null,
-        "album": "Needledrop",
-        "genre": "jazz house",
-        "super_genre": "House"
-      },
-      "expectedLocalMatch": {
-        "id": "bc4dab8b-c52c-4ff8-9a2e-78f72655f412",
-        "title": "Glow in the Dark",
-        "artist": "Session Victim",
-        "primary_artist": "session victim",
-        "album": "See You When You Get There",
-        "genre": "Deep House",
-        "file_path": "Session Victim - Glow in the Dark.mp3"
-      },
-      "verdict": "false-negative",
-      "failureCategory": "unknown",
-      "notes": "",
-      "superGenre": "House"
-    },
-    {
-      "id": "eval-291",
-      "spotifyTrack": {
-        "id": "0f788053-9e8a-46ed-8ff6-28125295b628",
-        "title": "The Shiver",
-        "artist": "Jayda G",
-        "primary_artist": null,
-        "album": "The Shiver",
-        "genre": null,
-        "super_genre": "House"
-      },
-      "expectedLocalMatch": {
-        "id": "e71b1b00-57cd-4feb-922a-329c60f7b61b",
-        "title": "Are U Down (Remix)",
-        "artist": "Jayda G",
-        "primary_artist": "jayda g",
-        "album": "Both Of Us / Are U Down [Ep]",
-        "genre": "House",
-        "file_path": "Jayda G - Are U Down (Remix).mp3"
-      },
-      "verdict": "false-negative",
-      "failureCategory": "unknown",
-      "notes": "",
-      "superGenre": "House"
-    },
-    {
-      "id": "eval-292",
-      "spotifyTrack": {
-        "id": "38f30197-44fd-4d46-a3ac-99e8ff2e550e",
-        "title": "The Universe In Her Eyes",
-        "artist": "Kink",
-        "primary_artist": null,
-        "album": "Playground",
-        "genre": "acid house",
-        "super_genre": "House"
-      },
-      "expectedLocalMatch": {
-        "id": "17567e18-70a5-491b-82f0-5ea2fce499b1",
-        "title": "To Love You (Vocal)",
-        "artist": "Kink Feat. Rachel Row",
-        "primary_artist": "kink",
-        "album": null,
-        "genre": "House",
-        "file_path": "Kink Feat. Rachel Row - To Love You (Vocal).mp3"
-      },
-      "verdict": "false-negative",
-      "failureCategory": "unknown",
-      "notes": "",
-      "superGenre": "House"
-    },
-    {
       "id": "eval-293",
       "spotifyTrack": {
         "id": "6a0b65b3-1649-432b-a512-64d5f4f41ad1",
@@ -5933,7 +4473,7 @@
         "file_path": "KiNK, Rachel Row - Time (Original Mix).mp3"
       },
       "verdict": "false-negative",
-      "failureCategory": "unknown",
+      "failureCategory": null,
       "notes": "",
       "superGenre": "House"
     },
@@ -5945,23 +4485,6 @@
         "artist": "Disclosure, Eko Roosevelt",
         "primary_artist": null,
         "album": "ENERGY (Deluxe)",
-        "genre": "house",
-        "super_genre": "House"
-      },
-      "expectedLocalMatch": null,
-      "verdict": "true-missing",
-      "failureCategory": null,
-      "notes": "",
-      "superGenre": "House"
-    },
-    {
-      "id": "eval-296",
-      "spotifyTrack": {
-        "id": "48f43b14-6e0e-4617-b997-c7fafd38002d",
-        "title": "Tondo",
-        "artist": "Disclosure, Eko Roosevelt",
-        "primary_artist": null,
-        "album": "Tondo",
         "genre": "house",
         "super_genre": "House"
       },
@@ -6009,23 +4532,6 @@
       "id": "eval-299",
       "spotifyTrack": {
         "id": "bccdb74e-cf77-40c5-a0a0-b8dd793f08b4",
-        "title": "Tracey in My Room - Lazy Dog Bootleg Vocal Mix",
-        "artist": "Everything But The Girl, Lazy Dog",
-        "primary_artist": null,
-        "album": "Like the Deserts Miss the Rain",
-        "genre": null,
-        "super_genre": "House"
-      },
-      "expectedLocalMatch": null,
-      "verdict": "true-missing",
-      "failureCategory": null,
-      "notes": "",
-      "superGenre": "House"
-    },
-    {
-      "id": "eval-300",
-      "spotifyTrack": {
-        "id": "8e62b02d-f39f-4c2b-8926-8cb8d6d21f70",
         "title": "Tracey in My Room - Lazy Dog Bootleg Vocal Mix",
         "artist": "Everything But The Girl, Lazy Dog",
         "primary_artist": null,
@@ -6145,32 +4651,7 @@
         "file_path": "Louie Vega,Rick Wilhite - Vince Montana Tribute (LV & Rick Wilhite ReWork).mp3"
       },
       "verdict": "false-negative",
-      "failureCategory": "unknown",
-      "notes": "",
-      "superGenre": "House"
-    },
-    {
-      "id": "eval-307",
-      "spotifyTrack": {
-        "id": "e5795c1d-10b8-446e-9429-19dabfe11bad",
-        "title": "Visions",
-        "artist": "Ian Pooley",
-        "primary_artist": null,
-        "album": "Since Then. 2017",
-        "genre": "french house",
-        "super_genre": "House"
-      },
-      "expectedLocalMatch": {
-        "id": "83061297-56cc-4071-8c77-7a0b9a584609",
-        "title": "Bay of Plenty",
-        "artist": "Ian Pooley",
-        "primary_artist": "ian pooley",
-        "album": "Since Then",
-        "genre": "House",
-        "file_path": "Ian Pooley - Bay of Plenty.mp3"
-      },
-      "verdict": "false-negative",
-      "failureCategory": "unknown",
+      "failureCategory": "version-notation",
       "notes": "",
       "superGenre": "House"
     },
@@ -6195,7 +4676,7 @@
         "file_path": "Felipe Gordon - Wait on Me (Original Mix).mp3"
       },
       "verdict": "false-negative",
-      "failureCategory": "unknown",
+      "failureCategory": "version-notation",
       "notes": "",
       "superGenre": "House"
     },
@@ -6237,7 +4718,7 @@
         "file_path": "Masters At Work, KenLou - We Did It For Years (KenLou Dub).mp3"
       },
       "verdict": "false-negative",
-      "failureCategory": "unknown",
+      "failureCategory": "version-notation",
       "notes": "",
       "superGenre": "House"
     },
@@ -6262,7 +4743,7 @@
         "file_path": "Haji & Emanuel - Weekend (Seamus Haji Extended 80's Remix).mp3"
       },
       "verdict": "false-negative",
-      "failureCategory": "unknown",
+      "failureCategory": "version-notation",
       "notes": "",
       "superGenre": "House"
     },

@@ -38,7 +38,10 @@
       "Bash(git rm:*)",
       "Bash(git mv:*)",
       "Bash(npm run eval:from-csv:*)",
-      "Bash(npx tsx:*)"
+      "Bash(npx tsx:*)",
+      "Bash(git pull:*)",
+      "Bash(node analyze-eval.js:*)",
+      "Bash(node:*)"
     ]
   }
 }
