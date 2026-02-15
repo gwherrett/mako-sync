@@ -74,6 +74,10 @@ export function normalize(str: string | null): string {
   let normalized = normalizationService.normalize(str);
   // Strip URL-like junk (e.g., "www.djsoundtop.com")
   normalized = normalized.replace(/\bwww\.\S+/gi, '');
+  // Strip feat/ft/featuring clauses (e.g., "feat Palmer Brown", "feat. Ras Stimulant")
+  normalized = normalized.replace(/\s+feat\.?\s+.*$/i, '');
+  normalized = normalized.replace(/\s+ft\.?\s+.*$/i, '');
+  normalized = normalized.replace(/\s+featuring\s+.*$/i, '');
   // Strip trailing standalone BPM numbers (e.g., " 131" at end after mix info)
   normalized = normalized.replace(/\s+\d{2,3}\s*$/, '');
   // Strip remaining punctuation for comparison keys (keep only word chars + spaces)
@@ -84,8 +88,12 @@ export function normalize(str: string | null): string {
 /** Extract core title without mix/version info */
 export function extractCoreTitle(title: string | null): string {
   if (!title) return '';
-  const { core } = normalizationService.extractVersionInfo(title);
-  return normalize(core);
+  // Strip URL junk before version extraction so it doesn't pollute the core
+  let cleaned = title.replace(/\bwww\.\S+/gi, '').trim();
+  const { core } = normalizationService.extractVersionInfo(cleaned);
+  // Also strip trailing "Original Mix" / "Extended Mix" that may remain unparenthesized
+  let coreClean = core.replace(/\s+original\s+mix\s*$/i, '').replace(/\s+extended\s+mix\s*$/i, '').trim();
+  return normalize(coreClean);
 }
 
 /**
@@ -142,27 +150,52 @@ export function calculateSimilarity(str1: string, str2: string): number {
 }
 
 /**
+ * Strip artist-name prefix from a title if present.
+ * Handles "Artist - Title" pattern where artist is embedded in the title field.
+ */
+function stripArtistPrefix(title: string | null, artist: string | null, rawArtist?: string | null): string {
+  if (!title || !artist) return title || '';
+  const titleLower = title.toLowerCase();
+  // Try with the provided artist (may be primary_artist, already normalized)
+  for (const a of [artist, rawArtist].filter(Boolean)) {
+    const prefixPattern = a!.toLowerCase().trim() + ' - ';
+    if (titleLower.startsWith(prefixPattern)) {
+      return title.slice(prefixPattern.length).trim();
+    }
+  }
+  return title;
+}
+
+/**
  * Build lookup structures from local tracks for efficient matching.
  */
 export function buildLocalIndex(localTracks: LocalTrack[]): LocalIndex {
   const exactSet = new Set(
-    localTracks.map(track =>
-      `${normalize(track.title)}_${normalizeArtist(track.primary_artist || track.artist)}`
-    )
+    localTracks.map(track => {
+      const artist = track.primary_artist || track.artist;
+      const title = stripArtistPrefix(track.title, artist, track.artist);
+      return `${normalize(title)}_${normalizeArtist(artist)}`;
+    })
   );
 
   const coreSet = new Set(
-    localTracks.map(track =>
-      `${extractCoreTitle(track.title)}_${normalizeArtist(track.primary_artist || track.artist)}`
-    )
+    localTracks.map(track => {
+      const artist = track.primary_artist || track.artist;
+      const title = stripArtistPrefix(track.title, artist, track.artist);
+      return `${extractCoreTitle(title)}_${normalizeArtist(artist)}`;
+    })
   );
 
-  const normalized = localTracks.map(track => ({
-    track,
-    title: normalize(track.title),
-    coreTitle: extractCoreTitle(track.title),
-    artist: normalizeArtist(track.primary_artist || track.artist),
-  }));
+  const normalized = localTracks.map(track => {
+    const artist = track.primary_artist || track.artist;
+    const title = stripArtistPrefix(track.title, artist, track.artist);
+    return {
+      track,
+      title: normalize(title),
+      coreTitle: extractCoreTitle(title),
+      artist: normalizeArtist(artist),
+    };
+  });
 
   return { exactSet, coreSet, normalized };
 }
@@ -195,6 +228,16 @@ export function matchTrack(
   const coreKey = `${spotifyCoreTitle}_${spotifyArtist}`;
   if (localIndex.coreSet.has(coreKey)) {
     return { ...baseResult, matched: true, tier: 2 };
+  }
+
+  // Tier 2b: Cross-compare — Spotify full title vs local core title (or vice versa).
+  // Handles cases where one side includes mix info that the other stripped.
+  // E.g., Spotify "Zombie (THEMBA's Herd Mix)" vs local core "zombie thembas herd mix"
+  for (const local of localIndex.normalized) {
+    if (local.artist !== spotifyArtist) continue;
+    if (spotifyTitle === local.coreTitle || spotifyCoreTitle === local.title) {
+      return { ...baseResult, matched: true, tier: 2, matchedLocalTrack: local.track };
+    }
   }
 
   // Tier 3: Fuzzy matching

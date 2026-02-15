@@ -116,18 +116,10 @@
         "genre": "acid house",
         "super_genre": "House"
       },
-      "expectedLocalMatch": {
-        "id": "04e2c7e6-3fe5-4684-93da-376a8c4f34eb",
-        "title": "Housemaster Boyz / Housenation",
-        "artist": "Hardfloor",
-        "primary_artist": "hardfloor",
-        "album": "Housemaster Boyz",
-        "genre": "House",
-        "file_path": "Hardfloor - Housemaster Boyz - Housenation.mp3"
-      },
-      "verdict": "false-negative",
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
       "failureCategory": null,
-      "notes": "",
+      "notes": "Different song by same artist - not a matching failure",
       "superGenre": "House"
     },
     {
@@ -445,18 +437,10 @@
         "genre": "jazz house",
         "super_genre": "House"
       },
-      "expectedLocalMatch": {
-        "id": "bc4dab8b-c52c-4ff8-9a2e-78f72655f412",
-        "title": "Glow in the Dark",
-        "artist": "Session Victim",
-        "primary_artist": "session victim",
-        "album": "See You When You Get There",
-        "genre": "Deep House",
-        "file_path": "Session Victim - Glow in the Dark.mp3"
-      },
-      "verdict": "false-negative",
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
       "failureCategory": null,
-      "notes": "",
+      "notes": "Different song by same artist - not a matching failure",
       "superGenre": "House"
     },
     {
@@ -901,18 +885,10 @@
         "genre": "stutter house",
         "super_genre": "House"
       },
-      "expectedLocalMatch": {
-        "id": "58faf1ef-63a0-49f5-a533-c7a30f7be081",
-        "title": "adore u",
-        "artist": "Fred again..",
-        "primary_artist": "fred again",
-        "album": "adore u",
-        "genre": "Afro House",
-        "file_path": "Fred again..; Obongjayar - adore u.mp3"
-      },
-      "verdict": "false-negative",
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
       "failureCategory": null,
-      "notes": "",
+      "notes": "Different song by same artist - not a matching failure",
       "superGenre": "House"
     },
     {
@@ -1415,18 +1391,10 @@
         "genre": "tech house",
         "super_genre": "House"
       },
-      "expectedLocalMatch": {
-        "id": "5f154b59-71ca-48e2-85fa-184085d864f9",
-        "title": "Abduction (surgeon Remix)",
-        "artist": "Green Velvet",
-        "primary_artist": "green velvet",
-        "album": null,
-        "genre": "House",
-        "file_path": "Green Velvet - Abduction (surgeon Remix).mp3"
-      },
-      "verdict": "false-negative",
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
       "failureCategory": null,
-      "notes": "",
+      "notes": "Different song by same artist - not a matching failure",
       "superGenre": "House"
     },
     {
@@ -1769,18 +1737,10 @@
         "genre": "disco house",
         "super_genre": "House"
       },
-      "expectedLocalMatch": {
-        "id": "a2b7d7d6-db9d-4e26-8b0d-5d77d979b31d",
-        "title": "Cry Baby (Royksopp Remix)",
-        "artist": "Spiller",
-        "primary_artist": "spiller",
-        "album": "Röyksopp Remixes",
-        "genre": "Downtempo",
-        "file_path": "Spiller - Cry Baby (Royksopp Remix).mp3"
-      },
-      "verdict": "false-negative",
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
       "failureCategory": null,
-      "notes": "",
+      "notes": "Different song by same artist - not a matching failure",
       "superGenre": "House"
     },
     {
@@ -2343,18 +2303,10 @@
         "genre": null,
         "super_genre": "House"
       },
-      "expectedLocalMatch": {
-        "id": "0d9a5948-268b-4f4c-9cf6-f2b024dec4ef",
-        "title": "Nickel & Dime Ass Nigga",
-        "artist": "Intro",
-        "primary_artist": "intro",
-        "album": "DJ Screw - Off The Head",
-        "genre": "Hip Hop",
-        "file_path": "Intro - Nickel & Dime Ass Nigga.mp3"
-      },
-      "verdict": "false-negative",
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
       "failureCategory": null,
-      "notes": "",
+      "notes": "Different song by same artist - not a matching failure",
       "superGenre": "House"
     },
     {
@@ -2977,18 +2929,10 @@
         "genre": "ballroom vogue",
         "super_genre": "House"
       },
-      "expectedLocalMatch": {
-        "id": "8410a1b1-4d8a-4ca5-89bd-b4fe284c3384",
-        "title": "To Be In Love 99 (MJ Cole Remix)",
-        "artist": "Masters At Work",
-        "primary_artist": "masters at work",
-        "album": null,
-        "genre": "UK Garage",
-        "file_path": "Masters At Work - To Be In Love 99 (MJ Cole Remix).mp3"
-      },
-      "verdict": "false-negative",
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
       "failureCategory": null,
-      "notes": "",
+      "notes": "Different song by same artist - not a matching failure",
       "superGenre": "House"
     },
     {
@@ -3602,18 +3546,10 @@
         "genre": "jazz house",
         "super_genre": "House"
       },
-      "expectedLocalMatch": {
-        "id": "678b6b15-b539-4aa9-afe5-f6993f0b51ae",
-        "title": "I Can't Kick This Feeling When It Hits",
-        "artist": "Moodymann",
-        "primary_artist": "moodymann",
-        "album": null,
-        "genre": "House",
-        "file_path": "Moodymann - I Can't Kick This Feeling When It Hits.mp3"
-      },
-      "verdict": "false-negative",
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
       "failureCategory": null,
-      "notes": "",
+      "notes": "Different song by same artist - not a matching failure",
       "superGenre": "House"
     },
     {
@@ -4151,18 +4087,10 @@
         "genre": "house",
         "super_genre": "House"
       },
-      "expectedLocalMatch": {
-        "id": "2859f6cf-61c5-428b-bff9-db22a09b56ac",
-        "title": "Bar A Thym (Original Mix)",
-        "artist": "Kerri Chandler",
-        "primary_artist": "kerri chandler",
-        "album": "Bar A Thym",
-        "genre": "House",
-        "file_path": "Kerri Chandler - Bar A Thym (Original Mix).mp3"
-      },
-      "verdict": "false-negative",
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
       "failureCategory": null,
-      "notes": "",
+      "notes": "Different song by same artist - not a matching failure",
       "superGenre": "House"
     },
     {
@@ -4463,18 +4391,10 @@
         "genre": "acid house",
         "super_genre": "House"
       },
-      "expectedLocalMatch": {
-        "id": "be6b3cbe-6a7f-4d65-b565-500acff581bd",
-        "title": "Time (Original Mix)",
-        "artist": "KiNK, Rachel Row",
-        "primary_artist": "kink rachel row",
-        "album": "Traxsource Essential Techno 2024-01-22",
-        "genre": "Techno",
-        "file_path": "KiNK, Rachel Row - Time (Original Mix).mp3"
-      },
-      "verdict": "false-negative",
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
       "failureCategory": null,
-      "notes": "",
+      "notes": "Different song by same artist - not a matching failure",
       "superGenre": "House"
     },
     {

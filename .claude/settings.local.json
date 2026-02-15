@@ -41,7 +41,8 @@
       "Bash(npx tsx:*)",
       "Bash(git pull:*)",
       "Bash(node analyze-eval.js:*)",
-      "Bash(node:*)"
+      "Bash(node:*)",
+      "Bash(sort:*)"
     ]
   }
 }

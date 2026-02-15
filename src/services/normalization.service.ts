@@ -18,7 +18,8 @@ export class NormalizationService {
     'remix', 'mix', 'edit', 'rework', 'bootleg', 'mashup',
     'version', 'radio', 'club', 'extended', 'vocal', 'instrumental', 'dub', 'original',
     'live', 'acoustic', 'unplugged', 'session',
-    'remaster', 'remastered', 'demo', 'vip'
+    'remaster', 'remastered', 'demo', 'vip',
+    'reprise', 'bonus track',
   ];
 
   // Artist feature keywords (negative indicators for mix info)
@@ -192,19 +193,18 @@ export class NormalizationService {
         core = core.replace(/\s+-\s+[^-]+$/, '').trim();
       }
     } else {
-      // No good mix candidate found — only strip pieces that scored zero (neutral),
-      // keep pieces with negative scores (artist features, subtitles)
+      // No good mix candidate found — strip neutral hyphen suffixes and brackets
+      // but preserve neutral parentheses (likely subtitles like "(If This Ain't Love)")
       const neutralPieces = scoredPieces.filter(p => p.score === 0);
       for (const piece of neutralPieces) {
-        if (piece.type === 'parentheses') {
-          const escaped = piece.content.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-          core = core.replace(new RegExp(`\\(${escaped}\\)`, ''), '').trim();
+        if (piece.type === 'hyphen') {
+          core = core.replace(/\s+-\s+[^-]+$/, '').trim();
         } else if (piece.type === 'brackets') {
+          // Brackets typically contain label/catalog info, not subtitles
           const escaped = piece.content.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
           core = core.replace(new RegExp(`\\[${escaped}\\]`, ''), '').trim();
-        } else if (piece.type === 'hyphen') {
-          core = core.replace(/\s+-\s+[^-]+$/, '').trim();
         }
+        // Don't strip neutral parentheses — they're likely subtitles
       }
     }
 
