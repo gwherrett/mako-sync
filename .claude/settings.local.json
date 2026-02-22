@@ -42,7 +42,9 @@
       "Bash(git pull:*)",
       "Bash(node analyze-eval.js:*)",
       "Bash(node:*)",
-      "Bash(sort:*)"
+      "Bash(sort:*)",
+      "Bash(cut:*)",
+      "Bash(python3:*)"
     ]
   }
 }
