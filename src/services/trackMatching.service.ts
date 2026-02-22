@@ -1,33 +1,19 @@
 import { supabase } from '@/integrations/supabase/client';
-import { NormalizationService } from './normalization.service';
-
-interface LocalTrack {
-  id: string;
-  title: string | null;
-  artist: string | null;
-  primary_artist: string | null;
-  album: string | null;
-  genre: string | null;
-  file_path: string;
-}
-
-interface SpotifyTrack {
-  id: string;
-  title: string;
-  artist: string;
-  primary_artist: string | null;
-  album: string | null;
-  genre: string | null;
-  super_genre: string | null;
-}
+import {
+  normalize,
+  normalizeArtist,
+  extractCoreTitle,
+  calculateSimilarity,
+  buildLocalIndex,
+  FUZZY_MATCH_THRESHOLD,
+  type LocalTrack,
+  type SpotifyTrack,
+} from './trackMatchingEngine';
 
 interface MissingTrack {
   spotifyTrack: SpotifyTrack;
   reason: string;
 }
-
-// Similarity threshold for fuzzy matching (percentage)
-const FUZZY_MATCH_THRESHOLD = 85;
 
 // Debug mode - set to true to log detailed matching info for specific tracks
 const DEBUG_MATCHING = true;
@@ -41,111 +27,6 @@ function shouldDebug(title: string, artist: string): boolean {
 }
 
 export class TrackMatchingService {
-  private static normalizationService = new NormalizationService();
-
-  // Normalize strings for comparison with enhanced artist handling
-  private static normalize(str: string | null): string {
-    if (!str) return '';
-    return str.toLowerCase()
-      .replace(/[^\w\s]/g, '') // Remove special characters
-      .replace(/\s+/g, ' ') // Normalize whitespace
-      .trim();
-  }
-
-  // Extract core title without mix/version info
-  private static extractCoreTitle(title: string | null): string {
-    if (!title) return '';
-    const { core } = this.normalizationService.extractVersionInfo(title);
-    return this.normalize(core);
-  }
-
-  // Simplified artist normalization - strips "The" prefix and normalizes
-  private static normalizeArtist(artist: string | null): string {
-    if (!artist) return '';
-
-    let normalized = artist.toLowerCase()
-      .replace(/[^\w\s]/g, '') // Remove special characters
-      .replace(/\s+/g, ' ') // Normalize whitespace
-      .trim();
-
-    // Strip leading "The " from artist names
-    if (normalized.startsWith('the ')) {
-      normalized = normalized.slice(4);
-    }
-
-    return normalized;
-  }
-
-  // Compare primary artists (already normalized in DB)
-  private static compareArtists(localPrimaryArtist: string | null, spotifyPrimaryArtist: string | null): {
-    exactMatch: boolean;
-    similarity: number;
-    normalizedLocal: string;
-    normalizedSpotify: string;
-  } {
-    const normalizedLocal = this.normalizeArtist(localPrimaryArtist);
-    const normalizedSpotify = this.normalizeArtist(spotifyPrimaryArtist);
-    
-    // Check for exact match first
-    if (normalizedLocal === normalizedSpotify) {
-      return {
-        exactMatch: true,
-        similarity: 100,
-        normalizedLocal,
-        normalizedSpotify
-      };
-    }
-
-    // Calculate similarity for partial matches
-    const similarity = normalizedLocal && normalizedSpotify 
-      ? this.calculateSimilarity(normalizedLocal, normalizedSpotify)
-      : 0;
-
-    return {
-      exactMatch: false,
-      similarity,
-      normalizedLocal,
-      normalizedSpotify
-    };
-  }
-
-  // Calculate Levenshtein distance
-  private static levenshteinDistance(str1: string, str2: string): number {
-    const matrix = [];
-    const len1 = str1.length;
-    const len2 = str2.length;
-
-    for (let i = 0; i <= len2; i++) {
-      matrix[i] = [i];
-    }
-
-    for (let j = 0; j <= len1; j++) {
-      matrix[0][j] = j;
-    }
-
-    for (let i = 1; i <= len2; i++) {
-      for (let j = 1; j <= len1; j++) {
-        if (str2.charAt(i - 1) === str1.charAt(j - 1)) {
-          matrix[i][j] = matrix[i - 1][j - 1];
-        } else {
-          matrix[i][j] = Math.min(
-            matrix[i - 1][j - 1] + 1, // substitution
-            matrix[i][j - 1] + 1,     // insertion
-            matrix[i - 1][j] + 1      // deletion
-          );
-        }
-      }
-    }
-
-    return matrix[len2][len1];
-  }
-
-  // Calculate similarity percentage
-  private static calculateSimilarity(str1: string, str2: string): number {
-    const distance = this.levenshteinDistance(str1, str2);
-    const maxLength = Math.max(str1.length, str2.length);
-    return maxLength === 0 ? 100 : ((maxLength - distance) / maxLength) * 100;
-  }
 
   // Fetch local tracks for user with pagination to handle large collections
   static async fetchLocalTracks(userId: string): Promise<LocalTrack[]> {
@@ -233,35 +114,11 @@ export class TrackMatchingService {
 
     const missingTracks: MissingTrack[] = [];
 
-    // Build lookup structures for local tracks
-    // Note: Fallback to artist field if primary_artist is null (legacy data)
-    // 1. Exact match set: full normalized title + artist
-    const localExactSet = new Set(
-      localTracks.map(track =>
-        `${this.normalize(track.title)}_${this.normalizeArtist(track.primary_artist || track.artist)}`
-      )
-    );
-
-    // 2. Core title match set: core title (no mix/version) + artist
-    const localCoreSet = new Set(
-      localTracks.map(track =>
-        `${this.extractCoreTitle(track.title)}_${this.normalizeArtist(track.primary_artist || track.artist)}`
-      )
-    );
-
-    // 3. For fuzzy matching, keep array of normalized local tracks with original data for debugging
-    const localNormalized = localTracks.map(track => ({
-      title: this.normalize(track.title),
-      coreTitle: this.extractCoreTitle(track.title),
-      artist: this.normalizeArtist(track.primary_artist || track.artist),
-      // Keep original values for debugging
-      originalTitle: track.title,
-      originalArtist: track.primary_artist || track.artist,
-    }));
+    // Build lookup structures using the engine
+    const localIndex = buildLocalIndex(localTracks);
 
     // Debug: Log local tracks matching debug criteria
     if (DEBUG_MATCHING) {
-      // Search in raw local tracks (before normalization) to see actual DB values
       const debugRawLocalTracks = localTracks.filter(t => {
         const combined = `${t.title || ''} ${t.artist || ''} ${t.primary_artist || ''}`.toLowerCase();
         return DEBUG_TRACKS.some(term => combined.includes(term.toLowerCase()));
@@ -280,13 +137,13 @@ export class TrackMatchingService {
         console.log(`   Total local tracks in DB: ${localTracks.length}`);
       }
 
-      const debugLocalTracks = localNormalized.filter(t =>
-        shouldDebug(t.originalTitle || '', t.originalArtist || '')
+      const debugLocalTracks = localIndex.normalized.filter(t =>
+        shouldDebug(t.track.title || '', (t.track.primary_artist || t.track.artist) || '')
       );
       if (debugLocalTracks.length > 0) {
         console.log('🔍 DEBUG: Normalized local tracks matching debug criteria:');
         debugLocalTracks.forEach(t => {
-          console.log(`  📀 Original: "${t.originalTitle}" by "${t.originalArtist}"`);
+          console.log(`  📀 Original: "${t.track.title}" by "${t.track.primary_artist || t.track.artist}"`);
           console.log(`     Normalized title: "${t.title}"`);
           console.log(`     Core title: "${t.coreTitle}"`);
           console.log(`     Normalized artist: "${t.artist}"`);
@@ -295,10 +152,9 @@ export class TrackMatchingService {
     }
 
     for (const spotifyTrack of spotifyTracks) {
-      const spotifyTitle = this.normalize(spotifyTrack.title);
-      const spotifyCoreTitle = this.extractCoreTitle(spotifyTrack.title);
-      // Fallback to artist field if primary_artist is null (legacy data)
-      const spotifyArtist = this.normalizeArtist(spotifyTrack.primary_artist || spotifyTrack.artist);
+      const spotifyTitle = normalize(spotifyTrack.title);
+      const spotifyCoreTitle = extractCoreTitle(spotifyTrack.title);
+      const spotifyArtist = normalizeArtist(spotifyTrack.primary_artist || spotifyTrack.artist);
 
       const debug = shouldDebug(spotifyTrack.title, spotifyTrack.primary_artist || spotifyTrack.artist);
 
@@ -313,34 +169,32 @@ export class TrackMatchingService {
 
       // Tier 1: Exact match on full title + artist
       const exactKey = `${spotifyTitle}_${spotifyArtist}`;
-      if (localExactSet.has(exactKey)) {
+      if (localIndex.exactSet.has(exactKey)) {
         if (debug) console.log(`  ✅ Tier 1 MATCH (exact): key="${exactKey}"`);
-        continue; // Found exact match
+        continue;
       }
       if (debug) console.log(`  ❌ Tier 1 no match: key="${exactKey}"`);
 
       // Tier 2: Match on core title (without mix/version) + artist
       const coreKey = `${spotifyCoreTitle}_${spotifyArtist}`;
-      if (localCoreSet.has(coreKey)) {
+      if (localIndex.coreSet.has(coreKey)) {
         if (debug) console.log(`  ✅ Tier 2 MATCH (core): key="${coreKey}"`);
-        continue; // Found core title match
+        continue;
       }
       if (debug) console.log(`  ❌ Tier 2 no match: key="${coreKey}"`);
 
-      // Tier 3: Fuzzy matching - check if any local track is similar enough
+      // Tier 3: Fuzzy matching
       let fuzzyMatch = false;
-      let bestFuzzyMatch: { local: typeof localNormalized[0]; titleSim: number; coreSim: number } | null = null;
+      let bestFuzzyMatch: { local: typeof localIndex.normalized[0]; titleSim: number; coreSim: number } | null = null;
 
-      for (const local of localNormalized) {
-        // Artist must match exactly (after normalization)
+      for (const local of localIndex.normalized) {
         if (local.artist !== spotifyArtist) continue;
 
-        // Check title similarity (try both full title and core title)
-        const titleSimilarity = this.calculateSimilarity(local.title, spotifyTitle);
-        const coreSimilarity = this.calculateSimilarity(local.coreTitle, spotifyCoreTitle);
+        const titleSimilarity = calculateSimilarity(local.title, spotifyTitle);
+        const coreSimilarity = calculateSimilarity(local.coreTitle, spotifyCoreTitle);
 
         if (debug && (titleSimilarity > 50 || coreSimilarity > 50)) {
-          console.log(`  🔎 Fuzzy candidate: "${local.originalTitle}"`);
+          console.log(`  🔎 Fuzzy candidate: "${local.track.title}"`);
           console.log(`     Title similarity: ${titleSimilarity.toFixed(1)}%, Core similarity: ${coreSimilarity.toFixed(1)}%`);
         }
 
@@ -353,22 +207,21 @@ export class TrackMatchingService {
 
       if (fuzzyMatch && bestFuzzyMatch) {
         if (debug) {
-          console.log(`  ✅ Tier 3 MATCH (fuzzy): "${bestFuzzyMatch.local.originalTitle}"`);
+          console.log(`  ✅ Tier 3 MATCH (fuzzy): "${bestFuzzyMatch.local.track.title}"`);
           console.log(`     Similarity: title=${bestFuzzyMatch.titleSim.toFixed(1)}%, core=${bestFuzzyMatch.coreSim.toFixed(1)}%`);
         }
-        continue; // Found fuzzy match
+        continue;
       }
 
       if (debug) {
         console.log(`  ❌ Tier 3 no fuzzy match found`);
-        // Check if there are ANY local tracks by this artist
-        const artistMatches = localNormalized.filter(l => l.artist === spotifyArtist);
+        const artistMatches = localIndex.normalized.filter(l => l.artist === spotifyArtist);
         if (artistMatches.length === 0) {
           console.log(`  ⚠️  No local tracks found for artist "${spotifyArtist}"`);
         } else {
           console.log(`  📋 Local tracks by this artist (${artistMatches.length}):`);
           artistMatches.slice(0, 5).forEach(l => {
-            console.log(`     - "${l.originalTitle}" (normalized: "${l.title}")`);
+            console.log(`     - "${l.track.title}" (normalized: "${l.title}")`);
           });
           if (artistMatches.length > 5) {
             console.log(`     ... and ${artistMatches.length - 5} more`);
@@ -394,7 +247,7 @@ export class TrackMatchingService {
       .select('super_genre')
       .eq('user_id', userId)
       .not('super_genre', 'is', null)
-      .limit(50000); // Override default 1000 limit
+      .limit(50000);
 
     if (error) {
       throw new Error(`Failed to fetch super genres: ${error.message}`);

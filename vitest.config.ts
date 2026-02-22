@@ -19,12 +19,21 @@ export default defineConfig({
         'src/**/*.spec.ts',
         'src/**/*.mock.ts',
         'src/integrations/**',
+        // Browser-only debug utilities (require DOM/localStorage/navigator)
+        'src/utils/debugHelpers.ts',
+        'src/utils/reloadDebugger.ts',
+        'src/utils/serviceWorkerCleanup.ts',
+        'src/utils/storageIsolationTest.ts',
+        // Mock service (not production code)
+        'src/services/spotifyAuthManager.mock.service.ts',
+        // Type-only files
+        'src/services/__tests__/fixtures/eval-types.ts',
       ],
       thresholds: {
-        statements: 30,
-        branches: 30,
-        functions: 30,
-        lines: 30,
+        statements: 55,
+        branches: 55,
+        functions: 55,
+        lines: 55,
       },
     },
     setupFiles: ['./src/test/setup.ts'],

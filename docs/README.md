@@ -1,245 +1,122 @@
 # Mako Sync Documentation
 
-**Last Updated**: January 10, 2026
-**Status**: Production
+**Last Updated**: February 2026
 
 ---
 
-## 📋 Quick Navigation
+## Quick Navigation
 
-### 🎯 Core Documentation
+### Product & Architecture
+- [Product Requirements (PRD)](prd-mako-sync.md) - Full product vision, epics, and acceptance criteria
+- [Product Overview](mako-sync-overview.md) - Visual 5-step workflow with diagrams
+- [Architecture](architecture-mako-sync.md) - System architecture and technical design
+- [Design Brief](design-brief-mako-sync.md) - Design system, colors, and brand identity
 
-**Product & Architecture**
-- [Product Requirements (PRD)](prd-mako-sync.md) - Product vision and requirements
-- [Product Brief](product-brief-mako-sync.md) - High-level product overview (historical)
-- [Architecture Overview](architecture-mako-sync.md) - Technical architecture
-- [Design Brief](design-brief-mako-sync.md) - Design system and guidelines
+### Reference Guides
+- [Authentication Reference](reference/authentication-reference.md) - Auth implementation, debugging, and testing
+- [Spotify Reference](reference/spotify-reference.md) - Spotify integration, OAuth, and troubleshooting
+- [Production Deployment](reference/production-deployment.md) - Environment setup, configuration, and deployment
 
-**Current Status**
-- [Current Status Assessment](current-status-assessment.md) - Latest project status
-- [Debugging Strategy](debugging-task-strategy.md) - Development methodology
+### Feature Plans
+- [slskd Integration](plans/slskd-complete-implementation.md) - Complete slskd implementation guide
+- [FLAC/M4A Tag Writing](plans/flac-m4a-tag-writing-plan.md) - Tag writing for non-MP3 formats
+- [UI Changes](plans/plan-ui-changes.md) - Planned UI improvements
+- [Test Improvement](plans/test-improvement-plan.md) - Test coverage improvement plan
 
-### 🏗️ System Documentation
+### Agents Framework
+- [Agents README](agents/README.md) - Usage guide, CLI options, installation
+- [Agents Architecture](agents/ARCHITECTURE.md) - Framework design and data flow
+- [Agents Quick Reference](agents/QUICK_REFERENCE.md) - All 15 rules at a glance
 
-**Living System Docs** (High-level status and links)
-- [Authentication System](systems/authentication.md) - Auth status and overview
-- [Spotify Integration](systems/spotify-integration.md) - Spotify status and overview
-
-**Implementation Guides** (Detailed how-tos)
-- [Authentication Reference](reference/authentication-reference.md) - Auth implementation, debugging, testing
-- [Spotify Reference](reference/spotify-reference.md) - Spotify implementation and troubleshooting
-- [Production Deployment](reference/production-deployment.md) - Deployment checklist and configuration
-
-### 🔧 Configuration
-
-- [Quick Setup Guide](setup-guide.md) - One-command Phase 4 setup
-- [Supabase Phase 4 Configuration](supabase-phase4-configuration.md) - Supabase production config
-- [Final Production Configuration](final-production-configuration.md) - Production settings
-
-### 🤖 Agents Framework
-
-- [Agents README](agents/README.md) - TypeScript validation framework
-- [Agents Architecture](agents/ARCHITECTURE.md) - Framework design
-- [Agents Quick Reference](agents/QUICK_REFERENCE.md) - Rule reference
+### Archive
+- [Archive](archive/) - Historical docs preserved for context (not actively maintained)
 
 ---
 
-## 📊 Documentation Structure
+## Documentation Structure
 
 ```
 docs/
 ├── README.md                          # This navigation file
+├── prd-mako-sync.md                   # Product requirements
+├── mako-sync-overview.md              # Visual workflow overview
+├── architecture-mako-sync.md          # Technical architecture
+├── design-brief-mako-sync.md          # Design system
 │
-├── Product & Architecture             # What we're building
-│   ├── prd-mako-sync.md
-│   ├── product-brief-mako-sync.md
-│   ├── architecture-mako-sync.md
-│   └── design-brief-mako-sync.md
+├── reference/                         # Implementation & operations
+│   ├── authentication-reference.md    # Auth: impl + debugging + testing
+│   ├── spotify-reference.md           # Spotify: impl + config + troubleshooting
+│   └── production-deployment.md       # Deployment: env vars + config + checklist
 │
-├── systems/                           # System status (high-level)
-│   ├── authentication.md             # Auth status + links to reference
-│   └── spotify-integration.md        # Spotify status + links to reference
+├── plans/                             # Active feature plans
+│   ├── slskd-complete-implementation.md
+│   ├── flac-m4a-tag-writing-plan.md
+│   ├── plan-ui-changes.md
+│   └── test-improvement-plan.md
 │
-├── reference/                         # Implementation guides (detailed)
-│   ├── authentication-reference.md   # Auth how-to
-│   ├── spotify-reference.md          # Spotify how-to
-│   └── production-deployment.md      # Deployment how-to
+├── agents/                            # Validation framework docs
+│   ├── README.md
+│   ├── ARCHITECTURE.md
+│   └── QUICK_REFERENCE.md
 │
-├── Configuration                      # Deployment configs
-│   ├── supabase-phase4-configuration.md
-│   └── final-production-configuration.md
-│
-├── Current Status                     # Latest state
-│   ├── current-status-assessment.md
-│   └── debugging-task-strategy.md
-│
-└── agents/                            # Code validation framework
+└── archive/                           # Historical (read-only)
     ├── README.md
-    ├── ARCHITECTURE.md
-    └── QUICK_REFERENCE.md
+    ├── product-brief-mako-sync.md
+    ├── current-status-assessment.md
+    ├── debugging-task-strategy.md
+    ├── authentication-system-status.md
+    └── spotify-integration-status.md
 ```
 
 ---
 
-## 🎯 Documentation Principles
+## Location Rules
 
-### Clear Separation of Concerns
-
-**systems/** = **"What's the current state?"**
-- High-level status overview
-- Phase completion tracking
-- Links to detailed implementation guides
-- Updated when major milestones complete
-
-**reference/** = **"How do I implement/debug/deploy this?"**
-- Detailed step-by-step procedures
-- Troubleshooting guides
-- Configuration examples
-- Updated when processes change
-
-**Core docs** = **"What are we building and why?"**
-- Product requirements and architecture
-- Design guidelines
-- Strategic documentation
-- Updated with major product changes
-
-### Simple Maintenance
-
-- ✅ **No complex tracking tables** - Simple status indicators
-- ✅ **No automation required** - Manual updates only when meaningful
-- ✅ **Clear ownership** - Each doc has a clear purpose
-- ✅ **Practical focus** - Documentation that actually gets used
+| Location | What goes here | When to update |
+|----------|---------------|----------------|
+| Root (`README.md`, `CLAUDE.md`, `AGENTS.md`) | Short, high-signal entry points | Rarely - major changes only |
+| `docs/` (root level) | Product vision & architecture | Major product changes |
+| `docs/reference/` | Implementation guides, debugging, deployment | When procedures change |
+| `docs/plans/` | Active feature implementation plans | While feature is in progress |
+| `docs/agents/` | Validation framework documentation | When agent rules change |
+| `docs/archive/` | Historical docs for context | Never (read-only) |
+| `agents/README.md` | Framework quick start | Point to docs/agents/ for details |
 
 ---
 
-## 🚀 Getting Started
+## Documentation Template
 
-### For New Developers
+Every doc in `docs/` (except archive/) should follow this format:
 
-1. **Understand the Product**
-   - Read [Product Requirements](prd-mako-sync.md)
-   - Review [Architecture Overview](architecture-mako-sync.md)
+```markdown
+# [Title]
 
-2. **Set Up Your Environment**
-   - Follow [Production Deployment](reference/production-deployment.md) for configuration
-   - Review [Supabase Configuration](supabase-phase4-configuration.md)
+> **[Category]**: One-line description.
 
-3. **Learn the Systems**
-   - Read [Authentication System](systems/authentication.md) status
-   - Read [Spotify Integration](systems/spotify-integration.md) status
-   - Dive into reference docs for detailed implementation
-
-4. **Understand Code Quality**
-   - Review [Agents Framework](agents/README.md)
-   - Run `npm run agents:validate` to check code
-
-### For Debugging Issues
-
-1. **Authentication Issues**
-   - See [Authentication Reference](reference/authentication-reference.md) → Debugging section
-   - Check [Debugging Strategy](debugging-task-strategy.md)
-
-2. **Spotify Issues**
-   - See [Spotify Reference](reference/spotify-reference.md) → Troubleshooting section
-   - Review [Production Deployment](reference/production-deployment.md) for config issues
-
-3. **Production Issues**
-   - Check [Production Deployment](reference/production-deployment.md) → Troubleshooting
-   - Review [Current Status Assessment](current-status-assessment.md)
-
-### For Deploying to Production
-
-Follow this checklist:
-1. Review [Production Deployment Guide](reference/production-deployment.md)
-2. Check environment variables are configured
-3. Validate with [Production Configuration](final-production-configuration.md)
-4. Run validation: `npm run agents:validate`
+**Status**: Active | Draft | Archived
+**Last Updated**: [Date]
 
 ---
 
-## 📝 Maintenance Guidelines
+## Overview
+[2-3 sentences: what this covers, who should read it]
 
-### When to Update Documentation
+## [Content Sections]
 
-**systems/** docs:
-- ✅ When a major phase completes
-- ✅ When system status changes (stable → needs attention)
-- ✅ When adding new major features
-- ❌ Not for every commit or small change
-
-**reference/** docs:
-- ✅ When procedures change
-- ✅ When troubleshooting new issues
-- ✅ When configuration requirements change
-- ✅ When adding new features that need documentation
-
-**Core docs**:
-- ✅ When product requirements change
-- ✅ When architecture evolves
-- ✅ For major strategic shifts
-- ❌ Not for implementation details
-
-### How to Update
-
-1. **Edit the relevant markdown file**
-2. **Update "Last Updated" date**
-3. **Commit with clear message**: `docs: update [system] for [reason]`
-4. **Keep it simple** - No need for complex tracking
+## Troubleshooting (if applicable)
 
 ---
 
-## 🔗 Related Resources
+**See also**: [Related doc links]
+```
 
-### GitHub
-- **Repository**: [mako-sync](https://github.com/gwherrett/mako-sync)
-- **Issues**: Use for task tracking (not task docs)
-- **Projects**: Use for project boards
-
-### Development
-- **Supabase Dashboard**: Database and auth management
-- **Vercel Dashboard**: Deployment and monitoring
-- **Spotify Developer**: OAuth app configuration
+**File naming**: lowercase with dashes (e.g., `setup-guide.md`)
 
 ---
 
-## 📊 Documentation Health
+## Maintenance
 
-### Current State (January 2026)
-- **Total Files**: 20 markdown files (down from 55)
-- **Systems Documented**: 2 (Authentication, Spotify)
-- **Reference Guides**: 3 (Auth, Spotify, Deployment)
-- **Maintenance Burden**: Low (simple, focused docs)
-
-### Recent Changes
-- **2026-01-10**: Documentation cleanup - removed 35 redundant files
-- **2026-01-10**: Created reference guide structure
-- **2026-01-10**: Simplified documentation approach
-- **2026-01-06**: Completed agent framework migration
-- **2025-12**: Created living system docs for auth and spotify
-
----
-
-## 💡 Documentation Philosophy
-
-**Simple Over Complex**
-- No gantt charts or complex tracking
-- No automation scripts required
-- No daily update requirements
-- Just clear, useful documentation
-
-**Practical Over Perfect**
-- Focus on what developers actually need
-- Update when it matters
-- Delete what isn't used
-- Keep it maintainable
-
-**Consolidated Over Scattered**
-- One place per topic
-- Clear navigation
-- No duplication
-- Easy to find what you need
-
----
-
-**Maintained by**: Development Team
-**Next Review**: As needed
+- Update `Last Updated` when making meaningful changes
+- Commit with: `docs: update [topic] for [reason]`
+- One authoritative source per topic - no duplication
+- When a feature plan is complete, move it to `archive/` or fold key info into the reference guide

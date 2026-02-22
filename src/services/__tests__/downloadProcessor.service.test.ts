@@ -6,7 +6,7 @@ import {
 } from '../downloadProcessor.service';
 import type { ProcessedFile } from '@/types/slskd';
 
-const { mapToSuperGenre, filterMp3Files, writeSuperGenreTag } = _testExports;
+const { mapToSuperGenre, filterAudioFiles, writeSuperGenreTag } = _testExports;
 
 describe('downloadProcessor.service', () => {
   describe('mapToSuperGenre', () => {
@@ -57,36 +57,39 @@ describe('downloadProcessor.service', () => {
     });
   });
 
-  describe('filterMp3Files', () => {
-    it('filters to only MP3 files', () => {
+  describe('filterAudioFiles', () => {
+    it('filters to only supported audio files (MP3, FLAC, M4A)', () => {
       const files = [
         new File([''], 'track1.mp3', { type: 'audio/mpeg' }),
         new File([''], 'track2.MP3', { type: 'audio/mpeg' }),
         new File([''], 'image.jpg', { type: 'image/jpeg' }),
         new File([''], 'document.pdf', { type: 'application/pdf' }),
-        new File([''], 'track3.mp3', { type: 'audio/mpeg' }),
+        new File([''], 'track3.flac', { type: 'audio/flac' }),
+        new File([''], 'track4.m4a', { type: 'audio/mp4' }),
+        new File([''], 'track5.wav', { type: 'audio/wav' }),
       ];
 
-      const mp3s = filterMp3Files(files);
-      expect(mp3s).toHaveLength(3);
-      expect(mp3s.map((f) => f.name)).toEqual([
+      const audioFiles = filterAudioFiles(files);
+      expect(audioFiles).toHaveLength(4);
+      expect(audioFiles.map((f) => f.name)).toEqual([
         'track1.mp3',
         'track2.MP3',
-        'track3.mp3',
+        'track3.flac',
+        'track4.m4a',
       ]);
     });
 
-    it('returns empty array when no MP3s', () => {
+    it('returns empty array when no supported audio files', () => {
       const files = [
         new File([''], 'image.jpg', { type: 'image/jpeg' }),
         new File([''], 'document.pdf', { type: 'application/pdf' }),
       ];
 
-      expect(filterMp3Files(files)).toHaveLength(0);
+      expect(filterAudioFiles(files)).toHaveLength(0);
     });
 
     it('handles empty input', () => {
-      expect(filterMp3Files([])).toHaveLength(0);
+      expect(filterAudioFiles([])).toHaveLength(0);
     });
   });
 
@@ -287,7 +290,7 @@ describe('downloadProcessor.service', () => {
       });
     });
 
-    it('filters out non-MP3 files', async () => {
+    it('filters out unsupported file types', async () => {
       const files = [
         new File([''], 'image.jpg', { type: 'image/jpeg' }),
         new File([''], 'document.pdf', { type: 'application/pdf' }),

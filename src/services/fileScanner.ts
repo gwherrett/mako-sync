@@ -2,6 +2,25 @@
  * Service for scanning directories and collecting local music files
  */
 
+/** Audio file extensions supported for scanning and metadata extraction */
+export const SUPPORTED_AUDIO_EXTENSIONS = ['.mp3', '.flac', '.m4a'];
+
+export function isSupportedAudioFile(filename: string): boolean {
+  const lower = filename.toLowerCase();
+  return SUPPORTED_AUDIO_EXTENSIONS.some((ext) => lower.endsWith(ext));
+}
+
+/** Strip supported audio extension from a filename (for title fallback) */
+export function stripAudioExtension(filename: string): string {
+  const lower = filename.toLowerCase();
+  for (const ext of SUPPORTED_AUDIO_EXTENSIONS) {
+    if (lower.endsWith(ext)) {
+      return filename.slice(0, -ext.length);
+    }
+  }
+  return filename;
+}
+
 export interface ScanOptions {
   onProgress?: (current: number, total: number) => void;
 }
@@ -35,7 +54,7 @@ export const scanDirectoryForLocalFiles = async (options?: ScanOptions): Promise
   // Recursively collect local music files
   const collectLocalFiles = async (dirHandle: any, path = '') => {
     for await (const entry of dirHandle.values()) {
-      if (entry.kind === 'file' && entry.name.toLowerCase().endsWith('.mp3')) {
+      if (entry.kind === 'file' && isSupportedAudioFile(entry.name)) {
         const file = await entry.getFile();
         localFiles.push(file);
 

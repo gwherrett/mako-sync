@@ -390,6 +390,7 @@ serve(async (req) => {
     let newTracksCount = 0
     let olderTracksCount = 0 // Count tracks older than last sync to determine when to stop
     const allSpotifyIds = new Set<string>() // Track all Spotify IDs from this sync for deletion detection
+    let duplicatesRemoved = 0 // Track duplicates removed during sync
 
     while (hasMore) {
       const url = `https://api.spotify.com/v1/me/tracks?limit=50&offset=${currentOffset}`
@@ -492,6 +493,22 @@ serve(async (req) => {
 
       // Process chunk if we have enough tracks or reached the end
       if (allChunkTracks.length >= CHUNK_SIZE || (!hasMore && allChunkTracks.length > 0)) {
+        // Deduplicate tracks within chunk by spotify_id (keep first occurrence = most recently added)
+        const seenIds = new Set<string>()
+        const dedupedChunkTracks = allChunkTracks.filter(item => {
+          const spotifyId = item.track?.id
+          if (!spotifyId || seenIds.has(spotifyId)) {
+            if (spotifyId) duplicatesRemoved++
+            return false
+          }
+          seenIds.add(spotifyId)
+          return true
+        })
+        if (dedupedChunkTracks.length < allChunkTracks.length) {
+          console.log(`🔀 Removed ${allChunkTracks.length - dedupedChunkTracks.length} duplicate tracks from chunk`)
+        }
+        allChunkTracks = dedupedChunkTracks
+
         console.log(`🔄 Processing chunk of ${allChunkTracks.length} tracks`)
 
         // Extract artist IDs and fetch genres
@@ -620,6 +637,22 @@ serve(async (req) => {
 
     // Process any remaining tracks that didn't reach CHUNK_SIZE
     if (allChunkTracks.length > 0) {
+      // Deduplicate final batch by spotify_id (keep first occurrence = most recently added)
+      const seenIds = new Set<string>()
+      const dedupedFinalTracks = allChunkTracks.filter(item => {
+        const spotifyId = item.track?.id
+        if (!spotifyId || seenIds.has(spotifyId)) {
+          if (spotifyId) duplicatesRemoved++
+          return false
+        }
+        seenIds.add(spotifyId)
+        return true
+      })
+      if (dedupedFinalTracks.length < allChunkTracks.length) {
+        console.log(`🔀 Removed ${allChunkTracks.length - dedupedFinalTracks.length} duplicate tracks from final batch`)
+      }
+      allChunkTracks = dedupedFinalTracks
+
       console.log(`🔄 Processing final batch of ${allChunkTracks.length} remaining tracks`)
 
       // Extract artist IDs and fetch genres
@@ -815,11 +848,15 @@ serve(async (req) => {
       ? `${currentOffset} tracks synced`
       : `${newTracksCount} new tracks added`
     
-    const deletionMessage = deletedTracksCount > 0 
+    const deletionMessage = deletedTracksCount > 0
       ? `, ${deletedTracksCount} removed`
       : ''
-    
-    const message = `${syncType} sync complete: ${baseMessage}${deletionMessage}`
+
+    const dupsMessage = duplicatesRemoved > 0
+      ? `, ${duplicatesRemoved} duplicates skipped`
+      : ''
+
+    const message = `${syncType} sync complete: ${baseMessage}${deletionMessage}${dupsMessage}`
     
     console.log(`🎉 ${message}`)
 
@@ -833,6 +870,7 @@ serve(async (req) => {
         deleted_tracks: deletedTracksCount,
         sync_type: syncType,
         sync_id: syncId,
+        duplicates_removed: duplicatesRemoved,
         genres_cached: manualGenreMap.size,
         verification_warnings: verificationWarnings.length > 0 ? verificationWarnings : undefined
       }),

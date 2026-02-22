@@ -55,7 +55,7 @@ See the [docs/](docs/) folder for detailed documentation:
 - [Mako Sync Overview](docs/mako-sync-overview.md) - Complete workflow guide with diagrams
 - [Architecture](docs/architecture-mako-sync.md) - System design and technical architecture
 - [Product Requirements](docs/prd-mako-sync.md) - Product vision and features
-- [Setup Guide](docs/setup-guide.md) - Configuration and deployment
+- [Deployment Guide](docs/reference/production-deployment.md) - Configuration and deployment
 
 ## Development
 

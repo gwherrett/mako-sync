@@ -12,6 +12,9 @@ dist
 dist-ssr
 *.local
 
+# Vite temp files
+vite.config.ts.timestamp-*
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
@@ -25,3 +28,6 @@ dist-ssr
 
 # One-time utility scripts
 sync-grouping.mjs
+
+# Eval review working files
+# eval-review.csv

@@ -1,0 +1,6166 @@
+{
+  "exportedAt": "2026-02-12T00:23:48Z",
+  "description": "Unmatched tracks for House - exported for eval review",
+  "totalCases": 335,
+  "cases": [
+    {
+      "id": "eval-001",
+      "spotifyTrack": {
+        "id": "6a63e5af-980c-45e7-8665-038e67b71970",
+        "title": "1995",
+        "artist": "&ME",
+        "primary_artist": null,
+        "album": "1995",
+        "genre": "afro house",
+        "super_genre": "House"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "House"
+    },
+    {
+      "id": "eval-002",
+      "spotifyTrack": {
+        "id": "aca6119a-f0a5-481a-a438-9ef9ae85356c",
+        "title": "3AM Eternal - Live at the S.S.L.",
+        "artist": "The KLF",
+        "primary_artist": null,
+        "album": "Solid State Logik 1",
+        "genre": "acid house",
+        "super_genre": "House"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "House"
+    },
+    {
+      "id": "eval-003",
+      "spotifyTrack": {
+        "id": "73e3ce84-2ce4-40b6-9b84-b01e8264a677",
+        "title": "3 AM - Mixed",
+        "artist": "Kiki Willows",
+        "primary_artist": null,
+        "album": "DJ-Kicks (Kerri Chandler) [Mixed Tracks]",
+        "genre": null,
+        "super_genre": "House"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "House"
+    },
+    {
+      "id": "eval-006",
+      "spotifyTrack": {
+        "id": "41facff7-5cbe-4ca5-b5b4-e32d200a6d42",
+        "title": "About Damn Time - Purple Disco Machine Remix",
+        "artist": "Lizzo, Purple Disco Machine",
+        "primary_artist": null,
+        "album": "About Damn Time (Purple Disco Machine Remix)",
+        "genre": "disco house",
+        "super_genre": "House"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "House"
+    },
+    {
+      "id": "eval-009",
+      "spotifyTrack": {
+        "id": "0268fde7-7250-4aff-a629-d1ffa17d86fa",
+        "title": "Adore",
+        "artist": "I:Cube",
+        "primary_artist": null,
+        "album": "Adore",
+        "genre": "french house",
+        "super_genre": "House"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "House"
+    },
+    {
+      "id": "eval-013",
+      "spotifyTrack": {
+        "id": "bbc3e90c-beaf-4247-90f9-4109e7242481",
+        "title": "Alabama Blues - Todd Edwards Vocal Radio Edit Mix",
+        "artist": "St Germain",
+        "primary_artist": null,
+        "album": "Alabama Blues (Todd Edwards Vocal Radio Edit Mix)",
+        "genre": "jazz house",
+        "super_genre": "House"
+      },
+      "expectedLocalMatch": {
+        "id": "a67590bd-aef1-478f-8aab-8f4374355c05",
+        "title": "Alabama Blues (Todd Edwards Dub Mix)",
+        "artist": "St. Germain",
+        "primary_artist": "st germain",
+        "album": null,
+        "genre": "UK Garage",
+        "file_path": "St. Germain - Alabama Blues (Todd Edwards Dub Mix).mp3"
+      },
+      "verdict": "false-negative",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "House"
+    },
+    {
+      "id": "eval-020",
+      "spotifyTrack": {
+        "id": "2994dad4-e21a-4b03-b8c4-bcfd891be4e6",
+        "title": "Are U Down - Remix",
+        "artist": "Jayda G",
+        "primary_artist": null,
+        "album": "Both Of Us / Are U Down",
+        "genre": null,
+        "super_genre": "House"
+      },
+      "expectedLocalMatch": {
+        "id": "e71b1b00-57cd-4feb-922a-329c60f7b61b",
+        "title": "Are U Down (Remix)",
+        "artist": "Jayda G",
+        "primary_artist": "jayda g",
+        "album": "Both Of Us / Are U Down [Ep]",
+        "genre": "House",
+        "file_path": "Jayda G - Are U Down (Remix).mp3"
+      },
+      "verdict": "false-negative",
+      "failureCategory": "version-notation",
+      "notes": "",
+      "superGenre": "House"
+    },
+    {
+      "id": "eval-022",
+      "spotifyTrack": {
+        "id": "c4187eef-6ba0-4e17-b3c0-f564a7e9ecfd",
+        "title": "A Trip to Trumpton",
+        "artist": "Urban Hype",
+        "primary_artist": null,
+        "album": "Conspiracy to Dance",
+        "genre": "acid house",
+        "super_genre": "House"
+      },
+      "expectedLocalMatch": {
+        "id": "69980693-5b5c-459b-ad02-746a512fc97b",
+        "title": "Trip To Trumpton",
+        "artist": "Urban Hype",
+        "primary_artist": "urban hype",
+        "album": "Trip To Trumpton",
+        "genre": "Old Skool",
+        "file_path": "Urban Hype - Trip To Trumpton.MP3"
+      },
+      "verdict": "false-negative",
+      "failureCategory": "fuzzy-miss",
+      "notes": "",
+      "superGenre": "House"
+    },
+    {
+      "id": "eval-023",
+      "spotifyTrack": {
+        "id": "cf4dd7d6-5962-4acd-9a77-b00398bcbb32",
+        "title": "Baby (How Much I LFO You)",
+        "artist": "DJ Koze",
+        "primary_artist": null,
+        "album": "Knock Knock",
+        "genre": null,
+        "super_genre": "House"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "House"
+    },
+    {
+      "id": "eval-024",
+      "spotifyTrack": {
+        "id": "92d91529-f00f-433d-87c2-030ba97dc44a",
+        "title": "Back Tonight (feat. Martin Luther) - 7\" Version",
+        "artist": "Miguel Migs, Martin Luther",
+        "primary_artist": null,
+        "album": "Back Tonight (feat. Martin Luther)",
+        "genre": "deep house",
+        "super_genre": "House"
+      },
+      "expectedLocalMatch": {
+        "id": "0d7deed9-08db-4165-8da8-1ac36b7f2196",
+        "title": "Back Tonight (feat. Martin Luther) (Extended Mix)",
+        "artist": "Miguel Migs, Martin Luther",
+        "primary_artist": "miguel migs martin luther",
+        "album": "Defected Presents Most Rated Summer 2021",
+        "genre": "House",
+        "file_path": "Miguel Migs, Martin Luther - Back Tonight (feat. Martin Luther) (Extended Mix).mp3"
+      },
+      "verdict": "false-negative",
+      "failureCategory": "version-notation",
+      "notes": "",
+      "superGenre": "House"
+    },
+    {
+      "id": "eval-027",
+      "spotifyTrack": {
+        "id": "0a2da5d7-00f0-4266-9de2-7d0372e6c110",
+        "title": "Bar A Thym",
+        "artist": "Kerri Chandler",
+        "primary_artist": null,
+        "album": "Bar A Thym / Sunshine & Twilight",
+        "genre": "house",
+        "super_genre": "House"
+      },
+      "expectedLocalMatch": {
+        "id": "2859f6cf-61c5-428b-bff9-db22a09b56ac",
+        "title": "Bar A Thym (Original Mix)",
+        "artist": "Kerri Chandler",
+        "primary_artist": "kerri chandler",
+        "album": "Bar A Thym",
+        "genre": "House",
+        "file_path": "Kerri Chandler - Bar A Thym (Original Mix).mp3"
+      },
+      "verdict": "false-negative",
+      "failureCategory": "version-notation",
+      "notes": "",
+      "superGenre": "House"
+    },
+    {
+      "id": "eval-034",
+      "spotifyTrack": {
+        "id": "1c9564f5-afd2-4954-971d-2a185e9c0570",
+        "title": "Brighter Days - Dajae- Underground Mix '93",
+        "artist": "Cajmere, Dajae",
+        "primary_artist": null,
+        "album": "It's Time",
+        "genre": "chicago house",
+        "super_genre": "House"
+      },
+      "expectedLocalMatch": {
+        "id": "60139faa-a44a-4657-9797-c4955fbb4c99",
+        "title": "Brighter Days (Dajae- Underground Mix '93)",
+        "artist": "Cajmere,Dajae",
+        "primary_artist": "cajmere dajae",
+        "album": "It's Time",
+        "genre": "House",
+        "file_path": "Cajmere,Dajae - Brighter Days (Dajae- Underground Mix '93).mp3"
+      },
+      "verdict": "false-negative",
+      "failureCategory": "version-notation",
+      "notes": "",
+      "superGenre": "House"
+    },
+    {
+      "id": "eval-037",
+      "spotifyTrack": {
+        "id": "a90136ac-0f14-4f74-a4d0-cf0e008ff2e4",
+        "title": "Cada Vez - Grant Nelson Vocal Remix",
+        "artist": "Negrocan",
+        "primary_artist": null,
+        "album": "Cada Vez (Ultimate Mix Collection)",
+        "genre": "latin house",
+        "super_genre": "House"
+      },
+      "expectedLocalMatch": {
+        "id": "59bf7fbe-7f12-4882-a63f-7a90fcf3ccf2",
+        "title": "Cada Vez (Grant Nelson Vocal Remix)",
+        "artist": "Negrocan",
+        "primary_artist": "negrocan",
+        "album": "Hed Kandi: Disco Kandy 2",
+        "genre": "Latin House",
+        "file_path": "Negrocan - Cada Vez (Grant Nelson Vocal Remix).mp3"
+      },
+      "verdict": "false-negative",
+      "failureCategory": "version-notation",
+      "notes": "",
+      "superGenre": "House"
+    },
+    {
+      "id": "eval-042",
+      "spotifyTrack": {
+        "id": "6d71427d-d9ab-4e1c-90d0-822a9818489f",
+        "title": "Childhood",
+        "artist": "Barry Can't Swim",
+        "primary_artist": null,
+        "album": "Loner",
+        "genre": "jazz house",
+        "super_genre": "House"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "House"
+    },
+    {
+      "id": "eval-043",
+      "spotifyTrack": {
+        "id": "b23e0cb8-d334-413a-8765-96059052e4f5",
+        "title": "Circus Bells",
+        "artist": "Robert Armani",
+        "primary_artist": null,
+        "album": "Circus Bells",
+        "genre": "chicago house",
+        "super_genre": "House"
+      },
+      "expectedLocalMatch": {
+        "id": "1702bfb6-4750-4c63-b5b6-8bd80e09c627",
+        "title": "Circus Bells (Hardfloor Remix)",
+        "artist": "Robert Armani",
+        "primary_artist": "robert armani",
+        "album": "Flux Trax 02",
+        "genre": "Acid House",
+        "file_path": "Robert Armani - Circus Bells (Hardfloor Remix).mp3"
+      },
+      "verdict": "false-negative",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "House"
+    },
+    {
+      "id": "eval-048",
+      "spotifyTrack": {
+        "id": "23041d73-009a-408d-aca2-ae7f62363a8d",
+        "title": "Come a Little Closer",
+        "artist": "TEE MANGO",
+        "primary_artist": null,
+        "album": "#2",
+        "genre": "jazz house",
+        "super_genre": "House"
+      },
+      "expectedLocalMatch": {
+        "id": "47e9715c-51ae-4a15-83b2-7ab230debdec",
+        "title": "Come a Little Closer (Original Mix)",
+        "artist": "Tee Mango",
+        "primary_artist": "tee mango",
+        "album": null,
+        "genre": "House",
+        "file_path": "Tee Mango - Come a Little Closer (Original Mix).mp3"
+      },
+      "verdict": "false-negative",
+      "failureCategory": "version-notation",
+      "notes": "",
+      "superGenre": "House"
+    },
+    {
+      "id": "eval-050",
+      "spotifyTrack": {
+        "id": "932b42d5-4b96-420f-9e7c-267b376fc96d",
+        "title": "Controller",
+        "artist": "Channel Tres",
+        "primary_artist": null,
+        "album": "Controller",
+        "genre": "hip house",
+        "super_genre": "House"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "House"
+    },
+    {
+      "id": "eval-057",
+      "spotifyTrack": {
+        "id": "a1d99850-1141-4fe6-974e-1e4de86370ba",
+        "title": "Da Fonk (feat. Joni) - [Dub]",
+        "artist": "Mochakk, Joni",
+        "primary_artist": null,
+        "album": "Da Fonk (feat. Joni)",
+        "genre": "tech house",
+        "super_genre": "House"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "House"
+    },
+    {
+      "id": "eval-059",
+      "spotifyTrack": {
+        "id": "d511d85b-b99c-4847-93a6-4e782cabc2ca",
+        "title": "Dawn",
+        "artist": "Session Victim, Nebraska",
+        "primary_artist": null,
+        "album": "Dawn",
+        "genre": "jazz house",
+        "super_genre": "House"
+      },
+      "expectedLocalMatch": {
+        "id": "36613aab-bf71-4d13-87a0-a547fb8062dc",
+        "title": "Dawn (Original Mix)",
+        "artist": "Session Victim, Nebraska",
+        "primary_artist": "session victim nebraska",
+        "album": "Dawn",
+        "genre": "Deep House",
+        "file_path": "Session Victim, Nebraska - Dawn (Original Mix).mp3"
+      },
+      "verdict": "false-negative",
+      "failureCategory": "version-notation",
+      "notes": "",
+      "superGenre": "House"
+    },
+    {
+      "id": "eval-069",
+      "spotifyTrack": {
+        "id": "352fe75a-d85d-45f9-9d10-0bd98fe26410",
+        "title": "Disco's Revenge - Mole Hole Dirty Mix",
+        "artist": "Gusto",
+        "primary_artist": null,
+        "album": "Disco's Revenge",
+        "genre": "disco house",
+        "super_genre": "House"
+      },
+      "expectedLocalMatch": {
+        "id": "818c1357-2645-4bb0-98c9-d9bb7016638f",
+        "title": "Disco's Revenge",
+        "artist": "Gusto",
+        "primary_artist": "gusto",
+        "album": "Best Of 538 Dance Smash - Summer Edition",
+        "genre": "French House",
+        "file_path": "Gusto - Disco's Revenge.mp3"
+      },
+      "verdict": "false-negative",
+      "failureCategory": "Core-strip",
+      "notes": "",
+      "superGenre": "House"
+    },
+    {
+      "id": "eval-072",
+      "spotifyTrack": {
+        "id": "4bc63f17-c0ff-4760-b990-89ce70d318df",
+        "title": "Do It Now - Original Edit",
+        "artist": "Dubtribe Sound System",
+        "primary_artist": null,
+        "album": "Do It Now",
+        "genre": null,
+        "super_genre": "House"
+      },
+      "expectedLocalMatch": {
+        "id": "26ca9391-7757-460a-b3ac-7bc92c8bab99",
+        "title": "Do It Now (Original Edit)",
+        "artist": "Dubtribe Sound System",
+        "primary_artist": "dubtribe sound system",
+        "album": "Do It Now",
+        "genre": "Deep House",
+        "file_path": "Dubtribe Sound System - Do It Now (Original Edit).mp3"
+      },
+      "verdict": "false-negative",
+      "failureCategory": "version-notation",
+      "notes": "",
+      "superGenre": "House"
+    },
+    {
+      "id": "eval-074",
+      "spotifyTrack": {
+        "id": "ea20cc5f-ce05-448d-89c3-d6b60eea78ef",
+        "title": "Don't Go - Original Mix",
+        "artist": "Awesome 3",
+        "primary_artist": null,
+        "album": "Don't Go",
+        "genre": "acid house",
+        "super_genre": "House"
+      },
+      "expectedLocalMatch": {
+        "id": "72eef1a7-5287-480a-bc07-866b259f35e7",
+        "title": "Don't Go (Original Mix)",
+        "artist": "Awesome 3",
+        "primary_artist": "awesome 3",
+        "album": null,
+        "genre": "Old Skool",
+        "file_path": "Awesome 3 - Don't Go (Original Mix).mp3"
+      },
+      "verdict": "false-negative",
+      "failureCategory": "version-notation",
+      "notes": "",
+      "superGenre": "House"
+    },
+    {
+      "id": "eval-084",
+      "spotifyTrack": {
+        "id": "8e8a768f-0452-44e9-a863-803a588c0370",
+        "title": "Energy Flash",
+        "artist": "Joey Beltram",
+        "primary_artist": null,
+        "album": "Classics",
+        "genre": "acid house",
+        "super_genre": "House"
+      },
+      "expectedLocalMatch": {
+        "id": "79c0ad69-6003-4f2d-8e92-773b8cf4af4e",
+        "title": "Energy Flash (Original Mix)",
+        "artist": "Joey Beltram",
+        "primary_artist": "joey beltram",
+        "album": "Beltram Volume 1",
+        "genre": "Techno",
+        "file_path": "Joey Beltram - Energy Flash (Original Mix).mp3"
+      },
+      "verdict": "false-negative",
+      "failureCategory": "version-notation",
+      "notes": "",
+      "superGenre": "House"
+    },
+    {
+      "id": "eval-085",
+      "spotifyTrack": {
+        "id": "2387e31b-ac95-4d5d-82a3-68dd34f726be",
+        "title": "Entourage",
+        "artist": "Drew Dapps",
+        "primary_artist": null,
+        "album": "Entourage",
+        "genre": "tech house",
+        "super_genre": "House"
+      },
+      "expectedLocalMatch": {
+        "id": "c9aee8da-52ba-4d54-9cb9-46b2402e4dc1",
+        "title": "Entourage (Original Mix) www.djsoundtop.com",
+        "artist": "Drew Dapps",
+        "primary_artist": "drew dapps",
+        "album": null,
+        "genre": "House",
+        "file_path": "Drew Dapps - Entourage (Original Mix) www.djsoundtop.com.mp3"
+      },
+      "verdict": "false-negative",
+      "failureCategory": "core-strip",
+      "notes": "",
+      "superGenre": "House"
+    },
+    {
+      "id": "eval-087",
+      "spotifyTrack": {
+        "id": "42d4b932-4324-476f-a156-1ad3526e73f4",
+        "title": "Exotica - Edit",
+        "artist": "Purple Disco Machine, Mind Enterprises",
+        "primary_artist": null,
+        "album": "Exotica",
+        "genre": "disco house",
+        "super_genre": "House"
+      },
+      "expectedLocalMatch": {
+        "id": "3eb65e0f-b827-467e-9c3c-92fd8341be12",
+        "title": "Exotica (Edit)",
+        "artist": "Purple Disco Machine, Mind Enterprises",
+        "primary_artist": "purple disco machine mind enterprises",
+        "album": "New Music Releases Week 48 of 2020",
+        "genre": "Disco House",
+        "file_path": "Purple Disco Machine, Mind Enterprises - Exotica (Edit).mp3"
+      },
+      "verdict": "false-negative",
+      "failureCategory": "version-notation",
+      "notes": "",
+      "superGenre": "House"
+    },
+    {
+      "id": "eval-088",
+      "spotifyTrack": {
+        "id": "4fe484a3-4160-436b-986e-abc2bee554d1",
+        "title": "Fallin In Love",
+        "artist": "Duck Sauce, A-Trak, Armand Van Helden",
+        "primary_artist": null,
+        "album": "Fallin In Love",
+        "genre": "disco house",
+        "super_genre": "House"
+      },
+      "expectedLocalMatch": {
+        "id": "bc59d01e-0bc9-4e09-8086-e074c7d5b99f",
+        "title": "Fallin In Love (Butch Extended Remix)",
+        "artist": "Duck Sauce, A-Trak, Armand Van Helden",
+        "primary_artist": "duck sauce a-trak armand van helden",
+        "album": "Fallin In Love - Butch Extended Remix",
+        "genre": "House",
+        "file_path": "Duck Sauce, A-Trak, Armand Van Helden - Fallin In Love (Butch Extended Remix).mp3"
+      },
+      "verdict": "false-negative",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "House"
+    },
+    {
+      "id": "eval-091",
+      "spotifyTrack": {
+        "id": "8a65ce12-2acb-41f4-8df7-6ad9039a68a5",
+        "title": "Flash",
+        "artist": "Green Velvet",
+        "primary_artist": null,
+        "album": "Move With Me",
+        "genre": "tech house",
+        "super_genre": "House"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "Different song by same artist - not a matching failure",
+      "superGenre": "House"
+    },
+    {
+      "id": "eval-092",
+      "spotifyTrack": {
+        "id": "78cbe27a-f13e-4061-96ec-f01af835fed8",
+        "title": "Flat Beat - Radio Edit",
+        "artist": "Mr. Oizo",
+        "primary_artist": null,
+        "album": "Analog Worms Attack",
+        "genre": "french house",
+        "super_genre": "House"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "House"
+    },
+    {
+      "id": "eval-093",
+      "spotifyTrack": {
+        "id": "3b5a4a5d-d79b-4258-888a-9e7338b613b8",
+        "title": "Flim Flam",
+        "artist": "Yellow Sox",
+        "primary_artist": null,
+        "album": "Flim Flam (Remixes)",
+        "genre": "lo-fi house",
+        "super_genre": "House"
+      },
+      "expectedLocalMatch": {
+        "id": "f9db6456-12de-4944-918e-6b781613e18c",
+        "title": "Flim Flam (Original Mix)",
+        "artist": "Yellow Sox",
+        "primary_artist": "yellow sox",
+        "album": "My House Vol.1 - A House Music Compilation By DJ Jef K, Paris",
+        "genre": "House",
+        "file_path": "Yellow Sox - Flim Flam (Original Mix).mp3"
+      },
+      "verdict": "false-negative",
+      "failureCategory": "version-notation",
+      "notes": "",
+      "superGenre": "House"
+    },
+    {
+      "id": "eval-097",
+      "spotifyTrack": {
+        "id": "52445c22-a95d-4ce6-b7f1-8d8c47586991",
+        "title": "Forgot About You - Piano Version",
+        "artist": "Axel Boman, Miljon",
+        "primary_artist": null,
+        "album": "Forgot About You (Piano Version)",
+        "genre": "jazz house",
+        "super_genre": "House"
+      },
+      "expectedLocalMatch": {
+        "id": "ba5ac60e-e49f-4a54-8ae0-ac6d6825a542",
+        "title": "Axel Boman, Miljon - Forgot About You (Piano Version)",
+        "artist": "Axel Boman, Miljon",
+        "primary_artist": "axel boman miljon",
+        "album": null,
+        "genre": "Chillout",
+        "file_path": "Axel Boman, Miljon - Axel Boman, Miljon - Forgot About You (Piano Version).mp3"
+      },
+      "verdict": "false-negative",
+      "failureCategory": "artist-in-title",
+      "notes": "",
+      "superGenre": "House"
+    },
+    {
+      "id": "eval-101",
+      "spotifyTrack": {
+        "id": "af2a2c00-0bfc-45dd-a1fb-f06f38c4d64a",
+        "title": "Get To Me Once",
+        "artist": "Matt Early, Ray Hurley, Abi Flynn",
+        "primary_artist": null,
+        "album": "Get To Me Once",
+        "genre": "disco house",
+        "super_genre": "House"
+      },
+      "expectedLocalMatch": {
+        "id": "8839c3df-17d9-4b93-877b-87ba6714474a",
+        "title": "Get To Me Once (Original Mix)",
+        "artist": "Matt Early, Ray Hurley, Abi Flynn",
+        "primary_artist": "matt early ray hurley abi flynn",
+        "album": "Get To Me Once Original Mix",
+        "genre": "House",
+        "file_path": "Matt Early, Ray Hurley, Abi Flynn - Get To Me Once (Original Mix).mp3"
+      },
+      "verdict": "false-negative",
+      "failureCategory": "version-notation",
+      "notes": "",
+      "superGenre": "House"
+    },
+    {
+      "id": "eval-102",
+      "spotifyTrack": {
+        "id": "20c48b56-78a3-476c-9a20-cf990abea4da",
+        "title": "Get Up (Everybody) - Mousse T. Remix",
+        "artist": "Byron Stingily",
+        "primary_artist": null,
+        "album": "The Purist",
+        "genre": "chicago house",
+        "super_genre": "House"
+      },
+      "expectedLocalMatch": {
+        "id": "04a488d4-0932-4d28-8f5b-edc9438b6a33",
+        "title": "Get Up (Everybody) - Mousse T. Remix 125",
+        "artist": "Byron Stingily",
+        "primary_artist": "byron stingily",
+        "album": "Get Up (Everybody)",
+        "genre": "House",
+        "file_path": "Byron Stingily - Get Up (Everybody) - Mousse T. Remix 125.mp3"
+      },
+      "verdict": "false-negative",
+      "failureCategory": "version-notation",
+      "notes": "",
+      "superGenre": "House"
+    },
+    {
+      "id": "eval-103",
+      "spotifyTrack": {
+        "id": "1fd90cd2-a7c0-4c30-a9b4-32923946ecf3",
+        "title": "Ginger",
+        "artist": "Riton, Kah-Lo",
+        "primary_artist": null,
+        "album": "Foreign Ororo (Special Edition)",
+        "genre": "house",
+        "super_genre": "House"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "House"
+    },
+    {
+      "id": "eval-106",
+      "spotifyTrack": {
+        "id": "2ed1d364-b8eb-45ac-b086-98193aebeaf7",
+        "title": "Glow in the Dark - Bonus Track",
+        "artist": "Session Victim",
+        "primary_artist": null,
+        "album": "Glow in the Dark",
+        "genre": "jazz house",
+        "super_genre": "House"
+      },
+      "expectedLocalMatch": {
+        "id": "bc4dab8b-c52c-4ff8-9a2e-78f72655f412",
+        "title": "Glow in the Dark",
+        "artist": "Session Victim",
+        "primary_artist": "session victim",
+        "album": "See You When You Get There",
+        "genre": "Deep House",
+        "file_path": "Session Victim - Glow in the Dark.mp3"
+      },
+      "verdict": "false-negative",
+      "failureCategory": "version-notation",
+      "notes": "",
+      "superGenre": "House"
+    },
+    {
+      "id": "eval-107",
+      "spotifyTrack": {
+        "id": "58fed585-18eb-44d4-b315-ff0b9ff9fbd6",
+        "title": "Go Back (feat. Julia Church)",
+        "artist": "John Summit, Sub Focus, Julia Church",
+        "primary_artist": null,
+        "album": "Go Back (feat. Julia Church)",
+        "genre": "house",
+        "super_genre": "House"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "House"
+    },
+    {
+      "id": "eval-115",
+      "spotifyTrack": {
+        "id": "e43843b9-8032-45e2-88e3-9727e82adf40",
+        "title": "Groovejet (If This Ain't Love) [feat. Sophie Ellis-Bextor] - Extended Vocal Mix",
+        "artist": "DJ Spiller, Sophie Ellis-Bextor",
+        "primary_artist": null,
+        "album": "Groovejet (If This Ain't Love) [feat. Sophie Ellis-Bextor]",
+        "genre": "disco house",
+        "super_genre": "House"
+      },
+      "expectedLocalMatch": {
+        "id": "12e3ad08-424f-4746-aeb6-999eac313e2c",
+        "title": "Groovejet (If This Ain't Love) [feat. Sophie Ellis-Bextor]",
+        "artist": "DJ Spiller, Sophie Ellis-Bextor",
+        "primary_artist": "dj spiller sophie ellis-bextor",
+        "album": "’2000s Club Hits Essentials",
+        "genre": "House",
+        "file_path": "DJ Spiller, Sophie Ellis-Bextor - Groovejet (If This Ain't Love) [feat. Sophie Ellis-Bextor].mp3"
+      },
+      "verdict": "false-negative",
+      "failureCategory": "core-strip",
+      "notes": "",
+      "superGenre": "House"
+    },
+    {
+      "id": "eval-118",
+      "spotifyTrack": {
+        "id": "85abae71-f62c-4b22-b823-b70c6c64c291",
+        "title": "Hear The Sun",
+        "artist": "Session Victim, Iron Curtis",
+        "primary_artist": null,
+        "album": "Dawn",
+        "genre": "jazz house",
+        "super_genre": "House"
+      },
+      "expectedLocalMatch": {
+        "id": "ec614de9-60ce-47d4-b1b2-9b8f7f87db73",
+        "title": "Hear The Sun (Original Mix)",
+        "artist": "Session Victim, Iron Curtis",
+        "primary_artist": "session victim iron curtis",
+        "album": "Dawn",
+        "genre": "Deep House",
+        "file_path": "Session Victim, Iron Curtis - Hear The Sun (Original Mix).mp3"
+      },
+      "verdict": "false-negative",
+      "failureCategory": "version-notation",
+      "notes": "",
+      "superGenre": "House"
+    },
+    {
+      "id": "eval-120",
+      "spotifyTrack": {
+        "id": "b9178e9d-1a71-442a-805b-75345c8e7052",
+        "title": "Hey Papi - Edit",
+        "artist": "Jitwam",
+        "primary_artist": null,
+        "album": "Hey Papi",
+        "genre": "jazz house",
+        "super_genre": "House"
+      },
+      "expectedLocalMatch": {
+        "id": "60299b63-84d7-47b3-b138-7cec46e51d68",
+        "title": "Hey Papi",
+        "artist": "Jitwam",
+        "primary_artist": "jitwam",
+        "album": "Third",
+        "genre": "Downtempo",
+        "file_path": "Jitwam - Hey Papi.mp3"
+      },
+      "verdict": "false-negative",
+      "failureCategory": "version-notation",
+      "notes": "",
+      "superGenre": "House"
+    },
+    {
+      "id": "eval-122",
+      "spotifyTrack": {
+        "id": "d76e68fd-289e-487c-82c7-12cbab6b309a",
+        "title": "Higher State of Consciousness - Tweekin Acid Funk",
+        "artist": "Josh Wink",
+        "primary_artist": null,
+        "album": "Higher State Of Consciousness",
+        "genre": "acid house",
+        "super_genre": "House"
+      },
+      "expectedLocalMatch": {
+        "id": "e97d06bf-7696-4aa9-810e-92ec845a8334",
+        "title": "Higher State of Consciousness (Tweekin Acid Funk Mix)",
+        "artist": "Josh Wink",
+        "primary_artist": "josh wink",
+        "album": "Strictly Club Cuts, Vol. 4",
+        "genre": "Breakbeat",
+        "file_path": "Josh Wink - Higher State of Consciousness (Tweekin Acid Funk Mix).mp3"
+      },
+      "verdict": "false-negative",
+      "failureCategory": "version-notation",
+      "notes": "",
+      "superGenre": "House"
+    },
+    {
+      "id": "eval-130",
+      "spotifyTrack": {
+        "id": "ae248a01-fa5a-41b7-8cc3-fb0ed80448dc",
+        "title": "Howsmusic",
+        "artist": "Dam Swindle",
+        "primary_artist": null,
+        "album": "In Reverse EP",
+        "genre": "deep house",
+        "super_genre": "House"
+      },
+      "expectedLocalMatch": {
+        "id": "cfab93d1-f617-45a1-8485-8a14d684e544",
+        "title": "Howsmusic (Original Mix)",
+        "artist": "Dam Swindle",
+        "primary_artist": "dam swindle",
+        "album": "In Reverse",
+        "genre": "Deep House",
+        "file_path": "Dam Swindle - Howsmusic (Original Mix).mp3"
+      },
+      "verdict": "false-negative",
+      "failureCategory": "core-strip",
+      "notes": "",
+      "superGenre": "House"
+    },
+    {
+      "id": "eval-131",
+      "spotifyTrack": {
+        "id": "f7495c65-2f94-4bdc-aa1f-28a9d2cad6db",
+        "title": "Hydrate",
+        "artist": "Chaos In The CBD",
+        "primary_artist": null,
+        "album": "Hydrate EP",
+        "genre": "jazz house",
+        "super_genre": "House"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "House"
+    },
+    {
+      "id": "eval-134",
+      "spotifyTrack": {
+        "id": "27993b1a-676e-4cf1-9775-e1cdb0ee0957",
+        "title": "I Feel It Coming",
+        "artist": "The Weeknd, Daft Punk",
+        "primary_artist": null,
+        "album": "Starboy",
+        "genre": "french house",
+        "super_genre": "House"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "House"
+    },
+    {
+      "id": "eval-140",
+      "spotifyTrack": {
+        "id": "5be31685-5561-42c8-a64a-9e1f0ebd76e1",
+        "title": "I Made This To Play at fabric - Edit",
+        "artist": "Laurence Guy",
+        "primary_artist": null,
+        "album": "I Made This To Play at fabric (Edit)",
+        "genre": "jazz house",
+        "super_genre": "House"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "House"
+    },
+    {
+      "id": "eval-142",
+      "spotifyTrack": {
+        "id": "2aa991bb-2be3-43c5-b4c0-823d29b10280",
+        "title": "I'm Lovin' It - Kooba's Percussive Kapp",
+        "artist": "Mark Farina, Homero Espinosa, Kid Enigma, King Kooba",
+        "primary_artist": null,
+        "album": "I'm Lovin' It Remixes",
+        "genre": "chicago house",
+        "super_genre": "House"
+      },
+      "expectedLocalMatch": {
+        "id": "a99c2dc1-a9ed-459a-bd5e-611d32d97d8c",
+        "title": "I'm Lovin' It (Kooba's Percussive Kapp) [Moulton Music]",
+        "artist": "Mark Farina, Homero Espinosa, Kid Enigma, King Kooba",
+        "primary_artist": "mark farina homero espinosa kid enigma king kooba",
+        "album": "Soulseek",
+        "genre": "House",
+        "file_path": "Mark Farina, Homero Espinosa, Kid Enigma, King Kooba - I'm Lovin' It (Kooba's Percussive Kapp) [Moulton Music].mp3"
+      },
+      "verdict": "false-negative",
+      "failureCategory": "version-notation",
+      "notes": "",
+      "superGenre": "House"
+    },
+    {
+      "id": "eval-146",
+      "spotifyTrack": {
+        "id": "b74af979-cb00-4a32-9247-3ab5d0af5832",
+        "title": "In The Shadows",
+        "artist": "Lovebirds",
+        "primary_artist": null,
+        "album": "In The Shadows",
+        "genre": "deep house",
+        "super_genre": "House"
+      },
+      "expectedLocalMatch": {
+        "id": "034ae373-2eb7-4d9c-8db6-6c9fc718bdb2",
+        "title": "In the Shadows (Lovebirds Reprise)",
+        "artist": "Lovebirds",
+        "primary_artist": "lovebirds",
+        "album": "Lovebirds Presents My Favourite Dish",
+        "genre": "House",
+        "file_path": "Lovebirds - In the Shadows (Lovebirds Reprise).mp3"
+      },
+      "verdict": "false-negative",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "House"
+    },
+    {
+      "id": "eval-149",
+      "spotifyTrack": {
+        "id": "df1e8b80-2a82-4a20-b771-c92c6cb7fb55",
+        "title": "It Makes You Forget (Itgehane) - Edit",
+        "artist": "Peggy Gou",
+        "primary_artist": null,
+        "album": "It Makes You Forget (Itgehane)",
+        "genre": null,
+        "super_genre": "House"
+      },
+      "expectedLocalMatch": {
+        "id": "b2eea999-7d29-4d99-820b-56dd40001ee5",
+        "title": "It Makes You Forget (Itgehane) (Edit)",
+        "artist": "Peggy Gou",
+        "primary_artist": "peggy gou",
+        "album": "Café Del Mar XXV (Vol. 25)",
+        "genre": "Deep House",
+        "file_path": "Peggy Gou - It Makes You Forget (Itgehane) (Edit).mp3"
+      },
+      "verdict": "false-negative",
+      "failureCategory": "version-notation",
+      "notes": "",
+      "superGenre": "House"
+    },
+    {
+      "id": "eval-156",
+      "spotifyTrack": {
+        "id": "7a7fe0e4-759c-4a53-bfba-0617d8333744",
+        "title": "Jesus",
+        "artist": "DJ Koze",
+        "primary_artist": null,
+        "album": "Knock Knock",
+        "genre": null,
+        "super_genre": "House"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "House"
+    },
+    {
+      "id": "eval-164",
+      "spotifyTrack": {
+        "id": "d823dbcc-7ada-4588-9cfa-8dabd57cc1e0",
+        "title": "Lady - Hear Me Tonight",
+        "artist": "Modjo",
+        "primary_artist": null,
+        "album": "Modjo (Remastered)",
+        "genre": "french house",
+        "super_genre": "House"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "House"
+    },
+    {
+      "id": "eval-167",
+      "spotifyTrack": {
+        "id": "1df5530b-f186-4a1a-932d-0914b2e05cc3",
+        "title": "Leko - Session Victim Remix",
+        "artist": "Kink, Session Victim",
+        "primary_artist": null,
+        "album": "Leko Remixes",
+        "genre": "acid house",
+        "super_genre": "House"
+      },
+      "expectedLocalMatch": {
+        "id": "5ca1b2be-3ae1-4216-b6d1-5cd7b8ee800e",
+        "title": "Leko - Session Victim Remix 122",
+        "artist": "Kink,Session Victim",
+        "primary_artist": "kink session victim",
+        "album": "Leko",
+        "genre": "Deep House",
+        "file_path": "Kink,Session Victim - Leko - Session Victim Remix 122.mp3"
+      },
+      "verdict": "false-negative",
+      "failureCategory": "version-notation",
+      "notes": "",
+      "superGenre": "House"
+    },
+    {
+      "id": "eval-178",
+      "spotifyTrack": {
+        "id": "f4d209bf-1781-4b01-b68d-5f4634fa208e",
+        "title": "Lovelee Dae",
+        "artist": "Blaze",
+        "primary_artist": null,
+        "album": "Lovelee Dae",
+        "genre": "funky house",
+        "super_genre": "House"
+      },
+      "expectedLocalMatch": {
+        "id": "85c9be2c-81db-4811-9eb4-0acb94986e17",
+        "title": "Lovelee Dae (Beloved Vocal Rmx)",
+        "artist": "Blaze",
+        "primary_artist": "blaze",
+        "album": "Lovelee Dae",
+        "genre": "House",
+        "file_path": "Blaze - Lovelee Dae (Beloved Vocal Rmx).mp3"
+      },
+      "verdict": "false-negative",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "House"
+    },
+    {
+      "id": "eval-182",
+      "spotifyTrack": {
+        "id": "2d879f6b-daa0-4928-87dc-5ccfc8549a69",
+        "title": "Love You Better",
+        "artist": "Alex Preston",
+        "primary_artist": null,
+        "album": "Love You Better",
+        "genre": "disco house",
+        "super_genre": "House"
+      },
+      "expectedLocalMatch": {
+        "id": "a685fea2-5fe1-4855-ad73-747da124ae20",
+        "title": "Love You Better (extended mix)",
+        "artist": "Alex Preston",
+        "primary_artist": "alex preston",
+        "album": "Love You Better",
+        "genre": "House",
+        "file_path": "Alex Preston - Love You Better (extended mix).mp3"
+      },
+      "verdict": "false-negative",
+      "failureCategory": "core-strip",
+      "notes": "",
+      "superGenre": "House"
+    },
+    {
+      "id": "eval-185",
+      "spotifyTrack": {
+        "id": "a76231fd-bc60-4704-8ff0-231e86b7f409",
+        "title": "Magic Carpet Ride",
+        "artist": "Mighty Dub Katz",
+        "primary_artist": null,
+        "album": "Magic Carpet Ride",
+        "genre": "latin house",
+        "super_genre": "House"
+      },
+      "expectedLocalMatch": {
+        "id": "d8627011-7e11-4ac6-a225-f595e4fcbf91",
+        "title": "Magic Carpet Ride (RIP Groove Remix)",
+        "artist": "Mighty Dub Katz",
+        "primary_artist": "mighty dub katz",
+        "album": null,
+        "genre": "MashUp",
+        "file_path": "Mighty Dub Katz - Magic Carpet Ride (RIP Groove Remix).mp3"
+      },
+      "verdict": "false-negative",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "House"
+    },
+    {
+      "id": "eval-186",
+      "spotifyTrack": {
+        "id": "4125b336-2842-4719-9914-d4db785f93ae",
+        "title": "Marea (we’ve lost dancing)",
+        "artist": "Fred again.., The Blessed Madonna",
+        "primary_artist": null,
+        "album": "Actual Life (April 14 - December 17 2020)",
+        "genre": "stutter house",
+        "super_genre": "House"
+      },
+      "expectedLocalMatch": {
+        "id": "02158b54-4c06-48b6-8141-416bbba88f85",
+        "title": "Marea (We’ve Lost Dancing) (Original Mix)",
+        "artist": "Fred again.., The Blessed Madonna",
+        "primary_artist": "fred again the blessed madonna",
+        "album": null,
+        "genre": "House",
+        "file_path": "Fred again.., The Blessed Madonna - Marea (We’ve Lost Dancing) (Original Mix).mp3"
+      },
+      "verdict": "false-negative",
+      "failureCategory": "version-notation",
+      "notes": "",
+      "superGenre": "House"
+    },
+    {
+      "id": "eval-193",
+      "spotifyTrack": {
+        "id": "19c9b6e2-c9c9-43ca-8a76-3fc0382bde19",
+        "title": "Midnight in Peckham",
+        "artist": "Chaos In The CBD",
+        "primary_artist": null,
+        "album": "Midnight in Peckham",
+        "genre": "jazz house",
+        "super_genre": "House"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "House"
+    },
+    {
+      "id": "eval-200",
+      "spotifyTrack": {
+        "id": "6e7cd11a-c18e-4e21-8581-8064184f485a",
+        "title": "Most Precious Love",
+        "artist": "Nico de Andrea, Blaze, UDAUFL, Barbara Tucker",
+        "primary_artist": null,
+        "album": "Most Precious Love",
+        "genre": "afro house",
+        "super_genre": "House"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "House"
+    },
+    {
+      "id": "eval-206",
+      "spotifyTrack": {
+        "id": "da2177ff-0f49-4e30-98a7-18ab03d16050",
+        "title": "Moves",
+        "artist": "Cody Currie, Eliza Rose",
+        "primary_artist": null,
+        "album": "Moves EP",
+        "genre": "jazz house",
+        "super_genre": "House"
+      },
+      "expectedLocalMatch": {
+        "id": "25ba98ab-6409-4a75-a486-92c0f903deb8",
+        "title": "Moves (House Mix)",
+        "artist": "Cody Currie, Eliza Rose",
+        "primary_artist": "cody currie eliza rose",
+        "album": null,
+        "genre": "House",
+        "file_path": "Cody Currie, Eliza Rose - Moves (House Mix).mp3"
+      },
+      "verdict": "false-negative",
+      "failureCategory": "core-strip",
+      "notes": "",
+      "superGenre": "House"
+    },
+    {
+      "id": "eval-209",
+      "spotifyTrack": {
+        "id": "fc89b0d1-e1b7-430a-8a58-dcd4e0632eea",
+        "title": "Movin On - Correct House Mix",
+        "artist": "Roach Motel",
+        "primary_artist": null,
+        "album": "Defected Presents House Masters - Heller & Farley",
+        "genre": "chicago house",
+        "super_genre": "House"
+      },
+      "expectedLocalMatch": {
+        "id": "e2d8ba49-89fb-417c-83f6-e20fc0efe451",
+        "title": "Movin' On",
+        "artist": "Roach Motel",
+        "primary_artist": "roach motel",
+        "album": null,
+        "genre": "UK Garage",
+        "file_path": "Roach Motel - Movin' On.mp3"
+      },
+      "verdict": "false-negative",
+      "failureCategory": "version-notation",
+      "notes": "",
+      "superGenre": "House"
+    },
+    {
+      "id": "eval-210",
+      "spotifyTrack": {
+        "id": "f7099b40-a92f-41c4-99e7-9d7498b89860",
+        "title": "Music Saved My Life",
+        "artist": "Dimitri From Paris, Fiorious",
+        "primary_artist": null,
+        "album": "Music Saved My Life",
+        "genre": "french house",
+        "super_genre": "House"
+      },
+      "expectedLocalMatch": {
+        "id": "7b5a894f-1ec6-4247-bd2c-c396d5816794",
+        "title": "Music Saved My Life (The Extended Discomix)",
+        "artist": "Dimitri From Paris, Fiorious",
+        "primary_artist": "dimitri from paris fiorious",
+        "album": "Traxsource Top 200 Soul / Funk / Disco of 2021",
+        "genre": "Nu Disco",
+        "file_path": "Dimitri From Paris, Fiorious - Music Saved My Life (The Extended Discomix).mp3"
+      },
+      "verdict": "false-negative",
+      "failureCategory": "core-strip",
+      "notes": "",
+      "superGenre": "House"
+    },
+    {
+      "id": "eval-213",
+      "spotifyTrack": {
+        "id": "23b4e2bb-8306-492f-b7b9-1cdb3dd3ab19",
+        "title": "My Beat",
+        "artist": "Blaze, Palmer Brown",
+        "primary_artist": null,
+        "album": "Basic Blaze",
+        "genre": "funky house",
+        "super_genre": "House"
+      },
+      "expectedLocalMatch": {
+        "id": "73823f20-498a-4a4e-a04f-3c65d76c6c79",
+        "title": "My Beat (feat. Palmer Brown)",
+        "artist": "Blaze,Palmer Brown",
+        "primary_artist": "blaze palmer brown",
+        "album": "Basic Blaze",
+        "genre": "Jazz House",
+        "file_path": "Blaze,Palmer Brown - My Beat (feat. Palmer Brown).mp3"
+      },
+      "verdict": "false-negative",
+      "failureCategory": "artist-in-title",
+      "notes": "",
+      "superGenre": "House"
+    },
+    {
+      "id": "eval-219",
+      "spotifyTrack": {
+        "id": "9539ca07-e386-41c9-97af-8d004f74a38f",
+        "title": "No Broke Boys",
+        "artist": "Disco Lines, Tinashe",
+        "primary_artist": null,
+        "album": "No Broke Boys",
+        "genre": "stutter house",
+        "super_genre": "House"
+      },
+      "expectedLocalMatch": {
+        "id": "a9759f67-863c-41bf-824a-f63b4ffbf57d",
+        "title": "No Broke Boys (Extended) 131",
+        "artist": "Disco Lines, Tinashe",
+        "primary_artist": "disco lines tinashe",
+        "album": null,
+        "genre": "House",
+        "file_path": "Disco Lines, Tinashe - No Broke Boys (Extended) 131.mp3"
+      },
+      "verdict": "false-negative",
+      "failureCategory": "core-strip",
+      "notes": "",
+      "superGenre": "House"
+    },
+    {
+      "id": "eval-225",
+      "spotifyTrack": {
+        "id": "cf856326-85f2-47cd-8913-313dbde75e98",
+        "title": "On The Down Low",
+        "artist": "K-Lone, Wilfy D",
+        "primary_artist": null,
+        "album": "On The Down Low",
+        "genre": "jazz house",
+        "super_genre": "House"
+      },
+      "expectedLocalMatch": {
+        "id": "25249409-db97-4fd3-ab8c-6d8e719f6747",
+        "title": "On The Down Low (Original Mix) 132",
+        "artist": "K-Lone, Wilfy D",
+        "primary_artist": "k-lone wilfy d",
+        "album": "Lone, Wilfy D",
+        "genre": "2Step",
+        "file_path": "K-Lone, Wilfy D - On The Down Low (Original Mix) 132.mp3"
+      },
+      "verdict": "false-negative",
+      "failureCategory": "version-notation",
+      "notes": "",
+      "superGenre": "House"
+    },
+    {
+      "id": "eval-231",
+      "spotifyTrack": {
+        "id": "f7fbfc7d-9b39-4336-8893-45153c0ef3c2",
+        "title": "Pasilda - Knee Deep Club Mix",
+        "artist": "Afro Medusa, Knee Deep",
+        "primary_artist": null,
+        "album": "Pasilda (Extended Versions)",
+        "genre": "latin house",
+        "super_genre": "House"
+      },
+      "expectedLocalMatch": {
+        "id": "b8a0df2b-14b5-4725-805a-b39a418c1b7e",
+        "title": "Pasilda (Knee Deep Club Mix)",
+        "artist": "Afro Medusa, Knee Deep",
+        "primary_artist": "afro medusa knee deep",
+        "album": "Pasilda",
+        "genre": "Latin House",
+        "file_path": "Afro Medusa, Knee Deep - Pasilda (Knee Deep Club Mix).mp3"
+      },
+      "verdict": "false-negative",
+      "failureCategory": "version-notation",
+      "notes": "",
+      "superGenre": "House"
+    },
+    {
+      "id": "eval-239",
+      "spotifyTrack": {
+        "id": "b2fa42b2-d73c-48ef-a37b-754d21908129",
+        "title": "Prix Choc - Radio Edit - High Mix",
+        "artist": "Étienne de Crécy",
+        "primary_artist": null,
+        "album": "Prix Choc",
+        "genre": "french house",
+        "super_genre": "House"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "House"
+    },
+    {
+      "id": "eval-243",
+      "spotifyTrack": {
+        "id": "1edf6c99-23ba-4b8f-88ca-a034e72724cd",
+        "title": "Rain or Shine",
+        "artist": "Session Victim, Eo",
+        "primary_artist": null,
+        "album": "Rain or Shine",
+        "genre": "jazz house",
+        "super_genre": "House"
+      },
+      "expectedLocalMatch": {
+        "id": "8f5455bf-ffd2-445e-91be-3f5c41430ee1",
+        "title": "Rain or Shine (Original Mix)",
+        "artist": "Session Victim, EO",
+        "primary_artist": "session victim eo",
+        "album": "Single Tracks 11.2025 week1",
+        "genre": "Downtempo",
+        "file_path": "Session Victim, EO - Rain or Shine (Original Mix).mp3"
+      },
+      "verdict": "false-negative",
+      "failureCategory": "version-notation",
+      "notes": "",
+      "superGenre": "House"
+    },
+    {
+      "id": "eval-244",
+      "spotifyTrack": {
+        "id": "1926fa02-1c00-412f-9269-9e40a6903264",
+        "title": "Raw Cuts #3",
+        "artist": "Motor City Drum Ensemble",
+        "primary_artist": null,
+        "album": "Raw Cuts, Vol.1",
+        "genre": "jazz house",
+        "super_genre": "House"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "House"
+    },
+    {
+      "id": "eval-248",
+      "spotifyTrack": {
+        "id": "6ad33819-cfd9-43c3-a970-dc446d89555a",
+        "title": "Rude Movements - Moodymann Remix",
+        "artist": "SunPalace, Moodymann",
+        "primary_artist": null,
+        "album": "Rude Movements (Moodymann Remix / Kenny Dope Dancefloor Powder Remix)",
+        "genre": "jazz house",
+        "super_genre": "House"
+      },
+      "expectedLocalMatch": {
+        "id": "1fd4c76c-82d9-46d0-bce1-0a473aff8abb",
+        "title": "Rude Movements (Moodymann Remix Extended Version)",
+        "artist": "SunPalace, Moodymann",
+        "primary_artist": "sunpalace moodymann",
+        "album": "Rude Movements - the Remixes",
+        "genre": "Downtempo",
+        "file_path": "SunPalace, Moodymann - Rude Movements (Moodymann Remix Extended Version).mp3"
+      },
+      "verdict": "false-negative",
+      "failureCategory": "version-notation",
+      "notes": "",
+      "superGenre": "House"
+    },
+    {
+      "id": "eval-251",
+      "spotifyTrack": {
+        "id": "e241668f-5d54-4821-a112-9d904da9e199",
+        "title": "Screen Off",
+        "artist": "Session Victim, Ras Stimulant",
+        "primary_artist": null,
+        "album": "Screen Off",
+        "genre": "jazz house",
+        "super_genre": "House"
+      },
+      "expectedLocalMatch": {
+        "id": "a30d063f-b919-43a2-8e74-02ec061af24b",
+        "title": "Screen Off (feat. Ras Stimulant) Original Mix",
+        "artist": "Session Victim, Ras Stimulant",
+        "primary_artist": "session victim ras stimulant",
+        "album": "Festival Essentials 2024: Nu Disco / Disco",
+        "genre": "House",
+        "file_path": "Session Victim, Ras Stimulant - Screen Off (feat. Ras Stimulant) Original Mix.mp3"
+      },
+      "verdict": "false-negative",
+      "failureCategory": "version-notation",
+      "notes": "",
+      "superGenre": "House"
+    },
+    {
+      "id": "eval-252",
+      "spotifyTrack": {
+        "id": "9ec2e377-8ba5-46e3-9010-bb2232f7f944",
+        "title": "Seeing Aliens",
+        "artist": "DJ Koze",
+        "primary_artist": null,
+        "album": "Knock Knock",
+        "genre": null,
+        "super_genre": "House"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "House"
+    },
+    {
+      "id": "eval-255",
+      "spotifyTrack": {
+        "id": "0b1647a7-baa2-490e-a39d-fce9c700ca7b",
+        "title": "Seventies",
+        "artist": "Theo Kottis",
+        "primary_artist": null,
+        "album": "Seventies",
+        "genre": "disco house",
+        "super_genre": "House"
+      },
+      "expectedLocalMatch": {
+        "id": "b367aabf-4b8e-45ab-a990-b54eacd0d58a",
+        "title": "Seventies (Extended Mix)",
+        "artist": "Theo Kottis",
+        "primary_artist": "theo kottis",
+        "album": "Seventies",
+        "genre": "House",
+        "file_path": "Theo Kottis - Seventies (Extended Mix).mp3"
+      },
+      "verdict": "false-negative",
+      "failureCategory": "version-notation",
+      "notes": "",
+      "superGenre": "House"
+    },
+    {
+      "id": "eval-258",
+      "spotifyTrack": {
+        "id": "84623af7-5281-4df0-9c36-aa5f22e2d827",
+        "title": "Show Me Some Love (feat. Sadie Walker)",
+        "artist": "Honey Dijon, Channel Tres, Sadie Walker",
+        "primary_artist": null,
+        "album": "Show Me Some Love (feat. Sadie Walker)",
+        "genre": "ballroom vogue",
+        "super_genre": "House"
+      },
+      "expectedLocalMatch": {
+        "id": "ce146558-1f4c-4689-90aa-8320bfd98c81",
+        "title": "Show Me Some Love (feat. Sadie Walker) (Extended Mix)",
+        "artist": "Honey Dijon, Channel Tres, Sadie Walker",
+        "primary_artist": "honey dijon channel tres sadie walker",
+        "album": "djsoundtop.com",
+        "genre": "House",
+        "file_path": "Honey Dijon, Channel Tres, Sadie Walker - Show Me Some Love (feat. Sadie Walker) (Extended Mix).mp3"
+      },
+      "verdict": "false-negative",
+      "failureCategory": "version-notation",
+      "notes": "",
+      "superGenre": "House"
+    },
+    {
+      "id": "eval-268",
+      "spotifyTrack": {
+        "id": "4d410755-899c-40cb-956c-49d915aff4f6",
+        "title": "Stakker Humanoid - 12\" Original",
+        "artist": "Humanoid",
+        "primary_artist": null,
+        "album": "Your Body Robotic (Part 2)",
+        "genre": "acid house",
+        "super_genre": "House"
+      },
+      "expectedLocalMatch": {
+        "id": "9b12fd42-258f-45d9-bd50-4a000beb26da",
+        "title": "Stakker Humanoid (12\" Original)",
+        "artist": "Humanoid",
+        "primary_artist": "humanoid",
+        "album": "Stakker Humanoid 92",
+        "genre": "Breakbeat",
+        "file_path": "Humanoid - Stakker Humanoid (12' Original).mp3"
+      },
+      "verdict": "false-negative",
+      "failureCategory": "version-notation",
+      "notes": "",
+      "superGenre": "House"
+    },
+    {
+      "id": "eval-273",
+      "spotifyTrack": {
+        "id": "6e6cf8ae-4390-49e2-a5e6-cfbc45cf357b",
+        "title": "Street Life",
+        "artist": "Purple Disco Machine",
+        "primary_artist": null,
+        "album": "Move Or Not EP",
+        "genre": "disco house",
+        "super_genre": "House"
+      },
+      "expectedLocalMatch": {
+        "id": "7bdd2e4d-597b-4937-acae-92b52feb55f5",
+        "title": "Street Life (Original Mix)",
+        "artist": "Purple Disco Machine",
+        "primary_artist": "purple disco machine",
+        "album": "Move Or Not EP",
+        "genre": "Disco House",
+        "file_path": "Purple Disco Machine - Street Life (Original Mix).mp3"
+      },
+      "verdict": "false-negative",
+      "failureCategory": "version-notation",
+      "notes": "",
+      "superGenre": "House"
+    },
+    {
+      "id": "eval-278",
+      "spotifyTrack": {
+        "id": "c710733b-2a3a-41ec-9022-e35a8373ea9d",
+        "title": "Sunshine - Farley and Heller's Faith On A Sunday Vocal",
+        "artist": "Black Science Orchestra, Alison David",
+        "primary_artist": null,
+        "album": "Defected Presents House Masters - Heller & Farley",
+        "genre": null,
+        "super_genre": "House"
+      },
+      "expectedLocalMatch": {
+        "id": "5d67fedb-8128-4184-8589-05467ade3d8e",
+        "title": "Sunshine (Farley and Heller's Faith On A Sunday Vocal)",
+        "artist": "Black Science Orchestra, Alison David",
+        "primary_artist": "black science orchestra alison david",
+        "album": "Defected presents House Masters - Heller & Farley",
+        "genre": "House",
+        "file_path": "Black Science Orchestra, Alison David - Sunshine (Farley and Heller's Faith On A Sunday Vocal).mp3"
+      },
+      "verdict": "false-negative",
+      "failureCategory": "version-notation",
+      "notes": "",
+      "superGenre": "House"
+    },
+    {
+      "id": "eval-282",
+      "spotifyTrack": {
+        "id": "7108ecc6-c009-40a8-8319-a2030bf5e0c2",
+        "title": "The Bomb! (These Sound Fall into My Mind) - Original Henry Street Edit",
+        "artist": "The Bucketheads",
+        "primary_artist": null,
+        "album": "All In The Mind",
+        "genre": null,
+        "super_genre": "House"
+      },
+      "expectedLocalMatch": {
+        "id": "ec8aa01d-f781-4326-a0be-926c2aa374c2",
+        "title": "The Bomb (These Sounds Fall into My Mind) (Armand Van Helden Re-Edit)",
+        "artist": "The Bucketheads",
+        "primary_artist": "the bucketheads",
+        "album": "The Bomb (These Sounds Fall into My Mind) (Armand Van Helden Re",
+        "genre": "UK Garage",
+        "file_path": "The Bucketheads - The Bomb (These Sounds Fall into My Mind) (Armand Van Helden Re-Edit).mp3"
+      },
+      "verdict": "false-negative",
+      "failureCategory": "version-notation",
+      "notes": "",
+      "superGenre": "House"
+    },
+    {
+      "id": "eval-284",
+      "spotifyTrack": {
+        "id": "746fdbcb-f792-4bd3-b17e-09776120ce6d",
+        "title": "The Bomb! (These Sounds Fall Into My Mind)",
+        "artist": "The Bucketheads, Kenny Dope",
+        "primary_artist": null,
+        "album": "Henry Street Music The Playlist Vol. 2",
+        "genre": null,
+        "super_genre": "House"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "House"
+    },
+    {
+      "id": "eval-287",
+      "spotifyTrack": {
+        "id": "04070d19-7e72-4821-9c15-c62c12b6ee7e",
+        "title": "The Ghetto - Ian Pooley's Paradisiaque Mix",
+        "artist": "Bob Sinclar, Ian Pooley",
+        "primary_artist": null,
+        "album": "Paradise (Remixed)",
+        "genre": "french house",
+        "super_genre": "House"
+      },
+      "expectedLocalMatch": {
+        "id": "c62294c0-91e3-4639-9b6d-60fdb18c9491",
+        "title": "The Ghetto",
+        "artist": "Bob Sinclar,Ian Pooley",
+        "primary_artist": "bob sinclar ian pooley",
+        "album": "Ian Pooley's Paradisiaque Mix",
+        "genre": "House",
+        "file_path": "Bob Sinclar,Ian Pooley - The Ghetto - Ian Pooley's Paradisiaque Mix.mp3"
+      },
+      "verdict": "false-negative",
+      "failureCategory": "core-strip",
+      "notes": "",
+      "superGenre": "House"
+    },
+    {
+      "id": "eval-302",
+      "spotifyTrack": {
+        "id": "bcbe1203-e814-4d8f-9696-9356468be49b",
+        "title": "Twin Flame",
+        "artist": "KAYTRANADA, Anderson .Paak",
+        "primary_artist": null,
+        "album": "Twin Flame",
+        "genre": null,
+        "super_genre": "House"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "House"
+    },
+    {
+      "id": "eval-306",
+      "spotifyTrack": {
+        "id": "63c20a94-6555-4be0-bb04-38786d8d4500",
+        "title": "Vince Montana Tribute - LV & Rick Wilhite ReWork",
+        "artist": "Louie Vega, Rick Wilhite",
+        "primary_artist": null,
+        "album": "Expansions In The NYC Preview EP 2",
+        "genre": "latin house",
+        "super_genre": "House"
+      },
+      "expectedLocalMatch": {
+        "id": "04250c79-1d19-444e-aa90-2f6d279ba86e",
+        "title": "Vince Montana Tribute (LV & Rick Wilhite ReWork)",
+        "artist": "Louie Vega,Rick Wilhite",
+        "primary_artist": "louie vega rick wilhite",
+        "album": "Expansions In The NYC Preview EP 2",
+        "genre": "Chicago House",
+        "file_path": "Louie Vega,Rick Wilhite - Vince Montana Tribute (LV & Rick Wilhite ReWork).mp3"
+      },
+      "verdict": "false-negative",
+      "failureCategory": "version-notation",
+      "notes": "",
+      "superGenre": "House"
+    },
+    {
+      "id": "eval-308",
+      "spotifyTrack": {
+        "id": "c3d511b6-217d-419b-8a7d-b14d596dfa5e",
+        "title": "Wait on Me",
+        "artist": "Felipe Gordon",
+        "primary_artist": null,
+        "album": "Wait on Me EP",
+        "genre": "jazz house",
+        "super_genre": "House"
+      },
+      "expectedLocalMatch": {
+        "id": "6e857862-39f0-4ca7-98e5-f16aa1c39627",
+        "title": "Wait on Me (Original Mix)",
+        "artist": "Felipe Gordon",
+        "primary_artist": "felipe gordon",
+        "album": "Wait On Me EP",
+        "genre": "Deep House",
+        "file_path": "Felipe Gordon - Wait on Me (Original Mix).mp3"
+      },
+      "verdict": "false-negative",
+      "failureCategory": "version-notation",
+      "notes": "",
+      "superGenre": "House"
+    },
+    {
+      "id": "eval-310",
+      "spotifyTrack": {
+        "id": "124ece7b-b4d5-4997-932e-3cbef5d4d9aa",
+        "title": "We Did It For Years - KenLou Dub",
+        "artist": "Masters At Work, KenLou",
+        "primary_artist": null,
+        "album": "We Did It For Years",
+        "genre": "ballroom vogue",
+        "super_genre": "House"
+      },
+      "expectedLocalMatch": {
+        "id": "05dd6a55-108d-4f02-ab3b-2dc4373b5996",
+        "title": "We Did It For Years (KenLou Dub)",
+        "artist": "Masters At Work, KenLou",
+        "primary_artist": "masters at work kenlou",
+        "album": "We Did It For Years",
+        "genre": "House",
+        "file_path": "Masters At Work, KenLou - We Did It For Years (KenLou Dub).mp3"
+      },
+      "verdict": "false-negative",
+      "failureCategory": "version-notation",
+      "notes": "",
+      "superGenre": "House"
+    },
+    {
+      "id": "eval-311",
+      "spotifyTrack": {
+        "id": "c31f3e99-0c70-42ba-a530-940e6298544e",
+        "title": "Weekend - Seamus Haji Extended 80's Remix",
+        "artist": "Haji & Emanuel",
+        "primary_artist": null,
+        "album": "Weekend",
+        "genre": "funky house",
+        "super_genre": "House"
+      },
+      "expectedLocalMatch": {
+        "id": "099eb93a-3f91-48dd-8c6b-0b9722b43d53",
+        "title": "Weekend (Seamus Haji Extended 80's Remix)",
+        "artist": "Haji & Emanuel",
+        "primary_artist": "haji & emanuel",
+        "album": null,
+        "genre": "Nu Disco",
+        "file_path": "Haji & Emanuel - Weekend (Seamus Haji Extended 80's Remix).mp3"
+      },
+      "verdict": "false-negative",
+      "failureCategory": "version-notation",
+      "notes": "",
+      "superGenre": "House"
+    },
+    {
+      "id": "eval-313",
+      "spotifyTrack": {
+        "id": "828a1efd-e65f-466b-b63c-589dbe995fcc",
+        "title": "What Time Is Love / Time Of Love",
+        "artist": "K.l.f.s.",
+        "primary_artist": null,
+        "album": "What Time Is Love",
+        "genre": "acid house",
+        "super_genre": "House"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "House"
+    },
+    {
+      "id": "eval-316",
+      "spotifyTrack": {
+        "id": "08473aaa-4fff-45dc-862e-e3d59207c956",
+        "title": "Wisdom to the Wise (Red 2) - A. Mochi Re-Edit",
+        "artist": "Dave Clarke",
+        "primary_artist": null,
+        "album": "Wisdom to the Wise (Red 2) [Remixes]",
+        "genre": "acid house",
+        "super_genre": "House"
+      },
+      "expectedLocalMatch": {
+        "id": "1088bca4-ef3a-4657-bcb1-e656a18500d5",
+        "title": "Wisdom to the Wise (Red 2) (A. Mochi Re-Edit)",
+        "artist": "Dave Clarke",
+        "primary_artist": "dave clarke",
+        "album": "Wisdom to the Wise (Red 2) [Remixes]",
+        "genre": "Techno",
+        "file_path": "Dave Clarke - Wisdom to the Wise (Red 2) (A. Mochi Re-Edit).mp3"
+      },
+      "verdict": "false-negative",
+      "failureCategory": "version-notation",
+      "notes": "",
+      "superGenre": "House"
+    },
+    {
+      "id": "eval-320",
+      "spotifyTrack": {
+        "id": "2990de4d-3ee6-4032-9dac-bf9d1e5c662c",
+        "title": "Zombie (THEMBA's Herd Mix)",
+        "artist": "THEMBA, Fela Kuti, Afrika 70",
+        "primary_artist": null,
+        "album": "Zombie (THEMBA's Herd Mix)",
+        "genre": "afro house",
+        "super_genre": "House"
+      },
+      "expectedLocalMatch": {
+        "id": "b419a1fc-7618-4556-9dc7-f5ff544fb09c",
+        "title": "Zombie (THEMBA's Herd Mix) (Extended Mix)",
+        "artist": "Themba/Fela Kuti/Afrika 70",
+        "primary_artist": "themba fela kuti afrika 70",
+        "album": "Kontor Sunset Chill 2023",
+        "genre": "Chillout",
+        "file_path": "Themba; Fela Kuti; Afrika 70 - Zombie (THEMBA's Herd Mix) (Extended Mix).mp3"
+      },
+      "verdict": "false-negative",
+      "failureCategory": "version-notation",
+      "notes": "",
+      "superGenre": "House"
+    },
+    {
+      "id": "eval-321",
+      "spotifyTrack": {
+        "id": "555ea3bb-fc8d-45eb-b4f1-de9c42c36a50",
+        "title": "1, 2 Step (feat. Missy Elliott)",
+        "artist": "Ciara, Missy Elliott",
+        "primary_artist": null,
+        "album": "Goodies",
+        "genre": "hip hop",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-322",
+      "spotifyTrack": {
+        "id": "e42893d8-d7d2-4893-b7b4-e7dfcccade58",
+        "title": "1nce Again (feat. Tammy Lucas) - Radio Version",
+        "artist": "A Tribe Called Quest, Tammy Lucas",
+        "primary_artist": null,
+        "album": "Beats, Rhymes & Life",
+        "genre": "jazz rap",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-323",
+      "spotifyTrack": {
+        "id": "0505ab55-fc9d-4a34-96e3-8006515e1380",
+        "title": "2000 Seasons",
+        "artist": "Talib Kweli",
+        "primary_artist": null,
+        "album": "Train of Thought: Lost Lyrics, Rare Releases & Beautiful B-Sides, Vol. 1",
+        "genre": "east coast hip hop",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-324",
+      "spotifyTrack": {
+        "id": "80b22c9f-0eeb-43cf-8455-682ed9f1ac15",
+        "title": "3030",
+        "artist": "Deltron 3030, Del The Funky Homosapien, Dan The Automator, Kid Koala",
+        "primary_artist": null,
+        "album": "Deltron 3030",
+        "genre": "experimental hip hop",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-325",
+      "spotifyTrack": {
+        "id": "7d969ef9-7a47-4aee-a29a-167fcb2b95ce",
+        "title": "4EVA",
+        "artist": "KAYTRAMINÉ, Aminé, KAYTRANADA, Pharrell Williams",
+        "primary_artist": null,
+        "album": "KAYTRAMINÉ",
+        "genre": null,
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-326",
+      "spotifyTrack": {
+        "id": "dfbafe24-a61b-40c0-8d4e-7ab0b935c66d",
+        "title": "4EVA - Instrumental",
+        "artist": "KAYTRAMINÉ, Aminé, KAYTRANADA",
+        "primary_artist": null,
+        "album": "KAYTRAMINÉ (Instrumentals)",
+        "genre": null,
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-327",
+      "spotifyTrack": {
+        "id": "446d1de1-b9c7-4021-9504-b04c190acc23",
+        "title": "4th Chamber",
+        "artist": "GZA, RZA, Ghostface Killah, Killah Priest",
+        "primary_artist": null,
+        "album": "Liquid Swords",
+        "genre": "east coast hip hop",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-328",
+      "spotifyTrack": {
+        "id": "f6207b09-9e0c-4698-b5f1-25796e451d4c",
+        "title": "8 Steps to Perfection",
+        "artist": "Company Flow",
+        "primary_artist": null,
+        "album": "Funcrusher Plus",
+        "genre": "experimental hip hop",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-329",
+      "spotifyTrack": {
+        "id": "5b74ee51-3e15-4298-bb8f-17335b0919c6",
+        "title": "93 'Til Infinity",
+        "artist": "Souls Of Mischief",
+        "primary_artist": null,
+        "album": "93 'til Infinity",
+        "genre": "jazz rap",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-330",
+      "spotifyTrack": {
+        "id": "3e11cc48-e36a-4be8-9dee-1f63b79a3414",
+        "title": "Acknowledge Your Own History",
+        "artist": "Jungle Brothers",
+        "primary_artist": null,
+        "album": "Done By The Forces Of Nature",
+        "genre": "jazz rap",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-331",
+      "spotifyTrack": {
+        "id": "cd6bfbb9-e21d-43b5-b11d-9f0d3de6a749",
+        "title": "Action Satisfaction (Dub)",
+        "artist": "Jurassic 5",
+        "primary_artist": null,
+        "album": "J5 Deluxe Re-Issue",
+        "genre": "hip hop",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-332",
+      "spotifyTrack": {
+        "id": "e924d12a-6323-4229-a027-2b59c73d4a8b",
+        "title": "Act Like You Know",
+        "artist": "Pete Rock & C.L. Smooth",
+        "primary_artist": null,
+        "album": "Mecca And The Soul Brother",
+        "genre": "east coast hip hop",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-333",
+      "spotifyTrack": {
+        "id": "77086eac-a5a9-497b-8d0a-e943dea5b528",
+        "title": "Agony",
+        "artist": "Yung Lean",
+        "primary_artist": null,
+        "album": "Stranger",
+        "genre": "cloud rap",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-334",
+      "spotifyTrack": {
+        "id": "4fb3b71d-8fb0-4272-8a15-bab6c00a3acc",
+        "title": "Alfred Lion Interlude",
+        "artist": "Madlib",
+        "primary_artist": null,
+        "album": "Shades Of Blue: Madlib Invades Blue Note",
+        "genre": "experimental hip hop",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-335",
+      "spotifyTrack": {
+        "id": "d198a224-37d8-41e8-acd1-86862f78639a",
+        "title": "All Good? - Can 7 Supermarket Remix",
+        "artist": "De La Soul, Chaka Khan, Can 7",
+        "primary_artist": null,
+        "album": "All Good? (Remixes)",
+        "genre": "jazz rap",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-336",
+      "spotifyTrack": {
+        "id": "1a7f235e-77bd-4178-956f-bcd964fb3dc4",
+        "title": "All That We Do",
+        "artist": "Jungle Brothers",
+        "primary_artist": null,
+        "album": "All That We Do",
+        "genre": "jazz rap",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-337",
+      "spotifyTrack": {
+        "id": "f0fd7440-a805-47c4-9e5b-2a5dbddae91a",
+        "title": "Andrew Hill Break",
+        "artist": "Madlib",
+        "primary_artist": null,
+        "album": "Shades Of Blue: Madlib Invades Blue Note",
+        "genre": "experimental hip hop",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-338",
+      "spotifyTrack": {
+        "id": "f08d9021-ba88-476f-be7c-8c7612b006b7",
+        "title": "Anger in the Nation",
+        "artist": "Pete Rock & C.L. Smooth",
+        "primary_artist": null,
+        "album": "Mecca And The Soul Brother",
+        "genre": "east coast hip hop",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-339",
+      "spotifyTrack": {
+        "id": "fe186985-dac4-4b1a-902c-2208fef68ca9",
+        "title": "A Roller Skating Jam Named \"Saturdays\" - Single Mix",
+        "artist": "De La Soul, Q-Tip, Vinia Mojica",
+        "primary_artist": null,
+        "album": "A Roller Skating Jam Named \"Saturdays\"",
+        "genre": "jazz rap",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-340",
+      "spotifyTrack": {
+        "id": "f1b7b2ce-07a2-4ac7-97d0-0543d1fb9325",
+        "title": "Atavista",
+        "artist": "Childish Gambino",
+        "primary_artist": null,
+        "album": "Atavista",
+        "genre": null,
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-341",
+      "spotifyTrack": {
+        "id": "8950e8e2-2694-4e39-9693-e36dfec6ffff",
+        "title": "Baby Got Back",
+        "artist": "Sir Mix-A-Lot",
+        "primary_artist": null,
+        "album": "Mack Daddy",
+        "genre": "old school hip hop",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-342",
+      "spotifyTrack": {
+        "id": "b4f4b11d-b090-4cbe-8014-f28355646889",
+        "title": "Baby Phife's Return",
+        "artist": "A Tribe Called Quest",
+        "primary_artist": null,
+        "album": "Beats, Rhymes & Life",
+        "genre": "jazz rap",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-343",
+      "spotifyTrack": {
+        "id": "95e800ce-a874-4581-95d0-88ad8b9ed431",
+        "title": "Beeds on a String",
+        "artist": "Jungle Brothers",
+        "primary_artist": null,
+        "album": "Done By The Forces Of Nature",
+        "genre": "jazz rap",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-344",
+      "spotifyTrack": {
+        "id": "acd54aa5-21e2-459e-b76a-d9ea2c89bcf2",
+        "title": "Behind The Bush",
+        "artist": "Jungle Brothers",
+        "primary_artist": null,
+        "album": "Straight Out The Jungle",
+        "genre": "jazz rap",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-345",
+      "spotifyTrack": {
+        "id": "3234cde7-9040-4887-9aed-7b64dd253bc1",
+        "title": "Belly Dancin' Dina",
+        "artist": "Jungle Brothers",
+        "primary_artist": null,
+        "album": "Done By The Forces Of Nature",
+        "genre": "jazz rap",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-346",
+      "spotifyTrack": {
+        "id": "34c93911-a248-4fa5-97b1-c2b0e8d78348",
+        "title": "BEST INTEREST",
+        "artist": "Tyler, The Creator",
+        "primary_artist": null,
+        "album": "BEST INTEREST",
+        "genre": null,
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-347",
+      "spotifyTrack": {
+        "id": "1b3d7764-780d-47d4-afc1-cbe795e78468",
+        "title": "Beyond a Shadow",
+        "artist": "Don Leisure",
+        "primary_artist": null,
+        "album": "Shaboo Strikes Back",
+        "genre": null,
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-348",
+      "spotifyTrack": {
+        "id": "d90afc9c-23f5-4f2f-abe2-615af2edb017",
+        "title": "Beyond This World",
+        "artist": "Jungle Brothers",
+        "primary_artist": null,
+        "album": "Done By The Forces Of Nature",
+        "genre": "jazz rap",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-349",
+      "spotifyTrack": {
+        "id": "f671edac-b7fb-4d5b-a3c5-2d258acf76fd",
+        "title": "B.I.B.L.E. (Basic Instructions Before Leaving Earth)",
+        "artist": "GZA, Killah Priest",
+        "primary_artist": null,
+        "album": "Liquid Swords",
+        "genre": "east coast hip hop",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-350",
+      "spotifyTrack": {
+        "id": "2e31ff3d-e1b4-49b9-ae31-dab58f3471b9",
+        "title": "Black Box interlude",
+        "artist": "Roots Manuva",
+        "primary_artist": null,
+        "album": "Run Come Save Me",
+        "genre": null,
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-351",
+      "spotifyTrack": {
+        "id": "cc87d561-369f-4e02-8342-907de258a184",
+        "title": "Black Is Black",
+        "artist": "Jungle Brothers",
+        "primary_artist": null,
+        "album": "Straight Out The Jungle",
+        "genre": "jazz rap",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-352",
+      "spotifyTrack": {
+        "id": "e1657d65-cbd5-4b19-ad21-359550144bd8",
+        "title": "Black Woman",
+        "artist": "Jungle Brothers",
+        "primary_artist": null,
+        "album": "Done By The Forces Of Nature",
+        "genre": "jazz rap",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-353",
+      "spotifyTrack": {
+        "id": "74d22d7b-d5c0-4310-bf5d-693588c0bd47",
+        "title": "BLAKT OUT",
+        "artist": "JK-47, Chiggz",
+        "primary_artist": null,
+        "album": "BLAKT OUT",
+        "genre": "aussie drill",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-354",
+      "spotifyTrack": {
+        "id": "f4d2b44e-e621-46c9-8e37-00aeb0bd1f9b",
+        "title": "Blue Flowers - DJ Hype Remix",
+        "artist": "Dr. Octagon, DJ Hype",
+        "primary_artist": null,
+        "album": "Silicon Valley (Music From The HBO Original Series)",
+        "genre": "experimental hip hop",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-355",
+      "spotifyTrack": {
+        "id": "02e63a7b-c35a-46c7-8bc9-1f6bf1069554",
+        "title": "Blue Note Interlude",
+        "artist": "Madlib",
+        "primary_artist": null,
+        "album": "Shades Of Blue: Madlib Invades Blue Note",
+        "genre": "experimental hip hop",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-356",
+      "spotifyTrack": {
+        "id": "6268f0c7-4071-42ec-86e4-c0c51034267f",
+        "title": "Booty Trap",
+        "artist": "Jungle Brothers",
+        "primary_artist": null,
+        "album": "All That We Do",
+        "genre": "jazz rap",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-357",
+      "spotifyTrack": {
+        "id": "75315b63-2f04-4eda-87a5-f31ada68838e",
+        "title": "Braggin' & Boastin'",
+        "artist": "Jungle Brothers",
+        "primary_artist": null,
+        "album": "Straight Out The Jungle",
+        "genre": "jazz rap",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-358",
+      "spotifyTrack": {
+        "id": "f181c9b9-2a86-4e25-9cc8-793990ca898d",
+        "title": "Brain",
+        "artist": "Jungle Brothers",
+        "primary_artist": null,
+        "album": "Raw Deluxe",
+        "genre": "jazz rap",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-359",
+      "spotifyTrack": {
+        "id": "4a6bd76f-d512-43f3-abba-8f9edbe4950b",
+        "title": "Break of Dawn",
+        "artist": "Skiifall, BADBADNOTGOOD, The Kount, YAMA//SATO",
+        "primary_artist": null,
+        "album": "Break of Dawn",
+        "genre": null,
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-360",
+      "spotifyTrack": {
+        "id": "7d7e34f4-fd1f-46e5-8df3-d21587219d23",
+        "title": "Bring It On",
+        "artist": "Jungle Brothers",
+        "primary_artist": null,
+        "album": "Raw Deluxe",
+        "genre": "jazz rap",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-361",
+      "spotifyTrack": {
+        "id": "ad7c373e-c98b-4600-ab72-1b2d1c6ca46c",
+        "title": "Buggin",
+        "artist": "Jungle Brothers",
+        "primary_artist": null,
+        "album": "All That We Do",
+        "genre": "jazz rap",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-362",
+      "spotifyTrack": {
+        "id": "02065013-d460-4226-baea-4be06f19e381",
+        "title": "Candy",
+        "artist": "Jungle Brothers",
+        "primary_artist": null,
+        "album": "All That We Do",
+        "genre": "jazz rap",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-363",
+      "spotifyTrack": {
+        "id": "4a8c94f7-ffa4-4c9f-9271-91715bc929f2",
+        "title": "Can I Kick It?",
+        "artist": "A Tribe Called Quest",
+        "primary_artist": null,
+        "album": "People's Instinctive Travels and the Paths of Rhythm (25th Anniversary Edition)",
+        "genre": "jazz rap",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-364",
+      "spotifyTrack": {
+        "id": "95db4f75-4fe3-4266-8a6e-37faacdee863",
+        "title": "Can't Front on Me",
+        "artist": "Pete Rock & C.L. Smooth",
+        "primary_artist": null,
+        "album": "Mecca And The Soul Brother",
+        "genre": "east coast hip hop",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-365",
+      "spotifyTrack": {
+        "id": "a80517eb-41a2-475f-a82f-c231a7dcb3d6",
+        "title": "Casualties Of War",
+        "artist": "Eric B. & Rakim",
+        "primary_artist": null,
+        "album": "Don't Sweat The Technique",
+        "genre": "old school hip hop",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-366",
+      "spotifyTrack": {
+        "id": "8f919119-ac6e-4592-871a-bdf8bb3af49e",
+        "title": "Changes",
+        "artist": "Jungle Brothers",
+        "primary_artist": null,
+        "album": "Raw Deluxe",
+        "genre": "jazz rap",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-367",
+      "spotifyTrack": {
+        "id": "2f0a278a-1d95-4d38-8bf6-0717ed534ec1",
+        "title": "Chase Me (feat. Run The Jewels & Big Boi)",
+        "artist": "Danger Mouse, Run The Jewels, Big Boi",
+        "primary_artist": null,
+        "album": "Baby Driver (Music from the Motion Picture)",
+        "genre": "hip hop",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-368",
+      "spotifyTrack": {
+        "id": "9992117a-8234-4c8b-a9bf-a1fecbe97c92",
+        "title": "Check the Rhime",
+        "artist": "A Tribe Called Quest",
+        "primary_artist": null,
+        "album": "The Low End Theory",
+        "genre": "jazz rap",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-369",
+      "spotifyTrack": {
+        "id": "d50b8205-77cd-4cfc-8546-eff8b2be3da2",
+        "title": "Cold World",
+        "artist": "GZA, Inspectah Deck",
+        "primary_artist": null,
+        "album": "Liquid Swords",
+        "genre": "east coast hip hop",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-370",
+      "spotifyTrack": {
+        "id": "989f1dec-0d31-4b88-ab0d-6a900b4c8648",
+        "title": "Comin' Thru",
+        "artist": "Chali 2na",
+        "primary_artist": null,
+        "album": "Fish Outta Water",
+        "genre": null,
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-371",
+      "spotifyTrack": {
+        "id": "dc804328-6345-4039-83a6-8f8b3ca926f1",
+        "title": "Confusion - Live",
+        "artist": "Baby S, San Quinn",
+        "primary_artist": null,
+        "album": "Live",
+        "genre": "g-funk",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-372",
+      "spotifyTrack": {
+        "id": "e2574e59-016f-4e0f-9ff9-226178fbb5d7",
+        "title": "Crew",
+        "artist": "A Tribe Called Quest",
+        "primary_artist": null,
+        "album": "Beats, Rhymes & Life",
+        "genre": "jazz rap",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-373",
+      "spotifyTrack": {
+        "id": "7e9233ab-e65e-4a9a-a3dc-67a4d5539f8c",
+        "title": "Crosshairs",
+        "artist": "DANGERDOOM",
+        "primary_artist": null,
+        "album": "THE MOUSE & THE MASK",
+        "genre": null,
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-374",
+      "spotifyTrack": {
+        "id": "483638b6-be9f-4e84-a12d-9c9658dcb3f4",
+        "title": "Dear Mama",
+        "artist": "2Pac",
+        "primary_artist": null,
+        "album": "Me Against The World",
+        "genre": "old school hip hop",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-375",
+      "spotifyTrack": {
+        "id": "e4ce6565-e82a-4db5-862c-55eb2933a6ef",
+        "title": "DENIAL IS A RIVER",
+        "artist": "Doechii",
+        "primary_artist": null,
+        "album": "Alligator Bites Never Heal",
+        "genre": null,
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-376",
+      "spotifyTrack": {
+        "id": "bece7d36-059f-4c7c-b4de-1fc055249c8d",
+        "title": "Distant Land",
+        "artist": "Madlib",
+        "primary_artist": null,
+        "album": "Shades Of Blue: Madlib Invades Blue Note",
+        "genre": "experimental hip hop",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-378",
+      "spotifyTrack": {
+        "id": "a34230aa-362d-4f29-9959-d85c0517c3da",
+        "title": "Doin' Our Own Dang",
+        "artist": "Jungle Brothers",
+        "primary_artist": null,
+        "album": "Done By The Forces Of Nature",
+        "genre": "jazz rap",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-379",
+      "spotifyTrack": {
+        "id": "f0b36abb-e3f6-4bd3-9481-3f96b5ab4bde",
+        "title": "Done by the Forces of Nature",
+        "artist": "Jungle Brothers",
+        "primary_artist": null,
+        "album": "Done By The Forces Of Nature",
+        "genre": "jazz rap",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-380",
+      "spotifyTrack": {
+        "id": "46fed2e1-b732-41ea-8e0a-2ce34772bbc3",
+        "title": "Don't Sweat The Technique",
+        "artist": "Eric B. & Rakim",
+        "primary_artist": null,
+        "album": "Don't Sweat The Technique",
+        "genre": "old school hip hop",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-381",
+      "spotifyTrack": {
+        "id": "d549e3da-4e3c-4ee5-b86f-13bbf92d991c",
+        "title": "Do the James",
+        "artist": "Super Lover Cee, Casanova Rud",
+        "primary_artist": null,
+        "album": "DNA International 30th Anniversary Greatest Hits, Vol. 1",
+        "genre": "old school hip hop",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-382",
+      "spotifyTrack": {
+        "id": "6e8f0b41-12e6-4d70-82a8-0017acfb2b9e",
+        "title": "Do Your Thing",
+        "artist": "Jungle Brothers",
+        "primary_artist": null,
+        "album": "All That We Do",
+        "genre": "jazz rap",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-383",
+      "spotifyTrack": {
+        "id": "d2ac09a9-dd08-471b-94a1-ede5376b4b86",
+        "title": "Ducky Boy",
+        "artist": "Jurassic 5",
+        "primary_artist": null,
+        "album": "J5 Deluxe Re-Issue",
+        "genre": "hip hop",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-384",
+      "spotifyTrack": {
+        "id": "7f569faf-7f16-4fca-b24e-0d638eefb28d",
+        "title": "Duel Of The Iron Mic",
+        "artist": "GZA, Masta Killa, Dreddy Kruger, Inspectah Deck, Ol' Dirty Bastard",
+        "primary_artist": null,
+        "album": "Liquid Swords",
+        "genre": "east coast hip hop",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-385",
+      "spotifyTrack": {
+        "id": "e8e15d25-faa9-40c2-8aaa-0c624f68497d",
+        "title": "Eazy-er Said Than Dunn",
+        "artist": "Eazy-E, Dr. Dre",
+        "primary_artist": null,
+        "album": "Eazy-Duz-It",
+        "genre": "gangster rap",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-386",
+      "spotifyTrack": {
+        "id": "1e2231db-5829-4326-aecf-427c78070d21",
+        "title": "Electric Relaxation",
+        "artist": "A Tribe Called Quest",
+        "primary_artist": null,
+        "album": "The Anthology",
+        "genre": "jazz rap",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-387",
+      "spotifyTrack": {
+        "id": "66255753-b9d2-43b1-803a-9119dd3b75f0",
+        "title": "Empty Bottles of Water",
+        "artist": "People Under The Stairs",
+        "primary_artist": null,
+        "album": "O.S.T.",
+        "genre": "jazz rap",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-388",
+      "spotifyTrack": {
+        "id": "f0740bd2-948b-4522-bd74-8d523a66aa42",
+        "title": "Even If It Is So",
+        "artist": "Q-Tip",
+        "primary_artist": null,
+        "album": "Kamaal The Abstract",
+        "genre": "east coast hip hop",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-389",
+      "spotifyTrack": {
+        "id": "bca91704-a160-4c63-9bea-f9468463f50e",
+        "title": "Experience - Instrumental",
+        "artist": "BADBADNOTGOOD, Ghostface Killah",
+        "primary_artist": null,
+        "album": "Sour Soul (Instrumentals)",
+        "genre": "east coast hip hop",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-390",
+      "spotifyTrack": {
+        "id": "a2d73971-59eb-4239-906e-67d8c04b3257",
+        "title": "Eye Know",
+        "artist": "De La Soul, Otis Redding",
+        "primary_artist": null,
+        "album": "3 Feet High and Rising",
+        "genre": "jazz rap",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-392",
+      "spotifyTrack": {
+        "id": "4c082912-625f-41f6-adff-daa620c7a07c",
+        "title": "Fast Life",
+        "artist": "Htiekal",
+        "primary_artist": null,
+        "album": "Fast Life",
+        "genre": null,
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-393",
+      "spotifyTrack": {
+        "id": "67db8572-7727-484d-bcff-852676a45cca",
+        "title": "Fast Shadow",
+        "artist": "Wu-Tang Clan",
+        "primary_artist": null,
+        "album": "Wu Tang Vs. Shaolin Masters",
+        "genre": "east coast hip hop",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-394",
+      "spotifyTrack": {
+        "id": "a8ce4431-7997-42ac-a1dd-e7fa7b215539",
+        "title": "Feelin' Alright",
+        "artist": "Jungle Brothers",
+        "primary_artist": null,
+        "album": "Done By The Forces Of Nature",
+        "genre": "jazz rap",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-395",
+      "spotifyTrack": {
+        "id": "0341eefa-64c4-4570-9877-9b5fbe229220",
+        "title": "First Law of Nature Rock Day (feat. Denmark Vessey)",
+        "artist": "Dabrye, Denmark Vessey",
+        "primary_artist": null,
+        "album": "Three/Three",
+        "genre": "jazz rap",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-396",
+      "spotifyTrack": {
+        "id": "1e88b2b6-6ac4-4a44-82f7-a46009f63fff",
+        "title": "Food - Instrumental",
+        "artist": "BADBADNOTGOOD, Ghostface Killah",
+        "primary_artist": null,
+        "album": "Sour Soul (Instrumentals)",
+        "genre": "east coast hip hop",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-397",
+      "spotifyTrack": {
+        "id": "06130b8d-e7e0-4401-91eb-5247db7662c9",
+        "title": "Footprints",
+        "artist": "Madlib",
+        "primary_artist": null,
+        "album": "Shades Of Blue: Madlib Invades Blue Note",
+        "genre": "experimental hip hop",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-398",
+      "spotifyTrack": {
+        "id": "0e57687c-a4a7-477a-98a8-1546f7182b06",
+        "title": "For Pete's Sake",
+        "artist": "Pete Rock & C.L. Smooth",
+        "primary_artist": null,
+        "album": "Mecca And The Soul Brother",
+        "genre": "east coast hip hop",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-399",
+      "spotifyTrack": {
+        "id": "8b5657bb-dfc6-4622-ae65-f99c76a47276",
+        "title": "FromHere (feat. Snoop Dogg & October London)",
+        "artist": "NxWorries, Anderson .Paak, Knxwledge, Snoop Dogg, October London",
+        "primary_artist": null,
+        "album": "FromHere (feat. Snoop Dogg & October London)",
+        "genre": "g-funk",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-400",
+      "spotifyTrack": {
+        "id": "316e9534-49da-4849-90cd-82c73dff6ac8",
+        "title": "Funky Blue Note",
+        "artist": "Morgan Adams Quartet Plus Two, Madlib",
+        "primary_artist": null,
+        "album": "Shades Of Blue: Madlib Invades Blue Note",
+        "genre": "jazz rap",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-401",
+      "spotifyTrack": {
+        "id": "19b8db33-9bee-4b5f-ab6c-b0cf3ac0ccec",
+        "title": "Gangsta",
+        "artist": "Free Nationals, A$AP Rocky, Anderson .Paak",
+        "primary_artist": null,
+        "album": "Gangsta",
+        "genre": "rap",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-402",
+      "spotifyTrack": {
+        "id": "b8d65442-94c6-4c9b-a4d3-95cedf35a256",
+        "title": "Get A Hold",
+        "artist": "A Tribe Called Quest",
+        "primary_artist": null,
+        "album": "Beats, Rhymes & Life",
+        "genre": "jazz rap",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-403",
+      "spotifyTrack": {
+        "id": "4995d429-948b-4a1c-bbb7-938b9ec63cac",
+        "title": "Get It Together",
+        "artist": "Beastie Boys, Q-Tip",
+        "primary_artist": null,
+        "album": "Ill Communication",
+        "genre": "rap rock",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-404",
+      "spotifyTrack": {
+        "id": "a9a45bfe-5629-40ea-8108-95593c61f664",
+        "title": "Gettin Money",
+        "artist": "Jungle Brothers",
+        "primary_artist": null,
+        "album": "Raw Deluxe",
+        "genre": "jazz rap",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-405",
+      "spotifyTrack": {
+        "id": "de582a85-e6be-49f8-933a-7eec3fed41e7",
+        "title": "Ghettos of the Mind",
+        "artist": "Pete Rock & C.L. Smooth",
+        "primary_artist": null,
+        "album": "Mecca And The Soul Brother",
+        "genre": "east coast hip hop",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-406",
+      "spotifyTrack": {
+        "id": "401507f8-2dde-41dd-8add-4eb441d2eb5a",
+        "title": "Good Newz Comin'",
+        "artist": "Jungle Brothers",
+        "primary_artist": null,
+        "album": "Done By The Forces Of Nature",
+        "genre": "jazz rap",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-407",
+      "spotifyTrack": {
+        "id": "213fe1f7-dd36-4730-af2f-06874d9164b4",
+        "title": "Grown Man Sport",
+        "artist": "Pete Rock, InI",
+        "primary_artist": null,
+        "album": "Center of Attention",
+        "genre": "jazz rap",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-409",
+      "spotifyTrack": {
+        "id": "19fc8b19-8a7f-48d9-b957-c2ced7e48c3f",
+        "title": "Gunshowers - Instrumental",
+        "artist": "BADBADNOTGOOD, Ghostface Killah",
+        "primary_artist": null,
+        "album": "Sour Soul (Instrumentals)",
+        "genre": "east coast hip hop",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-410",
+      "spotifyTrack": {
+        "id": "5b37d694-8641-40fe-b98f-e4b331b1b76d",
+        "title": "Handle My Business",
+        "artist": "Jungle Brothers",
+        "primary_artist": null,
+        "album": "Raw Deluxe",
+        "genre": "jazz rap",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-411",
+      "spotifyTrack": {
+        "id": "1f49e37f-abf6-4a59-86c8-202e809547e7",
+        "title": "Hang Loose",
+        "artist": "People Under The Stairs",
+        "primary_artist": null,
+        "album": "O.S.T.",
+        "genre": "jazz rap",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-412",
+      "spotifyTrack": {
+        "id": "2030441e-7e15-419f-b4c1-f8c901b59fbc",
+        "title": "Hate Today",
+        "artist": "Flawless Delivery, Lazy Jones",
+        "primary_artist": null,
+        "album": "Always Dilla Vol.4",
+        "genre": "jazz beats",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-413",
+      "spotifyTrack": {
+        "id": "047765c0-758f-44ce-98bb-da656e8f6959",
+        "title": "Havana (feat. Young Thug)",
+        "artist": "Camila Cabello, Young Thug",
+        "primary_artist": null,
+        "album": "Camila",
+        "genre": "rap",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-414",
+      "spotifyTrack": {
+        "id": "dce4da98-020a-4c5d-adec-5c5b88eefa04",
+        "title": "Hell's Wind Staff / Killah Hills 10304",
+        "artist": "GZA",
+        "primary_artist": null,
+        "album": "Liquid Swords",
+        "genre": "east coast hip hop",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-415",
+      "spotifyTrack": {
+        "id": "770bd83d-42ed-442a-8de2-c3dfa76aea63",
+        "title": "Hot In Herre",
+        "artist": "Nelly",
+        "primary_artist": null,
+        "album": "Nellyville",
+        "genre": null,
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-416",
+      "spotifyTrack": {
+        "id": "b23609ff-0ca8-4b9f-9a92-658017e5ec2b",
+        "title": "How Do U Want It (ft. K-Ci & JoJo)",
+        "artist": "2Pac, K-Ci & JoJo",
+        "primary_artist": null,
+        "album": "All Eyez On Me",
+        "genre": "old school hip hop",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-417",
+      "spotifyTrack": {
+        "id": "0aa0e71a-ba75-4dd1-9e69-45c66d072787",
+        "title": "How Ya Want It We Got It (Native Tongues Remix)",
+        "artist": "Jungle Brothers",
+        "primary_artist": null,
+        "album": "Raw Deluxe",
+        "genre": "jazz rap",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-418",
+      "spotifyTrack": {
+        "id": "48b9a40b-5104-4498-831d-8963cb6ae142",
+        "title": "Hypnotize - 2014 Remaster",
+        "artist": "The Notorious B.I.G.",
+        "primary_artist": null,
+        "album": "Life After Death (2014 Remastered Edition)",
+        "genre": "old school hip hop",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-419",
+      "spotifyTrack": {
+        "id": "1f34306c-8179-4c95-9c20-98d8910d2d68",
+        "title": "Hyssop of Love",
+        "artist": "BADBADNOTGOOD, Mick Jenkins",
+        "primary_artist": null,
+        "album": "IV",
+        "genre": "jazz rap",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-420",
+      "spotifyTrack": {
+        "id": "d0a1274b-9f17-4ec3-8ba4-40057e3e92a2",
+        "title": "If It Ain't Rough, It Ain't Right",
+        "artist": "Pete Rock & C.L. Smooth",
+        "primary_artist": null,
+        "album": "Mecca And The Soul Brother",
+        "genre": "east coast hip hop",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-421",
+      "spotifyTrack": {
+        "id": "33ebc315-a85b-4b4a-87de-3fc0938f1635",
+        "title": "I Get Around",
+        "artist": "2Pac, Shock G, Money B",
+        "primary_artist": null,
+        "album": "Greatest Hits",
+        "genre": "old school hip hop",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-422",
+      "spotifyTrack": {
+        "id": "4ce96383-713b-4bba-83e2-3fa51b9fe41c",
+        "title": "Ignition Sequence",
+        "artist": "Jurassic 5",
+        "primary_artist": null,
+        "album": "J5 Deluxe Re-Issue",
+        "genre": "hip hop",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-423",
+      "spotifyTrack": {
+        "id": "6dccf186-fbfd-445f-bf4a-e9d2f1aae0e4",
+        "title": "III. Urn",
+        "artist": "Childish Gambino",
+        "primary_artist": null,
+        "album": "Because the Internet",
+        "genre": null,
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-424",
+      "spotifyTrack": {
+        "id": "905720c8-c4f8-4785-a71f-83d41460e608",
+        "title": "I Know There's Gonna Be (Good Times)",
+        "artist": "Jamie xx, Young Thug, Popcaan",
+        "primary_artist": null,
+        "album": "In Colour",
+        "genre": "rap",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-425",
+      "spotifyTrack": {
+        "id": "6f1daaf4-95a9-409b-b2d6-eaef229ee49e",
+        "title": "I Know You Got Soul",
+        "artist": "Eric B. & Rakim",
+        "primary_artist": null,
+        "album": "Paid In Full",
+        "genre": "old school hip hop",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-426",
+      "spotifyTrack": {
+        "id": "e8b730a2-8405-48a3-858b-679cdccbd5b0",
+        "title": "I'll House You",
+        "artist": "Jungle Brothers",
+        "primary_artist": null,
+        "album": "I'll House You '98",
+        "genre": "jazz rap",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-428",
+      "spotifyTrack": {
+        "id": "238816cc-7f95-453f-bffc-8cbd7222ed41",
+        "title": "I'll House You '98 - Anthony Acid & DJ Skribble Feel da Drum Dub",
+        "artist": "Jungle Brothers, Anthony Acid, DJ Skribble",
+        "primary_artist": null,
+        "album": "I'll House You '98",
+        "genre": "jazz rap",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-429",
+      "spotifyTrack": {
+        "id": "795c6aa3-52c7-4cd0-be42-29c02d6bae8c",
+        "title": "I'll House You '98 - Anthony Acid & DJ Skribble Radio Edit",
+        "artist": "Jungle Brothers, Anthony Acid, DJ Skribble",
+        "primary_artist": null,
+        "album": "I'll House You '98",
+        "genre": "jazz rap",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-430",
+      "spotifyTrack": {
+        "id": "c5659470-ab3c-4268-b025-5d64d7d29fb7",
+        "title": "I'll House You '98 - Peter Presta's Vocal Mix",
+        "artist": "Jungle Brothers, Peter Presta",
+        "primary_artist": null,
+        "album": "I'll House You '98",
+        "genre": "jazz rap",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-431",
+      "spotifyTrack": {
+        "id": "4d4652eb-bd47-4076-a565-bee26f85b3b4",
+        "title": "I'm Gonna Do You",
+        "artist": "Jungle Brothers",
+        "primary_artist": null,
+        "album": "Straight Out The Jungle",
+        "genre": "jazz rap",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-432",
+      "spotifyTrack": {
+        "id": "e769a054-819d-4640-bd51-80039c80dd8b",
+        "title": "In Dayz \"2\" Come",
+        "artist": "Jungle Brothers",
+        "primary_artist": null,
+        "album": "Done By The Forces Of Nature",
+        "genre": "jazz rap",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-433",
+      "spotifyTrack": {
+        "id": "e92fef0d-60a7-4d62-a895-ef975e16bdf6",
+        "title": "Introduction",
+        "artist": "Madlib",
+        "primary_artist": null,
+        "album": "Shades Of Blue: Madlib Invades Blue Note",
+        "genre": "experimental hip hop",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-434",
+      "spotifyTrack": {
+        "id": "91ce8e16-31ee-4b2e-a549-9e87e2e7aaa4",
+        "title": "Investigative Reports",
+        "artist": "GZA, Raekwon, Ghostface Killah, U-God",
+        "primary_artist": null,
+        "album": "Liquid Swords",
+        "genre": "east coast hip hop",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-435",
+      "spotifyTrack": {
+        "id": "1fcd7413-289a-452f-b02e-c97b7e55a67c",
+        "title": "It Ain't Hard to Tell",
+        "artist": "Nas",
+        "primary_artist": null,
+        "album": "Illmatic XX",
+        "genre": "east coast hip hop",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-436",
+      "spotifyTrack": {
+        "id": "1f128198-85ce-4272-bb9c-74dd698f5725",
+        "title": "It's Like That",
+        "artist": "Pete Rock & C.L. Smooth",
+        "primary_artist": null,
+        "album": "Mecca And The Soul Brother",
+        "genre": "east coast hip hop",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-437",
+      "spotifyTrack": {
+        "id": "7ba39839-367d-48d6-8d34-24d25e57d4a0",
+        "title": "It's Yours - Mixed",
+        "artist": "T La Rock",
+        "primary_artist": null,
+        "album": "DJ-Kicks (Kerri Chandler) [Mixed Tracks]",
+        "genre": "old school hip hop",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-438",
+      "spotifyTrack": {
+        "id": "77a1b1d5-82a9-4bb3-ab5c-7b10bada8160",
+        "title": "Jayou Remix",
+        "artist": "Jurassic 5",
+        "primary_artist": null,
+        "album": "J5 Deluxe Re-Issue",
+        "genre": "hip hop",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-439",
+      "spotifyTrack": {
+        "id": "f1023191-44ed-44ca-b058-9260473933a8",
+        "title": "J. Beez Comin' Through",
+        "artist": "Jungle Brothers",
+        "primary_artist": null,
+        "album": "Done By The Forces Of Nature",
+        "genre": "jazz rap",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-440",
+      "spotifyTrack": {
+        "id": "d6c566ff-52c6-4596-970b-02ab7b13117b",
+        "title": "Jimbrowski",
+        "artist": "Jungle Brothers",
+        "primary_artist": null,
+        "album": "Straight Out The Jungle",
+        "genre": "jazz rap",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-441",
+      "spotifyTrack": {
+        "id": "41f7edcd-510c-487d-ba62-203848f525fb",
+        "title": "Jimmy's Bonus Beat",
+        "artist": "Jungle Brothers",
+        "primary_artist": null,
+        "album": "Straight Out The Jungle",
+        "genre": "jazz rap",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-442",
+      "spotifyTrack": {
+        "id": "b4a8b2ed-dad0-41ef-96ad-e4723688fecb",
+        "title": "Jimmy's Bonus Beat (Instrumental)",
+        "artist": "Jungle Brothers",
+        "primary_artist": null,
+        "album": "Straight out the Jungle: The Instrumental Show",
+        "genre": "jazz rap",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-443",
+      "spotifyTrack": {
+        "id": "39c57b40-7904-43ac-a28c-d1902b163390",
+        "title": "Join The Dots",
+        "artist": "Roots Manuva, Chali 2na",
+        "primary_artist": null,
+        "album": "Run Come Save Me",
+        "genre": null,
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-444",
+      "spotifyTrack": {
+        "id": "6ed1c9b5-e0b0-4a79-a140-4cf4f7508b3f",
+        "title": "Joints & Jam",
+        "artist": "Black Eyed Peas",
+        "primary_artist": null,
+        "album": "Behind The Front",
+        "genre": null,
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-445",
+      "spotifyTrack": {
+        "id": "47bcc001-ca9b-4d7c-97d3-9d9cf2f9e3b3",
+        "title": "Jungle Brother (Stereo MC's Remix)",
+        "artist": "Jungle Brothers",
+        "primary_artist": null,
+        "album": "Raw Deluxe",
+        "genre": "jazz rap",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-446",
+      "spotifyTrack": {
+        "id": "c037cd48-6301-44c2-8836-6016a6dc535a",
+        "title": "Jungle Brother (True Blue)",
+        "artist": "Jungle Brothers",
+        "primary_artist": null,
+        "album": "Raw Deluxe",
+        "genre": "jazz rap",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-447",
+      "spotifyTrack": {
+        "id": "c8dc17dc-3dae-4e9f-aeb4-772f4fcec5df",
+        "title": "Keeping It Moving",
+        "artist": "A Tribe Called Quest",
+        "primary_artist": null,
+        "album": "Beats, Rhymes & Life",
+        "genre": "jazz rap",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-448",
+      "spotifyTrack": {
+        "id": "04994810-adb5-4e16-83b5-0823fbd154ef",
+        "title": "Keep The Beat",
+        "artist": "Eric B. & Rakim",
+        "primary_artist": null,
+        "album": "Don't Sweat The Technique",
+        "genre": "old school hip hop",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-449",
+      "spotifyTrack": {
+        "id": "617ba867-f38c-4321-b28b-fb089ba58e47",
+        "title": "Kick Along",
+        "artist": "Eric B. & Rakim",
+        "primary_artist": null,
+        "album": "Don't Sweat The Technique",
+        "genre": "old school hip hop",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-450",
+      "spotifyTrack": {
+        "id": "28fb4402-a14d-4baa-99e5-1745b728835d",
+        "title": "Know How",
+        "artist": "Young MC",
+        "primary_artist": null,
+        "album": "Baby Driver (Music from the Motion Picture)",
+        "genre": null,
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-451",
+      "spotifyTrack": {
+        "id": "ea546b7d-cde0-4975-9394-74746e23ce55",
+        "title": "Know The Ledge",
+        "artist": "Eric B. & Rakim",
+        "primary_artist": null,
+        "album": "Don't Sweat The Technique",
+        "genre": "old school hip hop",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-452",
+      "spotifyTrack": {
+        "id": "4d540632-7481-44ff-971f-7ab0a9700eef",
+        "title": "Kool Accordin' \"2\" a Jungle Brother",
+        "artist": "Jungle Brothers",
+        "primary_artist": null,
+        "album": "Done By The Forces Of Nature",
+        "genre": "jazz rap",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-453",
+      "spotifyTrack": {
+        "id": "4d57d523-6967-44e3-90a0-b6c66cae36c6",
+        "title": "Lesson 6 (Reprise)",
+        "artist": "Jurassic 5",
+        "primary_artist": null,
+        "album": "J5 Deluxe Re-Issue",
+        "genre": "hip hop",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-454",
+      "spotifyTrack": {
+        "id": "4f13b616-7be2-46e2-8767-20fc4ff5c1eb",
+        "title": "Lesson Four: The Radio",
+        "artist": "Jurassic 5",
+        "primary_artist": null,
+        "album": "J5 Deluxe Re-Issue",
+        "genre": "hip hop",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-455",
+      "spotifyTrack": {
+        "id": "49a4e62f-e10a-453e-aeef-f0b115948db8",
+        "title": "Let Me",
+        "artist": "Jungle Brothers",
+        "primary_artist": null,
+        "album": "All That We Do",
+        "genre": "jazz rap",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-456",
+      "spotifyTrack": {
+        "id": "8e1ef759-eec5-44eb-ab77-3b89283214d6",
+        "title": "Let Me Blow Ya Mind",
+        "artist": "Eve, Gwen Stefani",
+        "primary_artist": null,
+        "album": "Eve-Olution [International Version (Explicit)]",
+        "genre": null,
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-457",
+      "spotifyTrack": {
+        "id": "36c63bb1-2941-4cb5-aa4b-f77534ffdf8d",
+        "title": "Let's Get Away",
+        "artist": "Jungle Brothers",
+        "primary_artist": null,
+        "album": "All That We Do",
+        "genre": "jazz rap",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-458",
+      "spotifyTrack": {
+        "id": "afaec33e-2b3f-47fb-a97b-d7d004a01347",
+        "title": "Live and Let Live",
+        "artist": "Souls Of Mischief",
+        "primary_artist": null,
+        "album": "93 'til Infinity",
+        "genre": "jazz rap",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-459",
+      "spotifyTrack": {
+        "id": "bc00388f-21c6-4afe-a8de-36851a5d5403",
+        "title": "Lot's of Lovin",
+        "artist": "Pete Rock & C.L. Smooth",
+        "primary_artist": null,
+        "album": "Mecca And The Soul Brother",
+        "genre": "east coast hip hop",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-460",
+      "spotifyTrack": {
+        "id": "21901d19-9853-478b-83f8-1b6d21b947a2",
+        "title": "Love & Hate",
+        "artist": "Jungle Brothers",
+        "primary_artist": null,
+        "album": "All That We Do",
+        "genre": "jazz rap",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-461",
+      "spotifyTrack": {
+        "id": "b490016f-3527-438c-b69d-fbbcdfd213d7",
+        "title": "Luck of Lucien",
+        "artist": "A Tribe Called Quest",
+        "primary_artist": null,
+        "album": "People's Instinctive Travels and the Paths of Rhythm (25th Anniversary Edition)",
+        "genre": "jazz rap",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-462",
+      "spotifyTrack": {
+        "id": "0132e3d4-d703-4b34-baf4-377f11d9c9db",
+        "title": "Mind Playing Tricks - Instrumental",
+        "artist": "BADBADNOTGOOD, Ghostface Killah",
+        "primary_artist": null,
+        "album": "Sour Soul (Instrumentals)",
+        "genre": "east coast hip hop",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-463",
+      "spotifyTrack": {
+        "id": "cd9fa9ff-5ad1-4002-99ce-75f7186414df",
+        "title": "Mind Power",
+        "artist": "A Tribe Called Quest",
+        "primary_artist": null,
+        "album": "Beats, Rhymes & Life",
+        "genre": "jazz rap",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-464",
+      "spotifyTrack": {
+        "id": "ad204be1-9840-4bf3-b082-8953faefa364",
+        "title": "Mono - Instrumental",
+        "artist": "BADBADNOTGOOD, Ghostface Killah",
+        "primary_artist": null,
+        "album": "Sour Soul (Instrumentals)",
+        "genre": "east coast hip hop",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-465",
+      "spotifyTrack": {
+        "id": "aa401bdf-4b12-4265-ab45-4941ad55c97b",
+        "title": "Montara",
+        "artist": "Madlib",
+        "primary_artist": null,
+        "album": "Shades Of Blue: Madlib Invades Blue Note",
+        "genre": "experimental hip hop",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-466",
+      "spotifyTrack": {
+        "id": "06cef6d4-8137-4079-9368-69a76aba64fe",
+        "title": "Mood Swings",
+        "artist": "Little Simz",
+        "primary_artist": null,
+        "album": "Drop 7",
+        "genre": null,
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-467",
+      "spotifyTrack": {
+        "id": "1935f044-174f-4145-9d55-fcc26f169cbc",
+        "title": "Motivators",
+        "artist": "A Tribe Called Quest",
+        "primary_artist": null,
+        "album": "Beats, Rhymes & Life",
+        "genre": "jazz rap",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-468",
+      "spotifyTrack": {
+        "id": "73aa498d-882b-4f7c-be1b-8bdf9811e851",
+        "title": "Moving Along",
+        "artist": "Jungle Brothers",
+        "primary_artist": null,
+        "album": "Raw Deluxe",
+        "genre": "jazz rap",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-469",
+      "spotifyTrack": {
+        "id": "0a88443e-8325-4977-8c04-08e41e1e9a9f",
+        "title": "My Advice 2 You",
+        "artist": "Gang Starr",
+        "primary_artist": null,
+        "album": "Moment Of Truth",
+        "genre": "east coast hip hop",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-470",
+      "spotifyTrack": {
+        "id": "c6653b92-ffb8-4cb2-9b98-6efc630aef95",
+        "title": "Mystic Bounce",
+        "artist": "Madlib",
+        "primary_artist": null,
+        "album": "Shades Of Blue: Madlib Invades Blue Note",
+        "genre": "experimental hip hop",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-471",
+      "spotifyTrack": {
+        "id": "953b3d71-eb77-403b-9cbe-76e9264ca4f4",
+        "title": "No Strings - intro",
+        "artist": "Roots Manuva",
+        "primary_artist": null,
+        "album": "Run Come Save Me",
+        "genre": null,
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-472",
+      "spotifyTrack": {
+        "id": "860c08e9-42a5-40fe-b78b-cac20a2594e4",
+        "title": "Nuggets of Wisdom - Instrumental",
+        "artist": "BADBADNOTGOOD, Ghostface Killah",
+        "primary_artist": null,
+        "album": "Sour Soul (Instrumentals)",
+        "genre": "east coast hip hop",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-473",
+      "spotifyTrack": {
+        "id": "18ecf589-6bfc-4053-88a9-79d2543fe79e",
+        "title": "Oh My God (feat. Busta Rhymes)",
+        "artist": "A Tribe Called Quest, Busta Rhymes",
+        "primary_artist": null,
+        "album": "Midnight Marauders",
+        "genre": "jazz rap",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-474",
+      "spotifyTrack": {
+        "id": "84250e03-d832-4571-aa56-1cb07b27c9ac",
+        "title": "On and On",
+        "artist": "Pete Rock & C.L. Smooth",
+        "primary_artist": null,
+        "album": "Mecca And The Soul Brother",
+        "genre": "east coast hip hop",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-475",
+      "spotifyTrack": {
+        "id": "2b339369-7b46-43ee-8dc0-30bfaef495ef",
+        "title": "One Dance",
+        "artist": "Drake, Wizkid, Kyla",
+        "primary_artist": null,
+        "album": "Views",
+        "genre": "rap",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-476",
+      "spotifyTrack": {
+        "id": "0dd21726-4a60-4e25-a232-e44a89b68511",
+        "title": "On The Run",
+        "artist": "Jungle Brothers",
+        "primary_artist": null,
+        "album": "Straight Out The Jungle",
+        "genre": "jazz rap",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-477",
+      "spotifyTrack": {
+        "id": "8b1300df-14e1-4236-a14e-e851a7b429b3",
+        "title": "Outro",
+        "artist": "Madlib",
+        "primary_artist": null,
+        "album": "Shades Of Blue: Madlib Invades Blue Note",
+        "genre": "experimental hip hop",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-478",
+      "spotifyTrack": {
+        "id": "22f31c24-0dff-4a57-b630-d82268c3306d",
+        "title": "Pain",
+        "artist": "De La Soul, Snoop Dogg",
+        "primary_artist": null,
+        "album": "and the Anonymous Nobody...",
+        "genre": "jazz rap",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-479",
+      "spotifyTrack": {
+        "id": "c8375877-78fe-44d0-adf8-58b435e85bc4",
+        "title": "Pain - Instrumental Version",
+        "artist": "De La Soul, Snoop Dogg",
+        "primary_artist": null,
+        "album": "and the Anonymous Nobody... (Instrumental Version)",
+        "genre": "jazz rap",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-480",
+      "spotifyTrack": {
+        "id": "eafc415c-acf3-4eb1-bbb1-f07b278a7ca8",
+        "title": "Paradise",
+        "artist": "LL COOL J, Amerie",
+        "primary_artist": null,
+        "album": "10",
+        "genre": "old school hip hop",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-481",
+      "spotifyTrack": {
+        "id": "a396582a-0a6b-4cb4-9ab8-3029faf8fea7",
+        "title": "Passin' Me By",
+        "artist": "The Pharcyde",
+        "primary_artist": null,
+        "album": "Bizarre Ride II The Pharcyde",
+        "genre": "jazz rap",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-482",
+      "spotifyTrack": {
+        "id": "bf3d63f0-3aa1-494a-86e3-34cad43e5ede",
+        "title": "Pass The Hand Grenade",
+        "artist": "Eric B. & Rakim",
+        "primary_artist": null,
+        "album": "Don't Sweat The Technique",
+        "genre": "old school hip hop",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-483",
+      "spotifyTrack": {
+        "id": "9be2d30d-70c5-4c6b-878b-8bc556effc42",
+        "title": "Peace/Dolphin Dance",
+        "artist": "Joe McDuphrey Experience, Madlib",
+        "primary_artist": null,
+        "album": "Shades Of Blue: Madlib Invades Blue Note",
+        "genre": "jazz rap",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-484",
+      "spotifyTrack": {
+        "id": "fdd25bac-5d25-4ede-be69-836edf46dcac",
+        "title": "Phony Rappers",
+        "artist": "A Tribe Called Quest",
+        "primary_artist": null,
+        "album": "Beats, Rhymes & Life",
+        "genre": "jazz rap",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-485",
+      "spotifyTrack": {
+        "id": "c39e9ba0-a2e2-4491-b22c-4131fb6a9a95",
+        "title": "Players",
+        "artist": "Coi Leray",
+        "primary_artist": null,
+        "album": "COI",
+        "genre": null,
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-486",
+      "spotifyTrack": {
+        "id": "9edf15c4-09da-4bfa-a848-e4ab865a4ef4",
+        "title": "Player's Ball",
+        "artist": "Outkast",
+        "primary_artist": null,
+        "album": "Southernplayalisticadillacmuzik",
+        "genre": "southern hip hop",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-487",
+      "spotifyTrack": {
+        "id": "284a1730-2f6e-403b-babf-69abffdd5050",
+        "title": "Please Set Me At Ease",
+        "artist": "Madlib, MED",
+        "primary_artist": null,
+        "album": "Shades Of Blue: Madlib Invades Blue Note",
+        "genre": "experimental hip hop",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-488",
+      "spotifyTrack": {
+        "id": "f8863bb9-0aac-48f2-b092-b8e6632280e5",
+        "title": "Poppa Large",
+        "artist": "Kool Keith",
+        "primary_artist": null,
+        "album": "Official Space Tape",
+        "genre": "east coast hip hop",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-489",
+      "spotifyTrack": {
+        "id": "42d792f6-6c25-4459-8bf1-61f9696ef38b",
+        "title": "Power 106",
+        "artist": "Jurassic 5",
+        "primary_artist": null,
+        "album": "J5 Deluxe Re-Issue",
+        "genre": "hip hop",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-490",
+      "spotifyTrack": {
+        "id": "17045495-10c8-4561-a57e-db9b098d8f8a",
+        "title": "Quality Control Part 2",
+        "artist": "Jurassic 5",
+        "primary_artist": null,
+        "album": "J5 Deluxe Re-Issue",
+        "genre": "hip hop",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-491",
+      "spotifyTrack": {
+        "id": "6c1efdcc-9f5f-4619-b2b3-f49615bde0ad",
+        "title": "Rapp Snitch Knishes",
+        "artist": "MF DOOM, Mr. Fantastik",
+        "primary_artist": null,
+        "album": "MM..FOOD",
+        "genre": "experimental hip hop",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-492",
+      "spotifyTrack": {
+        "id": "e0d6dfdc-d137-4ee3-8c04-ecbc7299d917",
+        "title": "Rapp Snitch Knishes feat. Mr. Fantastik",
+        "artist": "MF DOOM",
+        "primary_artist": null,
+        "album": "MM...FOOD",
+        "genre": "experimental hip hop",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-493",
+      "spotifyTrack": {
+        "id": "942f5b51-fde4-4d84-80bf-45a3311151e2",
+        "title": "Ray Gun - Instrumental",
+        "artist": "BADBADNOTGOOD, Ghostface Killah",
+        "primary_artist": null,
+        "album": "Sour Soul (Instrumentals)",
+        "genre": "east coast hip hop",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-494",
+      "spotifyTrack": {
+        "id": "fcd90ba2-f3db-41b2-9a9a-a6ef8e7ea3da",
+        "title": "Real Love",
+        "artist": "Childish Gambino",
+        "primary_artist": null,
+        "album": "Bando Stone and The New World",
+        "genre": null,
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-495",
+      "spotifyTrack": {
+        "id": "eff08237-6bfd-4411-a115-3cb1739f0507",
+        "title": "Rebuke",
+        "artist": "KAYTRAMINÉ, Aminé, KAYTRANADA",
+        "primary_artist": null,
+        "album": "KAYTRAMINÉ",
+        "genre": null,
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-496",
+      "spotifyTrack": {
+        "id": "bf37fa18-5ec4-4fbb-8d19-c705b2cb1218",
+        "title": "Relax With Pep",
+        "artist": "Eric B. & Rakim",
+        "primary_artist": null,
+        "album": "Don't Sweat The Technique",
+        "genre": "old school hip hop",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-497",
+      "spotifyTrack": {
+        "id": "a30ac5b5-ff66-4e70-b959-d11d1c268d0c",
+        "title": "Rest Assured",
+        "artist": "Eric B. & Rakim",
+        "primary_artist": null,
+        "album": "Don't Sweat The Technique",
+        "genre": "old school hip hop",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-498",
+      "spotifyTrack": {
+        "id": "52453ea6-ef23-4c93-b362-bba39594df83",
+        "title": "Return of the Mecca",
+        "artist": "Pete Rock & C.L. Smooth",
+        "primary_artist": null,
+        "album": "Mecca And The Soul Brother",
+        "genre": "east coast hip hop",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-499",
+      "spotifyTrack": {
+        "id": "8e0a33fb-6ddb-4cc8-965b-ae5ffc5c82de",
+        "title": "Right On",
+        "artist": "The Roots, Joanna Newsom, STS",
+        "primary_artist": null,
+        "album": "How I Got Over",
+        "genre": "east coast hip hop",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-500",
+      "spotifyTrack": {
+        "id": "2aa83fbe-4adb-4ea3-86c4-04eb95bd03d2",
+        "title": "Right Thurr",
+        "artist": "Chingy",
+        "primary_artist": null,
+        "album": "Jackpot",
+        "genre": "crunk",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-501",
+      "spotifyTrack": {
+        "id": "1bb02f73-5e29-4262-8dfe-ef1987915101",
+        "title": "Sally",
+        "artist": "Stetsasonic",
+        "primary_artist": null,
+        "album": "In Full Gear",
+        "genre": "old school hip hop",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-502",
+      "spotifyTrack": {
+        "id": "24f128a0-5918-4049-abf2-46acf39e9678",
+        "title": "See You Again (feat. Kali Uchis)",
+        "artist": "Tyler, The Creator, Kali Uchis",
+        "primary_artist": null,
+        "album": "Flower Boy",
+        "genre": null,
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-503",
+      "spotifyTrack": {
+        "id": "9108af05-145b-4a4e-9325-baeb157c680d",
+        "title": "Separate/Together",
+        "artist": "A Tribe Called Quest",
+        "primary_artist": null,
+        "album": "Beats, Rhymes & Life",
+        "genre": "jazz rap",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-504",
+      "spotifyTrack": {
+        "id": "f0e1b143-6a0b-4caf-884a-2f6f28af9984",
+        "title": "Shadowboxin'",
+        "artist": "GZA, Method Man",
+        "primary_artist": null,
+        "album": "Liquid Swords",
+        "genre": "east coast hip hop",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-505",
+      "spotifyTrack": {
+        "id": "1681bdea-55b5-466e-9f27-94eab3280109",
+        "title": "Shook Ones, Pt. II",
+        "artist": "Mobb Deep",
+        "primary_artist": null,
+        "album": "The Infamous",
+        "genre": "east coast hip hop",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-506",
+      "spotifyTrack": {
+        "id": "1f52e0f6-01db-4b14-9f77-5cdb18122d1c",
+        "title": "Signs",
+        "artist": "Snoop Dogg, Charlie Wilson, Justin Timberlake",
+        "primary_artist": null,
+        "album": "R&G (Rhythm & Gangsta): The Masterpiece",
+        "genre": "g-funk",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-507",
+      "spotifyTrack": {
+        "id": "f2b3ab98-356c-42ac-b820-20be32fc6c3d",
+        "title": "Six Degrees - Instrumental",
+        "artist": "BADBADNOTGOOD, Ghostface Killah",
+        "primary_artist": null,
+        "album": "Sour Soul (Instrumentals)",
+        "genre": "east coast hip hop",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-508",
+      "spotifyTrack": {
+        "id": "71abd6dc-e7bc-4b85-8b81-89099488672f",
+        "title": "Skins (feat. Grand Puba)",
+        "artist": "Pete Rock & C.L. Smooth, Grand Puba",
+        "primary_artist": null,
+        "album": "Mecca And The Soul Brother",
+        "genre": "east coast hip hop",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-509",
+      "spotifyTrack": {
+        "id": "b7d5bd76-4a56-45c9-967c-209ffca9c0fb",
+        "title": "Slim's Return",
+        "artist": "Madlib",
+        "primary_artist": null,
+        "album": "Shades Of Blue: Madlib Invades Blue Note",
+        "genre": "experimental hip hop",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-510",
+      "spotifyTrack": {
+        "id": "e3dc0c0e-c9a2-47d1-bcf4-a85ae6fe384d",
+        "title": "Soggy D",
+        "artist": "Peanut Butter Wolf",
+        "primary_artist": null,
+        "album": "Peanut Butter Breaks",
+        "genre": "underground hip hop",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-511",
+      "spotifyTrack": {
+        "id": "6a295c83-8b8e-4655-99f8-dd5ae5632958",
+        "title": "Something About Cha",
+        "artist": "Jungle Brothers",
+        "primary_artist": null,
+        "album": "All That We Do",
+        "genre": "jazz rap",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-512",
+      "spotifyTrack": {
+        "id": "b528bf9d-e852-48a8-a96c-c9bdaf57a45f",
+        "title": "sometimes i see the world and i say \"let me out\"",
+        "artist": "Jada Imani",
+        "primary_artist": null,
+        "album": "sometimes i see the world and i say \"let me out\"",
+        "genre": null,
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-513",
+      "spotifyTrack": {
+        "id": "5768704d-3a91-4696-a02f-0038f7492e1b",
+        "title": "Soul Brother #1",
+        "artist": "Pete Rock & C.L. Smooth",
+        "primary_artist": null,
+        "album": "Mecca And The Soul Brother",
+        "genre": "east coast hip hop",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-514",
+      "spotifyTrack": {
+        "id": "9f23fdcf-b3a0-460a-8911-1f0bdc2ff6a6",
+        "title": "Sounds Of The Safari",
+        "artist": "Jungle Brothers",
+        "primary_artist": null,
+        "album": "Straight Out The Jungle",
+        "genre": "jazz rap",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-515",
+      "spotifyTrack": {
+        "id": "b6b8af8c-0d40-421b-8fec-ed3817b8b2c4",
+        "title": "Sour Soul - Instrumental",
+        "artist": "BADBADNOTGOOD, Ghostface Killah",
+        "primary_artist": null,
+        "album": "Sour Soul (Instrumentals)",
+        "genre": "east coast hip hop",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-516",
+      "spotifyTrack": {
+        "id": "7bd3cfb9-9d6a-46ad-badf-46197395ee21",
+        "title": "Stark's Reality - Instrumental",
+        "artist": "BADBADNOTGOOD, Ghostface Killah",
+        "primary_artist": null,
+        "album": "Sour Soul (Instrumentals)",
+        "genre": "east coast hip hop",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-517",
+      "spotifyTrack": {
+        "id": "e4875ec1-ba21-469f-b241-19e0bb774cf2",
+        "title": "Step into a World (Rapture's Delight)",
+        "artist": "KRS-One",
+        "primary_artist": null,
+        "album": "I Got Next",
+        "genre": "east coast hip hop",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-518",
+      "spotifyTrack": {
+        "id": "46a06fd9-6f56-46f9-8ed7-93acb43b9b08",
+        "title": "Stepping Into Tomorrow",
+        "artist": "Madlib",
+        "primary_artist": null,
+        "album": "Shades Of Blue: Madlib Invades Blue Note",
+        "genre": "experimental hip hop",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-519",
+      "spotifyTrack": {
+        "id": "48c72ded-c4d3-4035-b518-690c241a85c2",
+        "title": "Still Not a Player (feat. Joe) - Radio Version",
+        "artist": "Big Pun, Joe",
+        "primary_artist": null,
+        "album": "Capital Punishment",
+        "genre": "east coast hip hop",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-520",
+      "spotifyTrack": {
+        "id": "9021873a-e444-4b5a-aa37-25421c7cc2b0",
+        "title": "Stormy",
+        "artist": "Morgan Adams Quartet Plus Two, Madlib",
+        "primary_artist": null,
+        "album": "Shades Of Blue: Madlib Invades Blue Note",
+        "genre": "jazz rap",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-521",
+      "spotifyTrack": {
+        "id": "77c72df8-78ed-419b-a107-fb8e4256d974",
+        "title": "Straighten It Out",
+        "artist": "Pete Rock & C.L. Smooth",
+        "primary_artist": null,
+        "album": "Mecca And The Soul Brother",
+        "genre": "east coast hip hop",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-522",
+      "spotifyTrack": {
+        "id": "eb9f0229-2605-4fa5-8840-fd4777257c6f",
+        "title": "Straight Out The Jungle",
+        "artist": "Jungle Brothers",
+        "primary_artist": null,
+        "album": "Straight Out The Jungle",
+        "genre": "jazz rap",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-523",
+      "spotifyTrack": {
+        "id": "0100f2da-fbbb-475a-9523-43d0b7ed68fc",
+        "title": "Street Knowledge - Instrumental",
+        "artist": "BADBADNOTGOOD, Ghostface Killah",
+        "primary_artist": null,
+        "album": "Sour Soul (Instrumentals)",
+        "genre": "east coast hip hop",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-524",
+      "spotifyTrack": {
+        "id": "18b0505d-d18d-4426-aec0-025bfc2aea00",
+        "title": "Stressed Out (feat. Faith Evans)",
+        "artist": "A Tribe Called Quest, Faith Evans",
+        "primary_artist": null,
+        "album": "Beats, Rhymes & Life",
+        "genre": "jazz rap",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-525",
+      "spotifyTrack": {
+        "id": "7db33814-3db4-463b-8273-cac9fed36c2c",
+        "title": "Sundress",
+        "artist": "A$AP Rocky",
+        "primary_artist": null,
+        "album": "Sundress",
+        "genre": "rap",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-526",
+      "spotifyTrack": {
+        "id": "8a52623b-01eb-4f63-83e2-3e72c2e5d7fc",
+        "title": "Sunshine",
+        "artist": "Jungle Brothers",
+        "primary_artist": null,
+        "album": "Done By The Forces Of Nature",
+        "genre": "jazz rap",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-527",
+      "spotifyTrack": {
+        "id": "426aaab6-65c5-4402-98fc-b7e9d02e7724",
+        "title": "Sure Shot",
+        "artist": "Beastie Boys",
+        "primary_artist": null,
+        "album": "Ill Communication",
+        "genre": "rap rock",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-528",
+      "spotifyTrack": {
+        "id": "24567610-989e-4e56-bca8-af99821766d5",
+        "title": "Swords In The Dirt",
+        "artist": "Roots Manuva, Skeme, Niara Scarlett, Big P, Rodney P, Blackitude, Fallacy",
+        "primary_artist": null,
+        "album": "Run Come Save Me",
+        "genre": null,
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-529",
+      "spotifyTrack": {
+        "id": "412f4154-353d-4890-9b71-995f336aa364",
+        "title": "Swordsman",
+        "artist": "GZA, Killah Priest",
+        "primary_artist": null,
+        "album": "Liquid Swords",
+        "genre": "east coast hip hop",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-530",
+      "spotifyTrack": {
+        "id": "0141670a-23a7-4b40-a186-9885a94e360d",
+        "title": "Talkin' All That Jazz",
+        "artist": "Stetsasonic",
+        "primary_artist": null,
+        "album": "In Full Gear",
+        "genre": "old school hip hop",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-531",
+      "spotifyTrack": {
+        "id": "85789c6c-5f2f-4455-b6df-83dfa49af5f4",
+        "title": "Talkin' All That Jazz - Dim's Radio Edit",
+        "artist": "Stetsasonic",
+        "primary_artist": null,
+        "album": "In Full Gear",
+        "genre": "old school hip hop",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-532",
+      "spotifyTrack": {
+        "id": "9d5b7469-0950-4469-8c8e-76920dda3592",
+        "title": "Tambourine - BVRLY Remix",
+        "artist": "Lil Seyi, BVRLY",
+        "primary_artist": null,
+        "album": "Remixes",
+        "genre": null,
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-533",
+      "spotifyTrack": {
+        "id": "43700d57-286b-456d-a06c-41416c355086",
+        "title": "Teach The Children",
+        "artist": "Eric B. & Rakim",
+        "primary_artist": null,
+        "album": "Don't Sweat The Technique",
+        "genre": "old school hip hop",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-534",
+      "spotifyTrack": {
+        "id": "093e6dca-f663-401b-a206-9be66ac95fe6",
+        "title": "That's the Joint",
+        "artist": "Funky 4 + 1",
+        "primary_artist": null,
+        "album": "The Sugar Hill Records Story",
+        "genre": null,
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-535",
+      "spotifyTrack": {
+        "id": "b9ef4d8a-c736-4ed3-8d30-a05786292eba",
+        "title": "The Basement (feat. Heavy D, Rob-O, Grap & Dida)",
+        "artist": "Pete Rock & C.L. Smooth, Grap & Dida, Heavy D, Rob-O",
+        "primary_artist": null,
+        "album": "Mecca And The Soul Brother",
+        "genre": "east coast hip hop",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-536",
+      "spotifyTrack": {
+        "id": "7e10a414-7b55-4a53-896b-d05cb7a9d21e",
+        "title": "the big daddys (skit)",
+        "artist": "Jungle Brothers",
+        "primary_artist": null,
+        "album": "All That We Do",
+        "genre": "jazz rap",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-537",
+      "spotifyTrack": {
+        "id": "dafd27c2-de02-4c99-8bba-ceeb8884830e",
+        "title": "The Chocolate Conquistadors (From Grand Theft Auto Online: The Cayo Perico Heist)",
+        "artist": "BADBADNOTGOOD, MF DOOM",
+        "primary_artist": null,
+        "album": "The Chocolate Conquistadors (From Grand Theft Auto Online: The Cayo Perico Heist)",
+        "genre": "experimental hip hop",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-538",
+      "spotifyTrack": {
+        "id": "ca2f1f5d-ad39-49f4-becd-61a8932d7353",
+        "title": "The Hop",
+        "artist": "A Tribe Called Quest",
+        "primary_artist": null,
+        "album": "Beats, Rhymes & Life",
+        "genre": "jazz rap",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-539",
+      "spotifyTrack": {
+        "id": "57deca2b-ca77-45ac-b5d7-c590c2da1aa4",
+        "title": "The Humpty Dance",
+        "artist": "Digital Underground",
+        "primary_artist": null,
+        "album": "Sex Packets",
+        "genre": "west coast hip hop",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-540",
+      "spotifyTrack": {
+        "id": "807f52b7-a31a-4bb9-ac67-c57ae19646ef",
+        "title": "The Jam",
+        "artist": "A Tribe Called Quest",
+        "primary_artist": null,
+        "album": "Beats, Rhymes & Life",
+        "genre": "jazz rap",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-541",
+      "spotifyTrack": {
+        "id": "dbb6ff42-e723-4de3-8bc3-509db4a05dc9",
+        "title": "The Joint Freestyle",
+        "artist": "Jurassic 5",
+        "primary_artist": null,
+        "album": "J5 Deluxe Re-Issue",
+        "genre": "hip hop",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-542",
+      "spotifyTrack": {
+        "id": "5270411e-8b02-42c0-b4e5-2e58f282499e",
+        "title": "The Joint Promo",
+        "artist": "Jurassic 5",
+        "primary_artist": null,
+        "album": "J5 Deluxe Re-Issue",
+        "genre": "hip hop",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-543",
+      "spotifyTrack": {
+        "id": "37169d14-036b-4f71-b55e-275150d629ad",
+        "title": "The Pressure",
+        "artist": "A Tribe Called Quest",
+        "primary_artist": null,
+        "album": "Beats, Rhymes & Life",
+        "genre": "jazz rap",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-544",
+      "spotifyTrack": {
+        "id": "a6190907-4702-4685-ad33-8450c03d620e",
+        "title": "The Promo",
+        "artist": "Jungle Brothers",
+        "primary_artist": null,
+        "album": "Straight Out The Jungle",
+        "genre": "jazz rap",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-545",
+      "spotifyTrack": {
+        "id": "635f1b62-82df-4dd1-b084-64c8556313b7",
+        "title": "The Punisher",
+        "artist": "Eric B. & Rakim",
+        "primary_artist": null,
+        "album": "Don't Sweat The Technique",
+        "genre": "old school hip hop",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-546",
+      "spotifyTrack": {
+        "id": "f4e8478f-ba9f-4791-b549-bc3522f039a2",
+        "title": "The Rhythm",
+        "artist": "Jurassic 5",
+        "primary_artist": null,
+        "album": "J5 Deluxe Re-Issue",
+        "genre": "hip hop",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-547",
+      "spotifyTrack": {
+        "id": "f6cbff2a-67a5-4831-95b3-c8307ae73856",
+        "title": "The Winner",
+        "artist": "Emapea",
+        "primary_artist": null,
+        "album": "Reflection",
+        "genre": "jazz rap",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-548",
+      "spotifyTrack": {
+        "id": "0811800f-4d59-4f62-ba9b-63b8fac36036",
+        "title": "The World Is Yours - Extended",
+        "artist": "Visioneers",
+        "primary_artist": null,
+        "album": "Marc Mac presents Visioneers - Dirty Old Hip Hop",
+        "genre": "jazz rap",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-549",
+      "spotifyTrack": {
+        "id": "64813135-9887-4d2b-aa49-8a83cca76001",
+        "title": "They Reminisce Over You (T.R.O.Y.)",
+        "artist": "Pete Rock & C.L. Smooth",
+        "primary_artist": null,
+        "album": "Mecca And The Soul Brother",
+        "genre": "east coast hip hop",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-550",
+      "spotifyTrack": {
+        "id": "2035acdd-4299-47f9-a6bd-6b20c8dbb967",
+        "title": "This Is Something for the Radio (Best Of)",
+        "artist": "Biz Markie",
+        "primary_artist": null,
+        "album": "Biz's Baddest Beats: The Best of Biz Markie",
+        "genre": "old school hip hop",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-551",
+      "spotifyTrack": {
+        "id": "ab4fdbb5-69dd-45e6-8851-f0f0b4789c6c",
+        "title": "Toe to Toe",
+        "artist": "Jungle Brothers",
+        "primary_artist": null,
+        "album": "Raw Deluxe",
+        "genre": "jazz rap",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-552",
+      "spotifyTrack": {
+        "id": "ab3b9a31-fee5-4bf7-ae9a-6431057e506e",
+        "title": "Tone's Rap - Instrumental",
+        "artist": "BADBADNOTGOOD, Ghostface Killah",
+        "primary_artist": null,
+        "album": "Sour Soul (Instrumentals)",
+        "genre": "east coast hip hop",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-553",
+      "spotifyTrack": {
+        "id": "ce682d6d-5224-4fa7-ada6-8a6d2a2768fe",
+        "title": "Tribe Vibes",
+        "artist": "Jungle Brothers",
+        "primary_artist": null,
+        "album": "Done By The Forces Of Nature",
+        "genre": "jazz rap",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-554",
+      "spotifyTrack": {
+        "id": "8574ed10-b91a-41ec-b39a-e46eaa77de9d",
+        "title": "Turn the Party Out",
+        "artist": "Biz Markie",
+        "primary_artist": null,
+        "album": "Superrappin - The Album, Vol. 2",
+        "genre": "old school hip hop",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-555",
+      "spotifyTrack": {
+        "id": "52406567-4081-4950-8e47-6fe43284dc8c",
+        "title": "U-Love",
+        "artist": "J Dilla",
+        "primary_artist": null,
+        "album": "Donuts",
+        "genre": "alternative hip hop",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-556",
+      "spotifyTrack": {
+        "id": "ef8222ee-9d92-4a26-9720-b8eb9f9f3e3f",
+        "title": "\"U\" Make Me Sweat",
+        "artist": "Jungle Brothers",
+        "primary_artist": null,
+        "album": "Done By The Forces Of Nature",
+        "genre": "jazz rap",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-557",
+      "spotifyTrack": {
+        "id": "02a3a047-ce09-40e4-8b7a-e123b8880b3d",
+        "title": "Wake Up Promo",
+        "artist": "Jurassic 5",
+        "primary_artist": null,
+        "album": "J5 Deluxe Re-Issue",
+        "genre": "hip hop",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-558",
+      "spotifyTrack": {
+        "id": "5c644881-59ff-464a-8265-49fea336a599",
+        "title": "Warm It Up, Kane",
+        "artist": "Big Daddy Kane",
+        "primary_artist": null,
+        "album": "It's A Big Daddy Thing",
+        "genre": "old school hip hop",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-559",
+      "spotifyTrack": {
+        "id": "b53a71e6-a56b-4d14-ad12-e5a8569310a9",
+        "title": "What I'm Here 4",
+        "artist": "Gang Starr",
+        "primary_artist": null,
+        "album": "Moment Of Truth",
+        "genre": "east coast hip hop",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-560",
+      "spotifyTrack": {
+        "id": "30176277-e551-45b2-888e-6649866cf751",
+        "title": "What Really Goes On",
+        "artist": "A Tribe Called Quest",
+        "primary_artist": null,
+        "album": "Beats, Rhymes & Life",
+        "genre": "jazz rap",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-561",
+      "spotifyTrack": {
+        "id": "7cce6254-49da-485c-8ba8-b6a8b95ae2f5",
+        "title": "What's Going On",
+        "artist": "Eric B. & Rakim",
+        "primary_artist": null,
+        "album": "Don't Sweat The Technique",
+        "genre": "old school hip hop",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-562",
+      "spotifyTrack": {
+        "id": "c21f7826-02bd-4e26-8b04-019c235b1303",
+        "title": "What's Going On",
+        "artist": "Jungle Brothers",
+        "primary_artist": null,
+        "album": "Straight Out The Jungle",
+        "genre": "jazz rap",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-563",
+      "spotifyTrack": {
+        "id": "d7f0aeeb-a136-4a98-adc2-bda29e8f49f0",
+        "title": "What's On Your Mind",
+        "artist": "Eric B. & Rakim",
+        "primary_artist": null,
+        "album": "Don't Sweat The Technique",
+        "genre": "old school hip hop",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-564",
+      "spotifyTrack": {
+        "id": "6f043dea-1c91-4b28-be61-c8f382c7a276",
+        "title": "What's The Five O",
+        "artist": "Jungle Brothers",
+        "primary_artist": null,
+        "album": "All That We Do",
+        "genre": "jazz rap",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-565",
+      "spotifyTrack": {
+        "id": "f6523ab1-2111-4122-a6eb-75c4beb2ab60",
+        "title": "What \"U\" Waitin' \"4\"?",
+        "artist": "Jungle Brothers",
+        "primary_artist": null,
+        "album": "Done By The Forces Of Nature",
+        "genre": "jazz rap",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-566",
+      "spotifyTrack": {
+        "id": "6bdb119a-029a-47ca-a667-7e1763e820a5",
+        "title": "What We Do",
+        "artist": "Freeway, JAY-Z, Beanie Sigel",
+        "primary_artist": null,
+        "album": "Philadelphia Freeway",
+        "genre": "east coast hip hop",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-567",
+      "spotifyTrack": {
+        "id": "9c58b38c-993d-4faa-b6e3-59193fec1efa",
+        "title": "When I B On Tha Mic",
+        "artist": "Rakim",
+        "primary_artist": null,
+        "album": "The Master",
+        "genre": "east coast hip hop",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-568",
+      "spotifyTrack": {
+        "id": "90b7625a-3b72-4fd4-a763-97573671107b",
+        "title": "Where You Wanna Go",
+        "artist": "Jungle Brothers",
+        "primary_artist": null,
+        "album": "Raw Deluxe",
+        "genre": "jazz rap",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-569",
+      "spotifyTrack": {
+        "id": "9f8e559f-7f7f-4279-9ca3-5db70544f258",
+        "title": "(Who's Gonna Be The) Next Victim",
+        "artist": "Jurassic 5",
+        "primary_artist": null,
+        "album": "J5 Deluxe Re-Issue",
+        "genre": "hip hop",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-570",
+      "spotifyTrack": {
+        "id": "58d1fbde-70bd-4608-ab9e-dd0b32499a9d",
+        "title": "Wig Out",
+        "artist": "Pete Rock & C.L. Smooth",
+        "primary_artist": null,
+        "album": "Mecca And The Soul Brother",
+        "genre": "east coast hip hop",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-571",
+      "spotifyTrack": {
+        "id": "c919b732-d8a7-4111-a66f-41220baf2b72",
+        "title": "Witness (1 Hope)",
+        "artist": "Roots Manuva",
+        "primary_artist": null,
+        "album": "Run Come Save Me",
+        "genre": null,
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-572",
+      "spotifyTrack": {
+        "id": "4c131b0c-bebe-4c41-b84d-43bba9cf426d",
+        "title": "Won't Do",
+        "artist": "J Dilla",
+        "primary_artist": null,
+        "album": "The Shining",
+        "genre": "alternative hip hop",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-573",
+      "spotifyTrack": {
+        "id": "9059e368-e784-4833-85a8-b4bb729b5c96",
+        "title": "Won't Trade",
+        "artist": "Q-Tip",
+        "primary_artist": null,
+        "album": "The Renaissance",
+        "genre": "east coast hip hop",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-574",
+      "spotifyTrack": {
+        "id": "2da29103-fb6c-40ea-84f1-eae7dcb3ae7c",
+        "title": "Word Play",
+        "artist": "A Tribe Called Quest",
+        "primary_artist": null,
+        "album": "Beats, Rhymes & Life",
+        "genre": "jazz rap",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-575",
+      "spotifyTrack": {
+        "id": "2a4cd8e7-a7ab-4c9b-bc55-c8179e2c70ba",
+        "title": "You In My Hut Now",
+        "artist": "Jungle Brothers",
+        "primary_artist": null,
+        "album": "All That We Do",
+        "genre": "jazz rap",
+        "super_genre": "Hip Hop"
+      },
+      "expectedLocalMatch": null,
+      "verdict": "true-missing",
+      "failureCategory": null,
+      "notes": "",
+      "superGenre": "Hip Hop"
+    }
+  ]
+}

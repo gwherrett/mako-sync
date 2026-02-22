@@ -18,7 +18,8 @@ export class NormalizationService {
     'remix', 'mix', 'edit', 'rework', 'bootleg', 'mashup',
     'version', 'radio', 'club', 'extended', 'vocal', 'instrumental', 'dub', 'original',
     'live', 'acoustic', 'unplugged', 'session',
-    'remaster', 'remastered', 'demo', 'vip'
+    'remaster', 'remastered', 'demo', 'vip',
+    'reprise', 'bonus track',
   ];
 
   // Artist feature keywords (negative indicators for mix info)
@@ -179,18 +180,32 @@ export class NormalizationService {
 
     if (bestMix) {
       mix = bestMix.content;
-      
-      // Remove the mix piece from title to get core
+
+      // Remove ONLY the specific mix piece, not all parens/brackets
       if (bestMix.type === 'parentheses') {
-        core = core.replace(/\([^)]*\)/g, '').trim();
+        // Escape the content for regex and remove only this specific parenthetical
+        const escaped = bestMix.content.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        core = core.replace(new RegExp(`\\(${escaped}\\)`, ''), '').trim();
       } else if (bestMix.type === 'brackets') {
-        core = core.replace(/\[[^\]]*\]/g, '').trim();
+        const escaped = bestMix.content.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        core = core.replace(new RegExp(`\\[${escaped}\\]`, ''), '').trim();
       } else if (bestMix.type === 'hyphen') {
         core = core.replace(/\s+-\s+[^-]+$/, '').trim();
       }
     } else {
-      // No good mix candidate found, remove all metadata but keep as core
-      core = core.replace(/\([^)]*\)/g, '').replace(/\[[^\]]*\]/g, '').replace(/\s+-\s+[^-]+$/, '').trim();
+      // No good mix candidate found — strip neutral hyphen suffixes and brackets
+      // but preserve neutral parentheses (likely subtitles like "(If This Ain't Love)")
+      const neutralPieces = scoredPieces.filter(p => p.score === 0);
+      for (const piece of neutralPieces) {
+        if (piece.type === 'hyphen') {
+          core = core.replace(/\s+-\s+[^-]+$/, '').trim();
+        } else if (piece.type === 'brackets') {
+          // Brackets typically contain label/catalog info, not subtitles
+          const escaped = piece.content.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+          core = core.replace(new RegExp(`\\[${escaped}\\]`, ''), '').trim();
+        }
+        // Don't strip neutral parentheses — they're likely subtitles
+      }
     }
 
     // Clean up whitespace

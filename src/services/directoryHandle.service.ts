@@ -12,6 +12,8 @@
  * - Recursively iterate files in the directory
  */
 
+import { isSupportedAudioFile } from './fileScanner';
+
 const DB_NAME = 'mako-sync-fs';
 const DB_VERSION = 1;
 const STORE_NAME = 'handles';
@@ -183,9 +185,9 @@ export interface FileWithHandle {
 }
 
 /**
- * Recursively get all MP3 files from a directory with their handles
+ * Recursively get all supported audio files from a directory with their handles
  */
-export async function getAllMp3Files(
+export async function getAllAudioFiles(
   dirHandle: FileSystemDirectoryHandle,
   basePath: string = ''
 ): Promise<FileWithHandle[]> {
@@ -196,12 +198,12 @@ export async function getAllMp3Files(
 
     if (entry.kind === 'directory') {
       // Recursively process subdirectories
-      const subFiles = await getAllMp3Files(
+      const subFiles = await getAllAudioFiles(
         entry as FileSystemDirectoryHandle,
         entryPath
       );
       files.push(...subFiles);
-    } else if (entry.kind === 'file' && entry.name.toLowerCase().endsWith('.mp3')) {
+    } else if (entry.kind === 'file' && isSupportedAudioFile(entry.name)) {
       const fileHandle = entry as FileSystemFileHandle;
       const file = await fileHandle.getFile();
       files.push({
@@ -214,6 +216,9 @@ export async function getAllMp3Files(
 
   return files;
 }
+
+/** @deprecated Use getAllAudioFiles instead */
+export const getAllMp3Files = getAllAudioFiles;
 
 /**
  * Write data to a file using its handle

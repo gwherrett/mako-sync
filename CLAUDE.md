@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Mako-Sync is a web application that helps music collectors identify gaps between their Spotify liked songs and local MP3 files. Core features include Spotify library sync, local file scanning with metadata extraction, genre mapping/normalization, and missing tracks analysis.
+Mako-Sync is a web application built through an agentic development framework grounded in product requirements, automated quality validation, and enforceable coding guardrails. It helps music collectors identify gaps between their Spotify liked songs and local MP3 files. Core features include Spotify library sync, local file scanning with metadata extraction, genre mapping/normalization, and missing tracks analysis.
 
 ## Commands
 
@@ -18,6 +18,7 @@ npm run lint             # ESLint
 npx vitest run           # Run all tests
 npx vitest run --coverage # Run with coverage
 npx vitest <pattern>     # Run specific test file
+npx vitest run trackMatchingEval  # Run matching Eval suite
 
 # Agents framework (code validation)
 npm run agents:validate  # Validate all agents
@@ -51,10 +52,14 @@ npm run agents:fix       # Auto-fix violations
 
 ### Key Services (`src/services/`)
 - `normalization.service.ts` - Text normalization for track matching (critical for matching accuracy)
+- `trackMatchingEngine.ts` - Core matching engine (3-tier: exact, core title, fuzzy)
+- `trackMatching.service.ts` - Matching orchestration between Spotify and local files
 - `metadataExtractor.ts` - MP3 metadata extraction using music-metadata-browser
 - `spotifyAuthManager.service.ts` - Spotify connection management
-- `trackMatching.service.ts` - Matching logic between Spotify and local files
 - `sessionCache.service.ts` - Auth session caching with timeouts
+
+### Eval Framework
+Track matching accuracy is validated by an Eval suite (`src/services/__tests__/trackMatchingEval.test.ts`) with fixture-based test cases (`eval-cases.json`). The suite tracks false-negative rates and must never regress. Tighten `MAX_FALSE_NEGATIVE_RATE` as matching improves.
 
 ### Auth Flow
 - Auth context: `src/contexts/NewAuthContext.tsx`
@@ -136,16 +141,23 @@ Standalone Python scripts for batch MP3 metadata operations using the **Mutagen*
 
 ## Documentation
 
-All general documentation should be placed in the `docs/` folder, not the repository root.
+All documentation lives in the `docs/` folder. See [docs/README.md](docs/README.md) for the full navigation hub and documentation template.
 
-**File naming convention:** Use lowercase with dash separators (e.g., `setup-guide.md`, `test-improvement-plan.md`).
+**File naming**: lowercase with dashes (e.g., `setup-guide.md`).
 
 **Key documentation:**
 - [docs/mako-sync-overview.md](docs/mako-sync-overview.md) - Product overview and 5-step workflow
 - [docs/architecture-mako-sync.md](docs/architecture-mako-sync.md) - System architecture
-- [docs/setup-guide.md](docs/setup-guide.md) - Configuration and deployment
+- [docs/reference/production-deployment.md](docs/reference/production-deployment.md) - Deployment and configuration
 
-**Root-level files only:**
-- `README.md` - Project introduction
-- `CLAUDE.md` - AI assistant guidance (this file)
-- `AGENTS.md` - Critical coding patterns
+**Documentation locations:**
+
+| Location | Purpose |
+|----------|---------|
+| Root (`README.md`, `CLAUDE.md`, `AGENTS.md`) | Short, high-signal entry points |
+| `docs/` (root level) | Product vision and architecture |
+| `docs/reference/` | Implementation guides, debugging, deployment |
+| `docs/plans/` | Active feature implementation plans |
+| `docs/agents/` | Validation framework documentation |
+| `docs/archive/` | Historical docs (read-only, not maintained) |
+| `agents/README.md` | Framework quick start (points to docs/agents/) |

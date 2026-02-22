@@ -59,7 +59,7 @@ import {
 import {
   isFileSystemAccessSupported,
   getDownloadsDirectory,
-  getAllMp3Files,
+  getAllAudioFiles,
   requestDirectoryAccess,
   clearStoredDirectoryHandle,
 } from '@/services/directoryHandle.service';
@@ -81,10 +81,13 @@ export function DownloadProcessingSection() {
 
   // Tag writing state
   const [isWritingTags, setIsWritingTags] = useState(false);
+  const [tagsHaveBeenWritten, setTagsHaveBeenWritten] = useState(false);
   const [writeProgress, setWriteProgress] = useState<{
     current: number;
     total: number;
     filename: string;
+    written: number;
+    skipped: number;
   } | null>(null);
 
   // Inline mapping state
@@ -127,6 +130,12 @@ export function DownloadProcessingSection() {
       const handle = await requestDirectoryAccess();
       if (handle) {
         setDirectoryHandle(handle);
+        // Reset to scan state if tags have been written (new folder = new files)
+        if (tagsHaveBeenWritten) {
+          setResult(null);
+          setTagsHaveBeenWritten(false);
+          setStatusFilter('all');
+        }
       }
     } catch (error) {
       console.error('Failed to select directory:', error);
@@ -138,6 +147,7 @@ export function DownloadProcessingSection() {
     await clearStoredDirectoryHandle();
     setDirectoryHandle(null);
     setResult(null);
+    setTagsHaveBeenWritten(false);
   };
 
   // Process files from the directory
@@ -149,8 +159,8 @@ export function DownloadProcessingSection() {
     setResult(null);
 
     try {
-      // Get all MP3 files with their handles
-      const filesWithHandles = await getAllMp3Files(directoryHandle);
+      // Get all audio files with their handles
+      const filesWithHandles = await getAllAudioFiles(directoryHandle);
 
       if (filesWithHandles.length === 0) {
         toast({
@@ -303,17 +313,45 @@ export function DownloadProcessingSection() {
     setIsWritingTags(true);
     setWriteProgress(null);
 
+    // Track cumulative written/skipped counts
+    let writtenCount = 0;
+    let skippedCount = 0;
+
     try {
-      const { success, errors } = await writeTagsInPlace(
+      const { success, skipped, errors } = await writeTagsInPlace(
         result.files,
-        (prog) => setWriteProgress(prog)
+        (prog) => {
+          if (prog.skipped) {
+            skippedCount++;
+          } else {
+            writtenCount++;
+          }
+          setWriteProgress({
+            ...prog,
+            written: writtenCount,
+            skipped: skippedCount,
+          });
+        }
       );
+
+      // Mark that tags have been written (or verified as already correct)
+      setTagsHaveBeenWritten(true);
 
       if (errors.length > 0) {
         toast({
           title: 'Tag Writing Complete (with errors)',
-          description: `${success} files updated, ${errors.length} failed`,
+          description: `${success} written, ${skipped} skipped (already correct), ${errors.length} failed`,
           variant: 'destructive',
+        });
+      } else if (skipped > 0 && success === 0) {
+        toast({
+          title: 'All Tags Already Correct',
+          description: `${skipped} files already have the correct SuperGenre tag`,
+        });
+      } else if (skipped > 0) {
+        toast({
+          title: 'Tags Written Successfully',
+          description: `${success} updated, ${skipped} skipped (already correct)`,
         });
       } else {
         toast({
@@ -339,6 +377,7 @@ export function DownloadProcessingSection() {
     setResult(null);
     setProgress(null);
     setStatusFilter('all');
+    setTagsHaveBeenWritten(false);
   };
 
   // Filter files based on status
@@ -566,7 +605,11 @@ export function DownloadProcessingSection() {
                 <div className="flex items-center gap-2">
                   <Loader2 className="h-4 w-4 animate-spin" />
                   <span className="text-sm">
-                    Writing tags: {writeProgress.current} of {writeProgress.total}...
+                    Processing {writeProgress.current} of {writeProgress.total}...
+                    {' '}
+                    <span className="text-muted-foreground">
+                      ({writeProgress.written} writing, {writeProgress.skipped} skipped)
+                    </span>
                   </span>
                 </div>
                 <Progress

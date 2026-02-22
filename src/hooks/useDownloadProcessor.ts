@@ -84,8 +84,8 @@ export function useDownloadProcessor(): UseDownloadProcessorReturn {
         const { summary } = processingResult;
         if (summary.total === 0) {
           toast({
-            title: 'No MP3 files found',
-            description: 'The selected folder contains no MP3 files.',
+            title: 'No audio files found',
+            description: 'The selected folder contains no supported audio files (MP3, FLAC, M4A).',
             variant: 'destructive',
           });
         } else {
