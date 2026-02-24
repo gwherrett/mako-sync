@@ -128,6 +128,7 @@ export const useLocalScanner = (onScanComplete?: () => void) => {
         // Handles token refresh interruptions by waiting and retrying
         let lastError: any = null;
         let success = false;
+        let lastErrorIsAuth = false; // track auth errors across retry attempts
 
         for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
           try {
@@ -136,11 +137,15 @@ export const useLocalScanner = (onScanComplete?: () => void) => {
               console.log(`🔄 Retry attempt ${attempt} for batch ${batchNumber} (waiting ${RETRY_DELAY_MS}ms)...`);
               await new Promise(resolve => setTimeout(resolve, RETRY_DELAY_MS));
 
-              // Verify session is valid before retry
-              const { data: { session } } = await supabase.auth.getSession();
-              if (!session) {
-                console.warn(`⚠️ No session on retry attempt ${attempt}, waiting for auth...`);
-                await new Promise(resolve => setTimeout(resolve, 2000));
+              // Only verify session when the previous error was auth-related.
+              // Calling getSession() on every retry adds unnecessary latency and
+              // cache churn during normal timeout/network retries.
+              if (lastErrorIsAuth) {
+                const { data: { session } } = await supabase.auth.getSession();
+                if (!session) {
+                  console.warn(`⚠️ No session on retry attempt ${attempt}, waiting for auth...`);
+                  await new Promise(resolve => setTimeout(resolve, 2000));
+                }
               }
             }
 
@@ -165,6 +170,7 @@ export const useLocalScanner = (onScanComplete?: () => void) => {
             lastError = err;
             const isTimeout = err?.message?.includes('timed out');
             const isAuthError = err?.message?.includes('JWT') || err?.code === 'PGRST301';
+            lastErrorIsAuth = isAuthError;
 
             if (isTimeout || isAuthError) {
               console.warn(`⚠️ Batch ${batchNumber} attempt ${attempt + 1} failed (${isTimeout ? 'timeout' : 'auth'}), will retry...`);

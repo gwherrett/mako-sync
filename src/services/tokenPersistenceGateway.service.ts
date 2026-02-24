@@ -34,13 +34,21 @@ class TokenPersistenceGatewayService {
    * Wait for token to appear in localStorage matching the session
    * AND verify Supabase client can use it for queries.
    * Returns true when ready, false after timeout (non-blocking)
+   *
+   * @param options.skipSetSession - Skip the setSession verification step (use for TOKEN_REFRESHED
+   *   events where Supabase has already refreshed internally — avoids redundant round-trips)
    */
-  async waitForTokenPersistence(session: Session, maxWaitMs = DEFAULT_MAX_WAIT_MS): Promise<boolean> {
+  async waitForTokenPersistence(
+    session: Session,
+    maxWaitMs = DEFAULT_MAX_WAIT_MS,
+    options?: { skipSetSession?: boolean }
+  ): Promise<boolean> {
     const startTime = Date.now();
     const accessToken = session.access_token;
 
     console.log('🔐 TOKEN GATEWAY: Starting token persistence check...', {
       maxWaitMs,
+      skipSetSession: options?.skipSetSession ?? false,
       tokenPrefix: accessToken.substring(0, 20) + '...'
     });
 
@@ -49,17 +57,26 @@ class TokenPersistenceGatewayService {
     console.log('🔐 TOKEN GATEWAY: Token in localStorage:', alreadyPersisted);
 
     if (alreadyPersisted) {
-      // Also verify Supabase client is ready by setting the session
-      // Use a timeout to prevent hanging
+      // On TOKEN_REFRESHED the Supabase client already has the new token in memory.
+      // Calling setSession again is redundant and frequently loses the 200ms race
+      // during long scans, generating noisy warnings. Skip it.
+      if (options?.skipSetSession) {
+        console.log('🔐 TOKEN GATEWAY: Token persisted, skipping setSession (refresh path)');
+        this.markTokenReady();
+        return true;
+      }
+
+      // On SIGNED_IN, verify Supabase client is ready by setting the session.
+      // Use a timeout to prevent hanging — increased to 1000ms for cold-start tolerance.
       try {
         const setSessionPromise = supabase.auth.setSession({
           access_token: session.access_token,
           refresh_token: session.refresh_token
         });
 
-        // Race against a 200ms timeout
+        // Race against a 1000ms timeout
         const timeoutPromise = new Promise<never>((_, reject) => {
-          setTimeout(() => reject(new Error('setSession timeout')), 200);
+          setTimeout(() => reject(new Error('setSession timeout')), 1000);
         });
 
         await Promise.race([setSessionPromise, timeoutPromise]);

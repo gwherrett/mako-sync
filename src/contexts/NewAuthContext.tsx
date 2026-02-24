@@ -392,13 +392,17 @@ export const NewAuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
               // OPTIMIZATION: Pre-populate session cache
               sessionCache.setSessionFromAuthContext(session);
 
-              updateAuthState();
+              // Update session/user state directly — token refresh doesn't change user
+              // identity so a full updateAuthState() (which reloads user data) is not needed.
+              setSession(session);
+              setUser(session.user);
 
-              // Wait for token persistence before allowing queries
-              // This prevents the race condition where queries start before
-              // the token is actually persisted to localStorage
+              // Wait for token persistence before allowing queries.
+              // Skip the redundant setSession call: Supabase has already refreshed
+              // the token internally so calling setSession() again just causes
+              // noisy timeout warnings during long scans.
               if (featureFlags.isTokenPersistenceGatewayEnabled()) {
-                tokenPersistenceGateway.waitForTokenPersistence(session, 300)
+                tokenPersistenceGateway.waitForTokenPersistence(session, 300, { skipSetSession: true })
                   .finally(() => {
                     setInitialDataReady(true); // Allow data queries to start
                   });
