@@ -123,6 +123,22 @@ See [AGENTS.md](AGENTS.md) for additional critical non-obvious patterns includin
 - SpotifyAuthManager singleton usage
 - Session cache direct access requirements
 
+## Python Utilities (`python/`)
+
+Standalone Python scripts for batch MP3 metadata operations using the **Mutagen** library. All new metadata/tag scripts should be created here.
+
+**Conventions:**
+- Dry-run by default, `--apply` flag to make changes
+- Support both single-file and `--batch <directory>` modes
+- Windows console encoding fix (`sys.stdout.reconfigure(encoding='utf-8')`)
+- Only handle MP3 files (use Mutagen, not Kid3 CLI or other libraries for other formats)
+
+**Existing scripts:**
+- `mp3_metadata_demo.py` - Read/inspect MP3 metadata (EasyID3, ID3, MP3)
+- `diagnose_comments.py` - Diagnose COMM frame conflicts (MediaMonkey vs Serato)
+- `fix_comments.py` - Remove problematic COMM frames, preserve Songs-DB_Custom1
+- `fix_album_artist.py` - Strip "Mixed By" prefix from Album Artist (TPE2) tags
+
 ## Documentation
 
 All documentation lives in the `docs/` folder. See [docs/README.md](docs/README.md) for the full navigation hub and documentation template.
