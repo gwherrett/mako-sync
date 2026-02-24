@@ -23,16 +23,16 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">100% </span>
+                <span class="strong">96.2% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>75/75</span>
+                <span class='fraction'>76/79</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">94.73% </span>
+                <span class="strong">91.3% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>18/19</span>
+                <span class='fraction'>21/23</span>
             </div>
         
             
@@ -44,9 +44,9 @@
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">100% </span>
+                <span class="strong">96.15% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>74/74</span>
+                <span class='fraction'>75/78</span>
             </div>
         
             
@@ -252,7 +252,24 @@
 <a name='L187'></a><a href='#L187'>187</a>
 <a name='L188'></a><a href='#L188'>188</a>
 <a name='L189'></a><a href='#L189'>189</a>
-<a name='L190'></a><a href='#L190'>190</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<a name='L190'></a><a href='#L190'>190</a>
+<a name='L191'></a><a href='#L191'>191</a>
+<a name='L192'></a><a href='#L192'>192</a>
+<a name='L193'></a><a href='#L193'>193</a>
+<a name='L194'></a><a href='#L194'>194</a>
+<a name='L195'></a><a href='#L195'>195</a>
+<a name='L196'></a><a href='#L196'>196</a>
+<a name='L197'></a><a href='#L197'>197</a>
+<a name='L198'></a><a href='#L198'>198</a>
+<a name='L199'></a><a href='#L199'>199</a>
+<a name='L200'></a><a href='#L200'>200</a>
+<a name='L201'></a><a href='#L201'>201</a>
+<a name='L202'></a><a href='#L202'>202</a>
+<a name='L203'></a><a href='#L203'>203</a>
+<a name='L204'></a><a href='#L204'>204</a>
+<a name='L205'></a><a href='#L205'>205</a>
+<a name='L206'></a><a href='#L206'>206</a>
+<a name='L207'></a><a href='#L207'>207</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -290,10 +307,8 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">5x</span>
-<span class="cline-any cline-yes">5x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">5x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -303,6 +318,25 @@
 <span class="cline-any cline-yes">5x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">5x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">5x</span>
+<span class="cline-any cline-yes">5x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">5x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">3x</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">3x</span>
@@ -477,13 +511,21 @@ class TokenPersistenceGatewayService {
    * Wait for token to appear in localStorage matching the session
    * AND verify Supabase client can use it for queries.
    * Returns true when ready, false after timeout (non-blocking)
+   *
+   * @param options.skipSetSession - Skip the setSession verification step (use for TOKEN_REFRESHED
+   *   events where Supabase has already refreshed internally — avoids redundant round-trips)
    */
-  async waitForTokenPersistence(session: Session, maxWaitMs = DEFAULT_MAX_WAIT_MS): Promise&lt;boolean&gt; {
+  async waitForTokenPersistence(
+    session: Session,
+    maxWaitMs = DEFAULT_MAX_WAIT_MS,
+    options?: { skipSetSession?: boolean }
+  ): Promise&lt;boolean&gt; {
     const startTime = Date.now();
     const accessToken = session.access_token;
 &nbsp;
     console.log('🔐 TOKEN GATEWAY: Starting token persistence check...', {
       maxWaitMs,
+      skipSetSession: options?.skipSetSession ?? false,
       tokenPrefix: accessToken.substring(0, 20) + '...'
     });
 &nbsp;
@@ -492,17 +534,26 @@ class TokenPersistenceGatewayService {
     console.log('🔐 TOKEN GATEWAY: Token in localStorage:', alreadyPersisted);
 &nbsp;
     if (alreadyPersisted) {
-      // Also verify Supabase client is ready by setting the session
-      // Use a timeout to prevent hanging
+      // On TOKEN_REFRESHED the Supabase client already has the new token in memory.
+      // Calling setSession again is redundant and frequently loses the 200ms race
+      // during long scans, generating noisy warnings. Skip it.
+      <span class="missing-if-branch" title="if path not taken" >I</span>if (options?.skipSetSession) {
+<span class="cstat-no" title="statement not covered" >        console.log('🔐 TOKEN GATEWAY: Token persisted, skipping setSession (refresh path)');</span>
+<span class="cstat-no" title="statement not covered" >        this.markTokenReady();</span>
+<span class="cstat-no" title="statement not covered" >        return true;</span>
+      }
+&nbsp;
+      // On SIGNED_IN, verify Supabase client is ready by setting the session.
+      // Use a timeout to prevent hanging — increased to 1000ms for cold-start tolerance.
       try {
         const setSessionPromise = supabase.auth.setSession({
           access_token: session.access_token,
           refresh_token: session.refresh_token
         });
 &nbsp;
-        // Race against a 200ms timeout
+        // Race against a 1000ms timeout
         const timeoutPromise = new Promise&lt;never&gt;((_, reject) =&gt; {
-          setTimeout(() =&gt; reject(new Error('setSession timeout')), 200);
+          setTimeout(() =&gt; reject(new Error('setSession timeout')), 1000);
         });
 &nbsp;
         await Promise.race([setSessionPromise, timeoutPromise]);
@@ -637,7 +688,7 @@ export default TokenPersistenceGatewayService;
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-02-15T02:51:21.613Z
+                at 2026-02-24T22:07:12.720Z
             </div>
         <script src="../prettify.js"></script>
         <script>

@@ -34,6 +34,7 @@ import {
 } from '@/components/ui/pagination';
 import { Checkbox } from '@/components/ui/checkbox';
 import { supabase } from '@/integrations/supabase/client';
+import type { Database } from '@/integrations/supabase/types';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/NewAuthContext';
 import { withQueryTimeout } from '@/utils/supabaseQuery';
@@ -165,13 +166,13 @@ const LocalTracksTable = ({ onTrackSelect, selectedTrack, refreshTrigger, isActi
         const { data: mappings } = await supabase
           .from('spotify_genre_map_base')
           .select('spotify_genre')
-          .eq('super_genre', selectedSuperGenre);
+          .eq('super_genre', selectedSuperGenre as Database['public']['Enums']['super_genre']);
 
         const { data: overrides } = await supabase
           .from('spotify_genre_map_overrides')
           .select('spotify_genre')
           .eq('user_id', user.id)
-          .eq('super_genre', selectedSuperGenre);
+          .eq('super_genre', selectedSuperGenre as Database['public']['Enums']['super_genre']);
 
         // Combine mapped genres
         const mappedGenres = new Set<string>();
@@ -450,9 +451,9 @@ const LocalTracksTable = ({ onTrackSelect, selectedTrack, refreshTrigger, isActi
       });
 
       setSelectedTracks(new Set());
-      if (user) {
-        fetchTracks(user.id);
-      }
+      // Reset to page 1 after deletion so active filters still return results
+      // (deleted items may have been the only content on the current page)
+      setCurrentPage(1);
     } catch (error) {
       console.error('Error deleting tracks:', error);
       toast({
