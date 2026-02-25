@@ -45,6 +45,7 @@ interface LocalTrack {
   artist: string | null;
   album: string | null;
   genre: string | null;
+  super_genre: string | null;
   year: number | null;
   bpm: number | null;
   key: string | null;
@@ -762,18 +763,7 @@ const LocalTracksTable = ({ onTrackSelect, selectedTrack, refreshTrigger, isActi
                     )}
                   </div>
                 </TableHead>
-                <TableHead
-                  className="hidden md:table-cell cursor-pointer hover:bg-muted/50 select-none"
-                  onClick={() => handleSort('year')}
-                >
-                  <div className="flex items-center gap-1">
-                    Year
-                    {sortField === 'year' && (
-                      sortDirection === 'asc' ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />
-                    )}
-                  </div>
-                </TableHead>
-                <TableHead className="hidden xl:table-cell">BPM</TableHead>
+                <TableHead className="hidden md:table-cell">SuperGenre</TableHead>
                 <TableHead
                   className="hidden xl:table-cell cursor-pointer hover:bg-muted/50 select-none"
                   onClick={() => handleSort('bitrate')}
@@ -838,16 +828,7 @@ const LocalTracksTable = ({ onTrackSelect, selectedTrack, refreshTrigger, isActi
                     {track.genre || <span className="text-muted-foreground">Unknown</span>}
                   </TableCell>
                   <TableCell className="hidden md:table-cell">
-                    {track.year || <span className="text-muted-foreground">—</span>}
-                  </TableCell>
-                  <TableCell className="hidden xl:table-cell">
-                    {track.bpm ? (
-                      <Badge variant="secondary" className="bg-blue-500/10 text-blue-400 border-blue-500/30">
-                        {track.bpm} BPM
-                      </Badge>
-                    ) : (
-                      <span className="text-muted-foreground">—</span>
-                    )}
+                    {track.super_genre || <span className="text-muted-foreground">—</span>}
                   </TableCell>
                   <TableCell className="hidden xl:table-cell">
                     {track.bitrate ? (

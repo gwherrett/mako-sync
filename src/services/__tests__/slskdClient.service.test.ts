@@ -101,18 +101,38 @@ describe('SlskdClientService', () => {
     const existingSearches = [
       { id: '1', searchText: 'Artist - Title', state: 'Completed' as const },
       { id: '2', searchText: 'Another Artist - Another Song', state: 'InProgress' as const },
+      { id: '3', searchText: 'Timed Out Artist - Song', state: 'TimedOut' as const },
+      { id: '4', searchText: 'Cancelled Artist - Song', state: 'Cancelled' as const },
     ];
 
-    it('detects exact duplicate', () => {
+    it('returns false for a Completed search (not a duplicate)', () => {
       expect(
         SlskdClientService.isSearchDuplicate(existingSearches, 'Artist - Title')
+      ).toBe(false);
+    });
+
+    it('detects InProgress search as duplicate', () => {
+      expect(
+        SlskdClientService.isSearchDuplicate(existingSearches, 'Another Artist - Another Song')
       ).toBe(true);
     });
 
-    it('detects case-insensitive duplicate', () => {
+    it('detects InProgress duplicate case-insensitively', () => {
       expect(
-        SlskdClientService.isSearchDuplicate(existingSearches, 'ARTIST - TITLE')
+        SlskdClientService.isSearchDuplicate(existingSearches, 'ANOTHER ARTIST - ANOTHER SONG')
       ).toBe(true);
+    });
+
+    it('returns false for TimedOut search', () => {
+      expect(
+        SlskdClientService.isSearchDuplicate(existingSearches, 'Timed Out Artist - Song')
+      ).toBe(false);
+    });
+
+    it('returns false for Cancelled search', () => {
+      expect(
+        SlskdClientService.isSearchDuplicate(existingSearches, 'Cancelled Artist - Song')
+      ).toBe(false);
     });
 
     it('returns false for non-duplicate', () => {
