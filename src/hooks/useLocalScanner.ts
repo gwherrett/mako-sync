@@ -4,6 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { scanDirectoryForLocalFiles } from '@/services/fileScanner';
 import { extractMetadataBatch } from '@/services/metadataExtractor';
 import { withTimeout } from '@/utils/promiseUtils';
+import { generateFileHash } from '@/utils/fileHash';
 
 const DB_UPSERT_TIMEOUT_MS = 60000; // 60 seconds per batch (shorter timeout, more retries)
 const BATCH_SIZE = 25; // Files per DB batch (sequential processing prevents API exhaustion)
@@ -11,6 +12,7 @@ const MAX_RETRIES = 3; // More retries to handle token refresh interruptions
 const WARMUP_TIMEOUT_MS = 30000; // 30 seconds for warmup query
 const BATCH_DELAY_MS = 500; // Delay between batches to allow browser cleanup
 const RETRY_DELAY_MS = 3000; // Wait before retry to allow token refresh to complete
+const HASH_PAGE_SIZE = 1000; // Supabase max rows per query
 
 export const useLocalScanner = (onScanComplete?: () => void) => {
   const [isScanning, setIsScanning] = useState(false);
@@ -51,23 +53,38 @@ export const useLocalScanner = (onScanComplete?: () => void) => {
 
       setScanProgress({ current: 0, total: localFiles.length });
 
-      // Warmup database connection before starting batches
-      console.log('🔥 Warming up database connection...');
-      const warmupStart = Date.now();
+      // Load all existing hashes for this user — used to skip unchanged files on rescan.
+      // Pages through results to work around Supabase's 1000-row limit.
+      console.log('🔥 Loading existing hashes from database...');
+      const existingHashes = new Set<string>();
+      const hashLoadStart = Date.now();
       try {
-        const warmupResult = await withTimeout(
-          Promise.resolve(supabase.from('local_mp3s').select('hash').limit(1)),
-          WARMUP_TIMEOUT_MS,
-          'Database warmup query timed out'
-        );
-        const warmupTime = Date.now() - warmupStart;
-        if (warmupResult.error) {
-          console.warn('⚠️ Warmup query returned error:', warmupResult.error);
-        } else {
-          console.log(`✅ Database connection warmed up in ${warmupTime}ms`);
+        let page = 0;
+        let hasMore = true;
+        while (hasMore) {
+          const result = await withTimeout(
+            Promise.resolve(
+              supabase
+                .from('local_mp3s')
+                .select('hash')
+                .eq('user_id', user.id)
+                .not('hash', 'is', null)
+                .range(page * HASH_PAGE_SIZE, (page + 1) * HASH_PAGE_SIZE - 1)
+            ),
+            WARMUP_TIMEOUT_MS,
+            'Hash load query timed out'
+          );
+          if (result.error) {
+            console.warn('⚠️ Hash load returned error:', result.error);
+            break;
+          }
+          (result.data ?? []).forEach((row: { hash: string }) => existingHashes.add(row.hash));
+          hasMore = (result.data?.length ?? 0) === HASH_PAGE_SIZE;
+          page++;
         }
-      } catch (warmupErr) {
-        console.warn('⚠️ Warmup failed, proceeding anyway:', warmupErr);
+        console.log(`✅ Loaded ${existingHashes.size} existing hashes in ${Date.now() - hashLoadStart}ms`);
+      } catch (hashLoadErr) {
+        console.warn('⚠️ Hash load failed, proceeding without skip logic:', hashLoadErr);
       }
 
       // Import normalization service once
@@ -77,8 +94,9 @@ export const useLocalScanner = (onScanComplete?: () => void) => {
       const totalBatches = Math.ceil(localFiles.length / BATCH_SIZE);
       let processedCount = 0;
       let insertedCount = 0;
+      let skippedCount = 0;
 
-      console.log(`📊 Processing ${localFiles.length} files in ${totalBatches} batches of ${BATCH_SIZE}`);
+      console.log(`📊 Processing ${localFiles.length} files in ${totalBatches} batches of ${BATCH_SIZE} (${existingHashes.size} already in DB)`);
 
       // Process files in batches: extract metadata then insert immediately
       for (let i = 0; i < localFiles.length; i += BATCH_SIZE) {
@@ -90,12 +108,31 @@ export const useLocalScanner = (onScanComplete?: () => void) => {
           console.log(`📦 Batch ${batchNumber}/${totalBatches}: Processing...`);
         }
 
-        // Extract metadata for this batch
+        // Hash files first to skip ones already in the DB.
+        // generateFileHash reads the full file (same I/O as parseBlob) but is much
+        // faster — skipping the metadata parse for unchanged files saves significant time.
+        const newFiles: File[] = [];
+        for (const file of fileBatch) {
+          const hash = await generateFileHash(file);
+          if (existingHashes.has(hash)) {
+            skippedCount++;
+          } else {
+            newFiles.push(file);
+          }
+        }
+
+        // Advance progress for skipped files
+        setScanProgress({ current: i + fileBatch.length, total: localFiles.length });
+
+        if (newFiles.length === 0) {
+          continue; // entire batch already in DB
+        }
+
+        // Extract metadata only for new/changed files
         const scannedTracks = await extractMetadataBatch(
-          fileBatch,
+          newFiles,
           (current, _total) => {
-            // Update progress relative to overall file count
-            setScanProgress({ current: i + current, total: localFiles.length });
+            setScanProgress({ current: i + (fileBatch.length - newFiles.length) + current, total: localFiles.length });
           }
         );
 
@@ -198,10 +235,13 @@ export const useLocalScanner = (onScanComplete?: () => void) => {
         }
       }
 
-      console.log(`✅ All batches complete: ${processedCount} files processed, ${insertedCount} tracks inserted`);
+      console.log(`✅ All batches complete: ${processedCount} new files processed, ${insertedCount} tracks inserted, ${skippedCount} unchanged files skipped`);
+      const description = skippedCount > 0
+        ? `${processedCount} new files added, ${skippedCount} unchanged files skipped.`
+        : `Successfully scanned ${processedCount} local files.`;
       toast({
         title: "Scan Complete",
-        description: `Successfully scanned ${processedCount} local files.`,
+        description,
       });
 
       // Trigger refresh callback
