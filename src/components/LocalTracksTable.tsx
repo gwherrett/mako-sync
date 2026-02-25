@@ -97,6 +97,8 @@ const LocalTracksTable = ({ onTrackSelect, selectedTrack, refreshTrigger, isActi
   const [albums, setAlbums] = useState<string[]>([]);
   // Supergenre to genre mapping for cascading filter
   const [superGenreToGenres, setSuperGenreToGenres] = useState<Map<string, string[]>>(new Map());
+  // Genre → Supergenre lookup for display column
+  const [genreToSuperGenre, setGenreToSuperGenre] = useState<Map<string, string>>(new Map());
   
   // Query deduplication ref
   const fetchInProgress = useRef(false);
@@ -344,17 +346,28 @@ const LocalTracksTable = ({ onTrackSelect, selectedTrack, refreshTrigger, isActi
       if (!userId) return;
       
       // Use database functions to efficiently get distinct values
-      const [genresResult, artistsResult, albumsResult] = await Promise.all([
+      const [genresResult, artistsResult, albumsResult, genreMapResult] = await Promise.all([
         supabase.rpc('get_distinct_local_genres', { user_uuid: userId }),
         supabase.rpc('get_distinct_local_artists', { user_uuid: userId }),
-        supabase.rpc('get_distinct_local_albums', { user_uuid: userId })
+        supabase.rpc('get_distinct_local_albums', { user_uuid: userId }),
+        supabase.from('v_effective_spotify_genre_map').select('spotify_genre, super_genre')
       ]);
 
       console.log('📊 RPC results:', {
         genres: genresResult,
         artists: artistsResult,
-        albums: albumsResult
+        albums: albumsResult,
+        genreMap: genreMapResult
       });
+
+      // Build genre → supergenre lookup (case-insensitive)
+      const lookup = new Map<string, string>();
+      (genreMapResult.data || []).forEach((row: any) => {
+        if (row.spotify_genre && row.super_genre) {
+          lookup.set(row.spotify_genre.toLowerCase(), row.super_genre);
+        }
+      });
+      setGenreToSuperGenre(lookup);
       
       // Extract the genre strings from the returned objects
       const uniqueGenres = (genresResult.data || []).map((row: any) => row.genre).filter(Boolean).sort();
@@ -762,18 +775,7 @@ const LocalTracksTable = ({ onTrackSelect, selectedTrack, refreshTrigger, isActi
                     )}
                   </div>
                 </TableHead>
-                <TableHead
-                  className="hidden md:table-cell cursor-pointer hover:bg-muted/50 select-none"
-                  onClick={() => handleSort('year')}
-                >
-                  <div className="flex items-center gap-1">
-                    Year
-                    {sortField === 'year' && (
-                      sortDirection === 'asc' ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />
-                    )}
-                  </div>
-                </TableHead>
-                <TableHead className="hidden xl:table-cell">BPM</TableHead>
+                <TableHead className="hidden md:table-cell">Supergenre</TableHead>
                 <TableHead
                   className="hidden xl:table-cell cursor-pointer hover:bg-muted/50 select-none"
                   onClick={() => handleSort('bitrate')}
@@ -838,12 +840,9 @@ const LocalTracksTable = ({ onTrackSelect, selectedTrack, refreshTrigger, isActi
                     {track.genre || <span className="text-muted-foreground">Unknown</span>}
                   </TableCell>
                   <TableCell className="hidden md:table-cell">
-                    {track.year || <span className="text-muted-foreground">—</span>}
-                  </TableCell>
-                  <TableCell className="hidden xl:table-cell">
-                    {track.bpm ? (
-                      <Badge variant="secondary" className="bg-blue-500/10 text-blue-400 border-blue-500/30">
-                        {track.bpm} BPM
+                    {track.genre && genreToSuperGenre.get(track.genre.toLowerCase()) ? (
+                      <Badge variant="secondary" className="bg-purple-500/10 text-purple-400 border-purple-500/30">
+                        {genreToSuperGenre.get(track.genre.toLowerCase())}
                       </Badge>
                     ) : (
                       <span className="text-muted-foreground">—</span>
