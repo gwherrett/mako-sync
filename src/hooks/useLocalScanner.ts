@@ -63,14 +63,12 @@ export const useLocalScanner = (onScanComplete?: () => void) => {
         let hasMore = true;
         while (hasMore) {
           const result = await withTimeout(
-            Promise.resolve(
-              supabase
-                .from('local_mp3s')
-                .select('hash')
-                .eq('user_id', user.id)
-                .not('hash', 'is', null)
-                .range(page * HASH_PAGE_SIZE, (page + 1) * HASH_PAGE_SIZE - 1)
-            ),
+            supabase
+              .from('local_mp3s')
+              .select('hash')
+              .eq('user_id', user.id)
+              .not('hash', 'is', null)
+              .range(page * HASH_PAGE_SIZE, (page + 1) * HASH_PAGE_SIZE - 1),
             WARMUP_TIMEOUT_MS,
             'Hash load query timed out'
           );
