@@ -256,6 +256,7 @@ const LocalTracksTable = ({ onTrackSelect, selectedTrack, refreshTrigger, isActi
       }
       if (yearFrom) query = query.gte('year', parseInt(yearFrom));
       if (yearTo) query = query.lte('year', parseInt(yearTo));
+      if (selectedSuperGenre) query = query.eq('super_genre', selectedSuperGenre);
       if (selectedArtist) query = query.eq('artist', selectedArtist);
       if (selectedAlbum) query = query.eq('album', selectedAlbum);
       if (selectedGenre) query = query.eq('genre', selectedGenre);

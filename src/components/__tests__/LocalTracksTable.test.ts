@@ -25,6 +25,7 @@ interface LocalTrack {
   artist: string | null;
   album: string | null;
   genre: string | null;
+  super_genre: string | null;
   year: number | null;
   bpm: number | null;
   bitrate: number | null;
@@ -38,6 +39,7 @@ function applyFilters(
     searchQuery?: string;
     yearFrom?: number;
     yearTo?: number;
+    selectedSuperGenre?: string;
     selectedArtist?: string;
     selectedAlbum?: string;
     selectedGenre?: string;
@@ -57,6 +59,7 @@ function applyFilters(
     }
     if (filters.yearFrom !== undefined && (track.year === null || track.year < filters.yearFrom)) return false;
     if (filters.yearTo !== undefined && (track.year === null || track.year > filters.yearTo)) return false;
+    if (filters.selectedSuperGenre && track.super_genre !== filters.selectedSuperGenre) return false;
     if (filters.selectedArtist && track.artist !== filters.selectedArtist) return false;
     if (filters.selectedAlbum && track.album !== filters.selectedAlbum) return false;
     if (filters.selectedGenre && track.genre !== filters.selectedGenre) return false;
@@ -109,6 +112,7 @@ function makeTrack(overrides: Partial<LocalTrack> & { id: string }): LocalTrack 
     artist: 'Test Artist',
     album: 'Test Album',
     genre: 'House',
+    super_genre: 'Electronic',
     year: 2020,
     bpm: 128,
     bitrate: 320,
@@ -224,6 +228,59 @@ describe('LocalTracksTable – filter logic', () => {
       makeTrack({ id: '3', genre: null }),
     ];
     expect(applyFilters(tracks, { missingMetadata: 'any' })).toHaveLength(2);
+  });
+
+  it('filters by super_genre (exact match)', () => {
+    const tracks = [
+      makeTrack({ id: '1', super_genre: 'Electronic' }),
+      makeTrack({ id: '2', super_genre: 'Hip Hop' }),
+      makeTrack({ id: '3', super_genre: 'Electronic' }),
+      makeTrack({ id: '4', super_genre: null }),
+    ];
+    const result = applyFilters(tracks, { selectedSuperGenre: 'Electronic' });
+    expect(result).toHaveLength(2);
+    result.forEach(t => expect(t.super_genre).toBe('Electronic'));
+  });
+
+  it('does not return tracks with null super_genre when super_genre filter is active', () => {
+    const tracks = [
+      makeTrack({ id: '1', super_genre: 'Electronic' }),
+      makeTrack({ id: '2', super_genre: null }),
+    ];
+    const result = applyFilters(tracks, { selectedSuperGenre: 'Electronic' });
+    expect(result).toHaveLength(1);
+    expect(result[0].id).toBe('1');
+  });
+
+  it('returns all tracks when no super_genre filter is active', () => {
+    const tracks = [
+      makeTrack({ id: '1', super_genre: 'Electronic' }),
+      makeTrack({ id: '2', super_genre: 'Hip Hop' }),
+      makeTrack({ id: '3', super_genre: null }),
+    ];
+    expect(applyFilters(tracks, {})).toHaveLength(3);
+  });
+
+  it('combines super_genre + genre filters', () => {
+    const tracks = [
+      makeTrack({ id: '1', super_genre: 'Electronic', genre: 'House' }),
+      makeTrack({ id: '2', super_genre: 'Electronic', genre: 'Techno' }),
+      makeTrack({ id: '3', super_genre: 'Hip Hop', genre: 'House' }),
+    ];
+    const result = applyFilters(tracks, { selectedSuperGenre: 'Electronic', selectedGenre: 'House' });
+    expect(result).toHaveLength(1);
+    expect(result[0].id).toBe('1');
+  });
+
+  it('combines super_genre + artist filters', () => {
+    const tracks = [
+      makeTrack({ id: '1', super_genre: 'Electronic', artist: 'Aphex Twin' }),
+      makeTrack({ id: '2', super_genre: 'Electronic', artist: 'DJ Shadow' }),
+      makeTrack({ id: '3', super_genre: 'Hip Hop', artist: 'Aphex Twin' }),
+    ];
+    const result = applyFilters(tracks, { selectedSuperGenre: 'Electronic', selectedArtist: 'Aphex Twin' });
+    expect(result).toHaveLength(1);
+    expect(result[0].id).toBe('1');
   });
 
   it('combines artist + genre filters', () => {
