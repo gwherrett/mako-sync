@@ -65,6 +65,7 @@ const metadataSchema = z.object({
   artist: z.string().max(500).nullable(),
   album: z.string().max(500).nullable(),
   genre: z.string().max(200).nullable(),
+  super_genre: z.string().max(200).nullable(),
   year: z.number().int().min(1900).max(new Date().getFullYear() + 1).nullable(),
   bitrate: z.number().int().min(0).max(10000).nullable(),
   bpm: z.number().min(0).max(500).nullable(),
@@ -88,6 +89,7 @@ export interface ScannedTrack {
   album: string | null;
   year: number | null;
   genre: string | null;
+  super_genre: string | null;
   bpm: number | null;
   key: string | null;
   bitrate: number | null;
@@ -188,10 +190,11 @@ export const extractMetadata = async (file: File): Promise<ScannedTrack> => {
     let album = null;
     let year = null;
     let genre = null;
+    let super_genre = null;
     let bpm = null;
     let key = null;
     let bitrate = null;
-    
+
     // Primary extraction from common metadata
     if (metadata.common) {
       title = metadata.common.title || null;
@@ -199,6 +202,7 @@ export const extractMetadata = async (file: File): Promise<ScannedTrack> => {
       album = metadata.common.album || null;
       year = metadata.common.year || null;
       genre = metadata.common.genre?.[0] || null;
+      super_genre = (metadata.common as any).grouping || null;
       bpm = metadata.common.bpm || null;
       key = metadata.common.key || null;
 
@@ -244,7 +248,7 @@ export const extractMetadata = async (file: File): Promise<ScannedTrack> => {
     }
 
     // Fallback: Try extracting from native tags if common is missing
-    if (metadata.native && (!title || !artist || !album || !year || !genre || !bpm || !key)) {
+    if (metadata.native && (!title || !artist || !album || !year || !genre || !super_genre || !bpm || !key)) {
       if (VERBOSE_LOGGING) console.log(`🔄 Attempting fallback extraction from native tags...`);
 
       // Try ID3v2.4 first, then ID3v2.3, then ID3v1
@@ -280,6 +284,9 @@ export const extractMetadata = async (file: File): Promise<ScannedTrack> => {
             if (!genre && (tag.id === 'TCON' || tag.id === 'GENRE' || tag.id === 'Genre')) {
               genre = typeof tag.value === 'string' ? tag.value : null;
             }
+            if (!super_genre && tag.id === 'TIT1') {
+              super_genre = typeof tag.value === 'string' ? tag.value : null;
+            }
             if (!bpm && (tag.id === 'TBPM' || tag.id === 'BPM' || tag.id === 'Bpm')) {
               const bpmValue = typeof tag.value === 'string' ? parseFloat(tag.value) : (typeof tag.value === 'number' ? tag.value : null);
               if (bpmValue && bpmValue > 0 && bpmValue < 300) {
@@ -292,8 +299,8 @@ export const extractMetadata = async (file: File): Promise<ScannedTrack> => {
           }
           
           // If we found some data in this format, break out
-          if (title || artist || album || year || genre || bpm || key) {
-            if (VERBOSE_LOGGING) console.log(`✅ Found metadata in ${format}:`, { title, artist, album, year, genre, bpm, key });
+          if (title || artist || album || year || genre || super_genre || bpm || key) {
+            if (VERBOSE_LOGGING) console.log(`✅ Found metadata in ${format}:`, { title, artist, album, year, genre, super_genre, bpm, key });
             break;
           }
         }
@@ -311,6 +318,7 @@ export const extractMetadata = async (file: File): Promise<ScannedTrack> => {
       album,
       year,
       genre,
+      super_genre,
       bpm,
       key,
       bitrate,

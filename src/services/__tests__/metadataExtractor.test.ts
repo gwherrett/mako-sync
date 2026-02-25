@@ -381,6 +381,81 @@ describe('metadataExtractor', () => {
       expect(result.key).toBe('Gm');
     });
 
+    it('extracts super_genre from common grouping field', async () => {
+      const mockMetadata = {
+        common: { title: 'Test', artist: 'Artist', grouping: 'House' },
+        format: {},
+        native: {},
+      };
+
+      vi.mocked(parseBlob).mockResolvedValue(mockMetadata as any);
+
+      const file = new File(['test'], 'test.mp3', { type: 'audio/mpeg' });
+      Object.defineProperty(file, 'lastModified', { value: Date.now() });
+
+      const result = await extractMetadata(file);
+
+      expect(result.super_genre).toBe('House');
+    });
+
+    it('extracts super_genre from native TIT1 tag when common grouping is absent', async () => {
+      const mockMetadata = {
+        common: { title: 'Test', artist: 'Artist' },
+        format: {},
+        native: {
+          'ID3v2.4': [
+            { id: 'TIT1', value: 'Drum & Bass' },
+          ],
+        },
+      };
+
+      vi.mocked(parseBlob).mockResolvedValue(mockMetadata as any);
+
+      const file = new File(['test'], 'test.mp3', { type: 'audio/mpeg' });
+      Object.defineProperty(file, 'lastModified', { value: Date.now() });
+
+      const result = await extractMetadata(file);
+
+      expect(result.super_genre).toBe('Drum & Bass');
+    });
+
+    it('stores super_genre as-is even if value does not match the genre mapper enum', async () => {
+      // The raw TIT1 value is stored verbatim — it is the scanner's job to capture
+      // what is in the file, not to validate against the Spotify genre mapping.
+      // Unrecognised values simply show as-is in the UI.
+      const mockMetadata = {
+        common: { title: 'Test', artist: 'Artist', grouping: 'Afrobeats' },
+        format: {},
+        native: {},
+      };
+
+      vi.mocked(parseBlob).mockResolvedValue(mockMetadata as any);
+
+      const file = new File(['test'], 'test.mp3', { type: 'audio/mpeg' });
+      Object.defineProperty(file, 'lastModified', { value: Date.now() });
+
+      const result = await extractMetadata(file);
+
+      expect(result.super_genre).toBe('Afrobeats');
+    });
+
+    it('sets super_genre to null when no grouping or TIT1 tag is present', async () => {
+      const mockMetadata = {
+        common: { title: 'Test', artist: 'Artist' },
+        format: {},
+        native: {},
+      };
+
+      vi.mocked(parseBlob).mockResolvedValue(mockMetadata as any);
+
+      const file = new File(['test'], 'test.mp3', { type: 'audio/mpeg' });
+      Object.defineProperty(file, 'lastModified', { value: Date.now() });
+
+      const result = await extractMetadata(file);
+
+      expect(result.super_genre).toBeNull();
+    });
+
     it('includes file size in result', async () => {
       const mockMetadata = {
         common: { title: 'Test', artist: 'Artist' },

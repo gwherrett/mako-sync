@@ -74,6 +74,7 @@ export type Database = {
           play_count: number | null
           primary_artist: string | null
           rating: number | null
+          super_genre: string | null
           title: string | null
           user_id: string
           year: number | null
@@ -101,6 +102,7 @@ export type Database = {
           play_count?: number | null
           primary_artist?: string | null
           rating?: number | null
+          super_genre?: string | null
           title?: string | null
           user_id: string
           year?: number | null
@@ -128,6 +130,7 @@ export type Database = {
           play_count?: number | null
           primary_artist?: string | null
           rating?: number | null
+          super_genre?: string | null
           title?: string | null
           user_id?: string
           year?: number | null
