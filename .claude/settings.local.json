@@ -44,7 +44,16 @@
       "Bash(node:*)",
       "Bash(sort:*)",
       "Bash(cut:*)",
-      "Bash(python3:*)"
+      "Bash(python3:*)",
+      "Bash(supabase --version)",
+      "Bash(supabase projects list)",
+      "Bash(supabase db execute --project-ref bzzstdpfmyqttnzhgaoa --sql \"SELECT title, artist, primary_artist, album, normalized_artist, normalized_title FROM spotify_liked WHERE artist ILIKE ''%High Contrast%'' ORDER BY album, title LIMIT 100;\")",
+      "Bash(supabase --help)",
+      "Bash(supabase inspect --help)",
+      "Bash(supabase sql --help)",
+      "Bash(SUPABASE_URL=\"https://bzzstdpfmyqttnzhgaoa.supabase.co\")",
+      "Bash(ANON_KEY=\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ6enN0ZHBmbXlxdHRuemhnYW9hIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDg0NzI5NzMsImV4cCI6MjA2NDA0ODk3M30.NXT4XRuPilV2AV6KYY56-vk3AqZ8I2DQKkVjfbMcWoI\")",
+      "Bash(__NEW_LINE_2499761a5e31c772__ curl -s \"$SUPABASE_URL/rest/v1/spotify_liked?artist=ilike.*High%20Contrast*&select=title,artist,primary_artist,album,normalized_artist,normalized_title&limit=5\" -H \"apikey: $ANON_KEY\" -H \"Authorization: Bearer $ANON_KEY\")"
     ]
   }
 }

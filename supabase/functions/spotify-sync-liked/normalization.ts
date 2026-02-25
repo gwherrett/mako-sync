@@ -70,6 +70,7 @@ function unifyPunctuation(text: string): string {
     .replace(/[‐‑‒–—―]/g, '-')
     .replace(/\s+[x×]\s+/gi, ' & ')
     .replace(/\s+and\s+/gi, ' & ')
+    .replace(/\s*,\s+/g, ' & ')
     .replace(/[^\w\s&'-]/g, ' ')
     .replace(/\s+/g, ' ')
     .trim();
