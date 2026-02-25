@@ -45,7 +45,6 @@ interface LocalTrack {
   artist: string | null;
   album: string | null;
   genre: string | null;
-  super_genre: string | null;
   year: number | null;
   bpm: number | null;
   key: string | null;
@@ -98,6 +97,8 @@ const LocalTracksTable = ({ onTrackSelect, selectedTrack, refreshTrigger, isActi
   const [albums, setAlbums] = useState<string[]>([]);
   // Supergenre to genre mapping for cascading filter
   const [superGenreToGenres, setSuperGenreToGenres] = useState<Map<string, string[]>>(new Map());
+  // Genre → Supergenre lookup for display column
+  const [genreToSuperGenre, setGenreToSuperGenre] = useState<Map<string, string>>(new Map());
   
   // Query deduplication ref
   const fetchInProgress = useRef(false);
@@ -345,17 +346,28 @@ const LocalTracksTable = ({ onTrackSelect, selectedTrack, refreshTrigger, isActi
       if (!userId) return;
       
       // Use database functions to efficiently get distinct values
-      const [genresResult, artistsResult, albumsResult] = await Promise.all([
+      const [genresResult, artistsResult, albumsResult, genreMapResult] = await Promise.all([
         supabase.rpc('get_distinct_local_genres', { user_uuid: userId }),
         supabase.rpc('get_distinct_local_artists', { user_uuid: userId }),
-        supabase.rpc('get_distinct_local_albums', { user_uuid: userId })
+        supabase.rpc('get_distinct_local_albums', { user_uuid: userId }),
+        supabase.from('v_effective_spotify_genre_map').select('spotify_genre, super_genre')
       ]);
 
       console.log('📊 RPC results:', {
         genres: genresResult,
         artists: artistsResult,
-        albums: albumsResult
+        albums: albumsResult,
+        genreMap: genreMapResult
       });
+
+      // Build genre → supergenre lookup (case-insensitive)
+      const lookup = new Map<string, string>();
+      (genreMapResult.data || []).forEach((row: any) => {
+        if (row.spotify_genre && row.super_genre) {
+          lookup.set(row.spotify_genre.toLowerCase(), row.super_genre);
+        }
+      });
+      setGenreToSuperGenre(lookup);
       
       // Extract the genre strings from the returned objects
       const uniqueGenres = (genresResult.data || []).map((row: any) => row.genre).filter(Boolean).sort();
@@ -828,7 +840,7 @@ const LocalTracksTable = ({ onTrackSelect, selectedTrack, refreshTrigger, isActi
                     {track.genre || <span className="text-muted-foreground">Unknown</span>}
                   </TableCell>
                   <TableCell className="hidden md:table-cell">
-                    {track.super_genre || <span className="text-muted-foreground">—</span>}
+                    {(track.genre && genreToSuperGenre.get(track.genre.toLowerCase())) || <span className="text-muted-foreground">—</span>}
                   </TableCell>
                   <TableCell className="hidden xl:table-cell">
                     {track.bitrate ? (
