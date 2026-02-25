@@ -42,6 +42,16 @@ export const useLocalScanner = (onScanComplete?: () => void) => {
     setIsScanning(true);
     setScanProgress({ current: 0, total: 0 });
 
+    // Detect token refreshes mid-scan so we can pause before the next upsert
+    // rather than letting the in-flight request hang and timeout.
+    let tokenRefreshPending = false;
+    const { data: { subscription: authSubscription } } = supabase.auth.onAuthStateChange((event) => {
+      if (event === 'TOKEN_REFRESHED') {
+        tokenRefreshPending = true;
+        console.log('🔑 Token refreshed mid-scan, will pause before next batch');
+      }
+    });
+
     try {
       // Scan directory for local files
       const localFiles = await scanDirectoryForLocalFiles();
@@ -159,11 +169,19 @@ export const useLocalScanner = (onScanComplete?: () => void) => {
 
         // Only log insert details on error or every 10 batches
 
+        // If a token refresh fired since the last batch, pause to let it settle
+        // before issuing the next upsert. This prevents the request from going
+        // out with a briefly-invalid token and hanging for 60 seconds.
+        if (tokenRefreshPending) {
+          console.log('⏸️ Pausing 2s for token refresh to settle...');
+          await new Promise(resolve => setTimeout(resolve, 2000));
+          tokenRefreshPending = false;
+        }
+
         // Insert this batch into database with retry logic
         // Handles token refresh interruptions by waiting and retrying
         let lastError: any = null;
         let success = false;
-        let lastErrorIsAuth = false; // track auth errors across retry attempts
 
         for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
           try {
@@ -172,15 +190,12 @@ export const useLocalScanner = (onScanComplete?: () => void) => {
               console.log(`🔄 Retry attempt ${attempt} for batch ${batchNumber} (waiting ${RETRY_DELAY_MS}ms)...`);
               await new Promise(resolve => setTimeout(resolve, RETRY_DELAY_MS));
 
-              // Only verify session when the previous error was auth-related.
-              // Calling getSession() on every retry adds unnecessary latency and
-              // cache churn during normal timeout/network retries.
-              if (lastErrorIsAuth) {
-                const { data: { session } } = await supabase.auth.getSession();
-                if (!session) {
-                  console.warn(`⚠️ No session on retry attempt ${attempt}, waiting for auth...`);
-                  await new Promise(resolve => setTimeout(resolve, 2000));
-                }
+              // Always verify session on retry — a timeout may have been caused by a
+              // mid-flight token refresh, which doesn't produce an auth error code.
+              const { data: { session } } = await supabase.auth.getSession();
+              if (!session) {
+                console.warn(`⚠️ No session on retry attempt ${attempt}, waiting for auth...`);
+                await new Promise(resolve => setTimeout(resolve, 2000));
               }
             }
 
@@ -205,7 +220,6 @@ export const useLocalScanner = (onScanComplete?: () => void) => {
             lastError = err;
             const isTimeout = err?.message?.includes('timed out');
             const isAuthError = err?.message?.includes('JWT') || err?.code === 'PGRST301';
-            lastErrorIsAuth = isAuthError;
 
             if (isTimeout || isAuthError) {
               console.warn(`⚠️ Batch ${batchNumber} attempt ${attempt + 1} failed (${isTimeout ? 'timeout' : 'auth'}), will retry...`);
@@ -255,6 +269,7 @@ export const useLocalScanner = (onScanComplete?: () => void) => {
         variant: "destructive",
       });
     } finally {
+      authSubscription.unsubscribe();
       console.log('🏁 Scan process finished, cleaning up...');
       setIsScanning(false);
       setScanProgress({ current: 0, total: 0 });
