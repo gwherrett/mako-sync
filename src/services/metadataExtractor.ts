@@ -358,6 +358,7 @@ export const extractMetadata = async (file: File): Promise<ScannedTrack> => {
       album: null,
       year: null,
       genre: null,
+      super_genre: null,
       bpm: null,
       key: null,
       bitrate: null,
