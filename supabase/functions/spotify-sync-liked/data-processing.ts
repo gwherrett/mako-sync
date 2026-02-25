@@ -1,4 +1,5 @@
 import type { SpotifyTrack } from './types.ts'
+import { processMetadata } from './normalization.ts'
 
 export function extractUniqueArtistIds(allTracks: SpotifyTrack[]): string[] {
   const artistIds = new Set<string>()
@@ -43,11 +44,21 @@ export function processSongsData(allTracks: SpotifyTrack[], userId: string, arti
       }
     }
     
+    const title = item.track.name;
+    const artist = item.track.artists.map((artist: any) => artist.name).join(', ');
+    const { normalized_title, normalized_artist, core_title, primary_artist, featured_artists, mix } = processMetadata(title, artist);
+
     return {
       user_id: userId,
       spotify_id: item.track.id,
-      title: item.track.name,
-      artist: item.track.artists.map((artist: any) => artist.name).join(', '),
+      title,
+      artist,
+      primary_artist,
+      featured_artists,
+      normalized_title,
+      normalized_artist,
+      core_title,
+      mix,
       album: item.track.album.name,
       year: item.track.album.release_date ? new Date(item.track.album.release_date).getFullYear() : null,
       added_at: item.added_at,
