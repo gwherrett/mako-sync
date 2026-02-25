@@ -71,6 +71,7 @@ export class NormalizationService {
       // Unify ampersands
       .replace(/\s+[x×]\s+/gi, ' & ')
       .replace(/\s+and\s+/gi, ' & ')
+      .replace(/\s*,\s+/g, ' & ')
       // Remove most punctuation except &, -, and spaces
       .replace(/[^\w\s&'-]/g, ' ')
       .replace(/\s+/g, ' ')
