@@ -44,11 +44,20 @@ export const useLocalScanner = (onScanComplete?: () => void) => {
 
     // Detect token refreshes mid-scan so we can pause before the next upsert
     // rather than letting the in-flight request hang and timeout.
+    //
+    // We listen for both TOKEN_REFRESHED and SIGNED_IN because a tab visibility
+    // change triggers _onVisibilityChanged → _recoverAndRefresh which emits both
+    // events in sequence. TOKEN_REFRESHED fires first but the Supabase client's
+    // internal setSession lock may still be held when it does — SIGNED_IN fires
+    // after the full refresh cycle completes.
     let tokenRefreshPending = false;
+    let tokenRefreshSettledAt = 0;
+    const TOKEN_REFRESH_SETTLE_MS = 1500; // outlast the 1000ms setSession timeout + buffer
     const { data: { subscription: authSubscription } } = supabase.auth.onAuthStateChange((event) => {
-      if (event === 'TOKEN_REFRESHED') {
+      if (event === 'TOKEN_REFRESHED' || event === 'SIGNED_IN') {
         tokenRefreshPending = true;
-        console.log('🔑 Token refreshed mid-scan, will pause before next batch');
+        tokenRefreshSettledAt = Date.now() + TOKEN_REFRESH_SETTLE_MS;
+        console.log(`🔑 Auth event '${event}' mid-scan, will pause before next batch (settle by +${TOKEN_REFRESH_SETTLE_MS}ms)`);
       }
     });
 
@@ -169,12 +178,16 @@ export const useLocalScanner = (onScanComplete?: () => void) => {
 
         // Only log insert details on error or every 10 batches
 
-        // If a token refresh fired since the last batch, pause to let it settle
-        // before issuing the next upsert. This prevents the request from going
-        // out with a briefly-invalid token and hanging for 60 seconds.
+        // If a token refresh fired since the last batch, pause until the Supabase
+        // client's internal setSession lock has had time to fully release.
+        // A fixed wait isn't enough — we track when the settle window ends and
+        // wait out any remaining time before issuing the upsert.
         if (tokenRefreshPending) {
-          console.log('⏸️ Pausing 2s for token refresh to settle...');
-          await new Promise(resolve => setTimeout(resolve, 2000));
+          const remainingMs = tokenRefreshSettledAt - Date.now();
+          if (remainingMs > 0) {
+            console.log(`⏸️ Pausing ${remainingMs}ms for token refresh to settle...`);
+            await new Promise(resolve => setTimeout(resolve, remainingMs));
+          }
           tokenRefreshPending = false;
         }
 
