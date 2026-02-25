@@ -99,8 +99,8 @@ const LocalTracksTable = ({ onTrackSelect, selectedTrack, refreshTrigger, isActi
   // Supergenre to genre mapping for cascading filter
   const [superGenreToGenres, setSuperGenreToGenres] = useState<Map<string, string[]>>(new Map());
   
-  // Query deduplication ref
-  const fetchInProgress = useRef(false);
+  // Abort controller for in-flight fetch cancellation
+  const fetchAbortController = useRef<AbortController | null>(null);
   const hasInitiallyLoaded = useRef(false);
   
   const tracksPerPage = 100;
@@ -242,13 +242,11 @@ const LocalTracksTable = ({ onTrackSelect, selectedTrack, refreshTrigger, isActi
       return;
     }
 
-    // Prevent duplicate concurrent fetches
-    if (fetchInProgress.current) {
-      console.log('🔄 LocalTracksTable: Fetch already in progress, skipping');
-      return;
+    // Cancel any in-flight fetch before starting a new one
+    if (fetchAbortController.current) {
+      fetchAbortController.current.abort();
     }
-    
-    fetchInProgress.current = true;
+    fetchAbortController.current = new AbortController();
     setLoading(true);
 
     // Build filter function for reuse
@@ -297,7 +295,7 @@ const LocalTracksTable = ({ onTrackSelect, selectedTrack, refreshTrigger, isActi
         });
       }
       setLoading(false);
-      fetchInProgress.current = false;
+      fetchAbortController.current = null;
       return;
     }
 
@@ -329,13 +327,13 @@ const LocalTracksTable = ({ onTrackSelect, selectedTrack, refreshTrigger, isActi
         });
       }
       setLoading(false);
-      fetchInProgress.current = false;
+      fetchAbortController.current = null;
       return;
     }
 
     setTracks(dataResult.data?.data || []);
     setLoading(false);
-    fetchInProgress.current = false;
+    fetchAbortController.current = null;
   };
 
   const fetchFilterOptions = async (userId: string) => {
