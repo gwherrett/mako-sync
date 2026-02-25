@@ -154,8 +154,9 @@ export class SlskdClientService {
   }
 
   /**
-   * Check if search already exists in wishlist
-   * Uses normalized comparison to catch near-duplicates
+   * Check if an active (InProgress) search already exists
+   * Only skips if a search is currently running — completed/timed-out/cancelled
+   * searches are not considered duplicates since slskd has no real wishlist persistence
    */
   static isSearchDuplicate(
     existingSearches: SlskdSearchResponse[],
@@ -163,7 +164,9 @@ export class SlskdClientService {
   ): boolean {
     const normalizedNew = this.normalizeSearchText(newSearchText);
     return existingSearches.some(
-      (search) => this.normalizeSearchText(search.searchText) === normalizedNew
+      (search) =>
+        search.state === 'InProgress' &&
+        this.normalizeSearchText(search.searchText) === normalizedNew
     );
   }
 }
