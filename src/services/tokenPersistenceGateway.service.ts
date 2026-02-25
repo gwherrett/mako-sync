@@ -21,6 +21,7 @@ const POLL_INTERVAL_MS = 10;
 class TokenPersistenceGatewayService {
   private static instance: TokenPersistenceGatewayService | null = null;
   private tokenReady = false;
+  private sessionVerified = false; // true once setSession has succeeded — skip on subsequent events
   private pendingCallbacks: (() => void)[] = [];
 
   static getInstance(): TokenPersistenceGatewayService {
@@ -57,17 +58,21 @@ class TokenPersistenceGatewayService {
     console.log('🔐 TOKEN GATEWAY: Token in localStorage:', alreadyPersisted);
 
     if (alreadyPersisted) {
-      // On TOKEN_REFRESHED the Supabase client already has the new token in memory.
-      // Calling setSession again is redundant and frequently loses the 200ms race
-      // during long scans, generating noisy warnings. Skip it.
-      if (options?.skipSetSession) {
-        console.log('🔐 TOKEN GATEWAY: Token persisted, skipping setSession (refresh path)');
+      // Skip setSession if:
+      // 1. Caller explicitly opts out (TOKEN_REFRESHED path), OR
+      // 2. We've already verified the session once this sign-in — covers the case where
+      //    Supabase's own _onVisibilityChanged emits a synthetic SIGNED_IN on tab restore,
+      //    which would otherwise race setSession against a browser-throttled network call.
+      if (options?.skipSetSession || this.sessionVerified) {
+        console.log('🔐 TOKEN GATEWAY: Token persisted, skipping setSession', {
+          reason: options?.skipSetSession ? 'caller-opted-out' : 'already-verified'
+        });
         this.markTokenReady();
         return true;
       }
 
-      // On SIGNED_IN, verify Supabase client is ready by setting the session.
-      // Use a timeout to prevent hanging — increased to 1000ms for cold-start tolerance.
+      // First sign-in only: verify Supabase client is ready by setting the session.
+      // Use a timeout to prevent hanging — 1000ms for cold-start tolerance.
       try {
         const setSessionPromise = supabase.auth.setSession({
           access_token: session.access_token,
@@ -82,12 +87,14 @@ class TokenPersistenceGatewayService {
         await Promise.race([setSessionPromise, timeoutPromise]);
         const elapsed = Date.now() - startTime;
         console.log(`🔐 TOKEN GATEWAY: Token verified and client ready (${elapsed}ms)`);
+        this.sessionVerified = true;
         this.markTokenReady();
         return true;
       } catch (error) {
         const elapsed = Date.now() - startTime;
         console.warn(`🔐 TOKEN GATEWAY: setSession failed/timeout after ${elapsed}ms, proceeding anyway:`, error);
         // Still proceed - token is in localStorage, client might work
+        this.sessionVerified = true; // don't retry setSession on subsequent events
         this.markTokenReady();
         return true;
       }
@@ -198,6 +205,7 @@ class TokenPersistenceGatewayService {
    */
   reset(): void {
     this.tokenReady = false;
+    this.sessionVerified = false;
     this.pendingCallbacks = [];
   }
 }
