@@ -434,6 +434,115 @@ describe('LocalTracksTable – filter + delete use case (bug fix)', () => {
   });
 });
 
+describe('LocalTracksTable – fetch cancellation logic (fetchAbortController)', () => {
+  /**
+   * The component uses an AbortController ref to cancel in-flight fetches when
+   * a new fetch is triggered (e.g. a filter selection changes mid-request).
+   *
+   * Previously a boolean `fetchInProgress` flag was used, which silently dropped
+   * the new fetch instead of cancelling the old one — filters appeared to do nothing.
+   *
+   * These tests verify the abort-and-replace pattern in isolation.
+   */
+
+  it('aborts the previous controller when a new fetch starts', () => {
+    let currentController: AbortController | null = null;
+
+    // Simulate starting fetch #1
+    if (currentController) currentController.abort();
+    currentController = new AbortController();
+    const firstSignal = currentController.signal;
+    expect(firstSignal.aborted).toBe(false);
+
+    // Simulate filter change → fetch #2 starts, aborting #1
+    if (currentController) currentController.abort();
+    currentController = new AbortController();
+
+    expect(firstSignal.aborted).toBe(true);
+    expect(currentController.signal.aborted).toBe(false);
+  });
+
+  it('does not abort the new controller when completing normally', () => {
+    let currentController: AbortController | null = null;
+
+    if (currentController) currentController.abort();
+    currentController = new AbortController();
+    const signal = currentController.signal;
+
+    // Simulate successful completion — clear the ref
+    currentController = null;
+
+    expect(signal.aborted).toBe(false);
+  });
+
+  it('clears the controller ref on completion so the next fetch can proceed', () => {
+    let currentController: AbortController | null = null;
+
+    if (currentController) currentController.abort();
+    currentController = new AbortController();
+
+    // Simulate fetch completing
+    currentController = null;
+
+    // Next fetch should start without aborting anything
+    const prevController = currentController; // null
+    if (currentController) currentController.abort();
+    currentController = new AbortController();
+
+    expect(prevController).toBeNull();
+    expect(currentController.signal.aborted).toBe(false);
+  });
+
+  it('handles rapid sequential filter changes — only last controller is alive', () => {
+    let currentController: AbortController | null = null;
+    const signals: AbortSignal[] = [];
+
+    // Simulate 5 rapid filter changes
+    for (let i = 0; i < 5; i++) {
+      if (currentController) currentController.abort();
+      currentController = new AbortController();
+      signals.push(currentController.signal);
+    }
+
+    // All signals except the last should be aborted
+    signals.slice(0, -1).forEach(s => expect(s.aborted).toBe(true));
+    expect(signals[signals.length - 1].aborted).toBe(false);
+  });
+
+  it('old boolean guard would silently drop fetches — new pattern always starts a fetch', () => {
+    // Old pattern: boolean flag
+    let fetchInProgress = false;
+    let fetchCount = 0;
+
+    const oldFetch = () => {
+      if (fetchInProgress) return; // silently dropped
+      fetchInProgress = true;
+      fetchCount++;
+      // never resets because it's async — simulating the bug
+    };
+
+    oldFetch(); // fetch #1 starts
+    oldFetch(); // fetch #2 dropped — bug!
+    oldFetch(); // fetch #3 dropped — bug!
+    expect(fetchCount).toBe(1); // only 1 fetch ran
+
+    // New pattern: abort controller
+    let controller: AbortController | null = null;
+    let newFetchCount = 0;
+
+    const newFetch = () => {
+      if (controller) controller.abort();
+      controller = new AbortController();
+      newFetchCount++;
+    };
+
+    newFetch(); // fetch #1 starts
+    newFetch(); // fetch #2 cancels #1, starts fresh
+    newFetch(); // fetch #3 cancels #2, starts fresh
+    expect(newFetchCount).toBe(3); // all 3 fetches ran
+  });
+});
+
 describe('LocalTracksTable – getMissingMetadataCount logic', () => {
   const getMissingMetadataCount = (track: LocalTrack) => {
     const fields = [track.title, track.artist, track.album, track.year, track.genre];
