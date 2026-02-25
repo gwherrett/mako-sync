@@ -72,7 +72,7 @@ const LocalTracksTable = ({ onTrackSelect, selectedTrack, refreshTrigger, isActi
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalTracks, setTotalTracks] = useState(0);
-  const [sortField, setSortField] = useState<'last_modified' | 'year' | 'artist' | 'title' | 'album' | 'genre' | 'bitrate' | 'file_size'>('last_modified');
+  const [sortField, setSortField] = useState<'last_modified' | 'year' | 'artist' | 'title' | 'album' | 'genre' | 'super_genre' | 'bitrate' | 'file_size'>('last_modified');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
   const [selectedTracks, setSelectedTracks] = useState<Set<string>>(new Set());
   const [editingTrack, setEditingTrack] = useState<LocalTrack | null>(null);
@@ -406,7 +406,7 @@ const LocalTracksTable = ({ onTrackSelect, selectedTrack, refreshTrigger, isActi
     setArtists(allArtists);
   };
 
-  const handleSort = (field: 'year' | 'artist' | 'last_modified' | 'title' | 'album' | 'genre' | 'bitrate' | 'file_size') => {
+  const handleSort = (field: 'year' | 'artist' | 'last_modified' | 'title' | 'album' | 'genre' | 'super_genre' | 'bitrate' | 'file_size') => {
     if (sortField === field) {
       setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
     } else {
@@ -762,7 +762,17 @@ const LocalTracksTable = ({ onTrackSelect, selectedTrack, refreshTrigger, isActi
                     )}
                   </div>
                 </TableHead>
-                <TableHead className="hidden md:table-cell">SuperGenre</TableHead>
+                <TableHead
+                  className="hidden md:table-cell cursor-pointer hover:bg-muted/50 select-none"
+                  onClick={() => handleSort('super_genre')}
+                >
+                  <div className="flex items-center gap-1">
+                    SuperGenre
+                    {sortField === 'super_genre' && (
+                      sortDirection === 'asc' ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />
+                    )}
+                  </div>
+                </TableHead>
                 <TableHead
                   className="hidden xl:table-cell cursor-pointer hover:bg-muted/50 select-none"
                   onClick={() => handleSort('bitrate')}
