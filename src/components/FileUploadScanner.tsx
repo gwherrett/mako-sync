@@ -19,12 +19,17 @@ import { useToast } from '@/hooks/use-toast';
 
 interface FileUploadScannerProps {
   onScanComplete?: () => void;
+  onScanningChange?: (isScanning: boolean) => void;
 }
 
-const FileUploadScanner = ({ onScanComplete }: FileUploadScannerProps) => {
+const FileUploadScanner = ({ onScanComplete, onScanningChange }: FileUploadScannerProps) => {
   const { isScanning, scanLocalFiles, scanProgress } = useLocalScanner(onScanComplete);
   const { toast } = useToast();
   const [isDeleting, setIsDeleting] = useState(false);
+
+  React.useEffect(() => {
+    onScanningChange?.(isScanning);
+  }, [isScanning]);
 
   const deleteAllLocalFiles = async () => {
     setIsDeleting(true);

@@ -6,12 +6,10 @@ import { extractMetadataBatch } from '@/services/metadataExtractor';
 import { withTimeout } from '@/utils/promiseUtils';
 import { generateFileHash } from '@/utils/fileHash';
 
-const DB_UPSERT_TIMEOUT_MS = 60000; // 60 seconds per batch (shorter timeout, more retries)
+const DB_UPSERT_TIMEOUT_MS = 60000; // 60 seconds per batch
 const BATCH_SIZE = 25; // Files per DB batch (sequential processing prevents API exhaustion)
-const MAX_RETRIES = 3; // More retries to handle token refresh interruptions
 const WARMUP_TIMEOUT_MS = 30000; // 30 seconds for warmup query
 const BATCH_DELAY_MS = 500; // Delay between batches to allow browser cleanup
-const RETRY_DELAY_MS = 3000; // Wait before retry to allow token refresh to complete
 const HASH_PAGE_SIZE = 1000; // Supabase max rows per query
 
 export const useLocalScanner = (onScanComplete?: () => void) => {
@@ -87,7 +85,8 @@ export const useLocalScanner = (onScanComplete?: () => void) => {
               .select('hash')
               .eq('user_id', user.id)
               .not('hash', 'is', null)
-              .range(page * HASH_PAGE_SIZE, (page + 1) * HASH_PAGE_SIZE - 1),
+              .range(page * HASH_PAGE_SIZE, (page + 1) * HASH_PAGE_SIZE - 1)
+              .then(r => r),
             WARMUP_TIMEOUT_MS,
             'Hash load query timed out'
           );
@@ -191,60 +190,19 @@ export const useLocalScanner = (onScanComplete?: () => void) => {
           tokenRefreshPending = false;
         }
 
-        // Insert this batch into database with retry logic
-        // Handles token refresh interruptions by waiting and retrying
-        let lastError: any = null;
-        let success = false;
+        // Insert this batch into the database
+        const result = await withTimeout(
+          supabase
+            .from('local_mp3s')
+            .upsert(uniqueTracks, { onConflict: 'hash', ignoreDuplicates: false })
+            .then(r => r),
+          DB_UPSERT_TIMEOUT_MS,
+          `Database upsert batch ${batchNumber} timed out after ${DB_UPSERT_TIMEOUT_MS / 1000}s`
+        );
 
-        for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
-          try {
-            if (attempt > 0) {
-              // Wait longer on retry to allow token refresh to complete
-              console.log(`🔄 Retry attempt ${attempt} for batch ${batchNumber} (waiting ${RETRY_DELAY_MS}ms)...`);
-              await new Promise(resolve => setTimeout(resolve, RETRY_DELAY_MS));
-
-              // Always verify session on retry — a timeout may have been caused by a
-              // mid-flight token refresh, which doesn't produce an auth error code.
-              const { data: { session } } = await supabase.auth.getSession();
-              if (!session) {
-                console.warn(`⚠️ No session on retry attempt ${attempt}, waiting for auth...`);
-                await new Promise(resolve => setTimeout(resolve, 2000));
-              }
-            }
-
-            const result = await withTimeout(
-              supabase
-                .from('local_mp3s')
-                .upsert(uniqueTracks, {
-                  onConflict: 'hash',
-                  ignoreDuplicates: false
-                }),
-              DB_UPSERT_TIMEOUT_MS,
-              `Database upsert batch ${batchNumber} timed out after ${DB_UPSERT_TIMEOUT_MS / 1000}s`
-            );
-
-            if (result.error) {
-              throw result.error;
-            }
-
-            success = true;
-            break;
-          } catch (err: any) {
-            lastError = err;
-            const isTimeout = err?.message?.includes('timed out');
-            const isAuthError = err?.message?.includes('JWT') || err?.code === 'PGRST301';
-
-            if (isTimeout || isAuthError) {
-              console.warn(`⚠️ Batch ${batchNumber} attempt ${attempt + 1} failed (${isTimeout ? 'timeout' : 'auth'}), will retry...`);
-            } else {
-              console.warn(`⚠️ Batch ${batchNumber} attempt ${attempt + 1} failed:`, err?.message || err);
-            }
-          }
-        }
-
-        if (!success) {
-          console.error(`❌ Database insertion error (batch ${batchNumber}) after ${MAX_RETRIES + 1} attempts:`, lastError);
-          throw lastError;
+        if (result.error) {
+          console.error(`❌ Database insertion error (batch ${batchNumber}):`, result.error);
+          throw result.error;
         }
 
         insertedCount += uniqueTracks.length;

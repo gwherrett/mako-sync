@@ -23,30 +23,30 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">28.94% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/38</span>
+                <span class='fraction'>11/38</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">31.25% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>0/16</span>
+                <span class='fraction'>5/16</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">90% </span>
                 <span class="quiet">Functions</span>
-                <span class='fraction'>0/10</span>
+                <span class='fraction'>9/10</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">27.77% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/36</span>
+                <span class='fraction'>10/36</span>
             </div>
         
             
@@ -361,31 +361,29 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">11x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">11x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">10x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">10x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">22x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">11x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">17x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -399,10 +397,12 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">7x</span>
+<span class="cline-any cline-yes">7x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">20x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -424,7 +424,7 @@ export class SlskdClientService {
   /**
    * Make an authenticated request to slskd API
    */
-  private static async <span class="fstat-no" title="function not covered" >request&lt;T&gt;(</span>
+  private static async request&lt;T&gt;(
     config: SlskdConfig,
     endpoint: string,
     options: RequestInit = <span class="branch-0 cbranch-no" title="branch not covered" >{}</span>
@@ -460,7 +460,7 @@ export class SlskdClientService {
    * Test connection to slskd instance
    * Returns true if connected and logged in to Soulseek network
    */
-  static async <span class="fstat-no" title="function not covered" >testConnection(c</span>onfig: SlskdConfig): Promise&lt;boolean&gt; {
+  static async testConnection(config: SlskdConfig): Promise&lt;boolean&gt; {
 <span class="cstat-no" title="statement not covered" >    try {</span>
       // Try /api/v0/application first - it's a simple endpoint that should work with API key
       const url = <span class="cstat-no" title="statement not covered" >`${config.apiEndpoint}/api/v0/application`;</span>
@@ -496,7 +496,7 @@ export class SlskdClientService {
   /**
    * Get existing searches from slskd wishlist
    */
-  static async <span class="fstat-no" title="function not covered" >getExistingSearches(</span>
+  static async getExistingSearches(
     config: SlskdConfig
   ): Promise&lt;SlskdSearchResponse[]&gt; {
 <span class="cstat-no" title="statement not covered" >    return this.request&lt;SlskdSearchResponse[]&gt;(config, '/api/v0/searches', {</span>
@@ -507,7 +507,7 @@ export class SlskdClientService {
   /**
    * Add track to slskd wishlist (creates a search)
    */
-  static async <span class="fstat-no" title="function not covered" >addToWishlist(</span>
+  static async addToWishlist(
     config: SlskdConfig,
     searchText: string
   ): Promise&lt;SlskdSearchResponse&gt; {
@@ -528,34 +528,34 @@ export class SlskdClientService {
    * - 'primary' mode uses only first artist - additional artists cause false negatives
    * - Don't include "320 MP3" - causes false negatives on slskd
    */
-  static <span class="fstat-no" title="function not covered" >formatSearchQuery(</span>
+  static formatSearchQuery(
     artist: string,
     title: string,
-    format: 'primary' | 'full' = <span class="branch-0 cbranch-no" title="branch not covered" >'primary'</span>
+    format: 'primary' | 'full' = 'primary'
   ): string {
-    let processedArtist = <span class="cstat-no" title="statement not covered" >artist;</span>
+    let processedArtist = artist;
 &nbsp;
-<span class="cstat-no" title="statement not covered" >    if (format === 'primary') {</span>
+    if (format === 'primary') {
       // Extract primary artist only - additional artists can cause false negatives
       // Handle comma-separated: "Artist1, Artist2" → "Artist1"
-<span class="cstat-no" title="statement not covered" >      processedArtist = artist.split(',')[0].trim();</span>
+      processedArtist = artist.split(',')[0].trim();
       // Also handle "feat." and "ft.": "Artist feat. Other" → "Artist"
-<span class="cstat-no" title="statement not covered" >      processedArtist = processedArtist.split(/\s+(?:feat\.?|ft\.?)\s+/i)[0].trim();</span>
+      processedArtist = processedArtist.split(/\s+(?:feat\.?|ft\.?)\s+/i)[0].trim();
     }
 &nbsp;
     // Remove quotes and sanitize
-    const sanitize = <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >(s</span>tr: string) =&gt; <span class="cstat-no" title="statement not covered" >str.replace(/["]/g, '').trim();</span></span>
+    const sanitize = (str: string) =&gt; str.replace(/["]/g, '').trim();
 &nbsp;
     // Return clean search query without bitrate/format specifiers
-<span class="cstat-no" title="statement not covered" >    return `${sanitize(processedArtist)} - ${sanitize(title)}`;</span>
+    return `${sanitize(processedArtist)} - ${sanitize(title)}`;
   }
 &nbsp;
   /**
    * Normalize search text for duplicate detection
    * Removes special characters and normalizes whitespace
    */
-  static <span class="fstat-no" title="function not covered" >normalizeSearchText(t</span>ext: string): string {
-<span class="cstat-no" title="statement not covered" >    return text</span>
+  static normalizeSearchText(text: string): string {
+    return text
       .toLowerCase()
       .replace(/[^\w\s]/g, '')
       .replace(/\s+/g, ' ')
@@ -567,14 +567,14 @@ export class SlskdClientService {
    * Only skips if a search is currently running — completed/timed-out/cancelled
    * searches are not considered duplicates since slskd has no real wishlist persistence
    */
-  static <span class="fstat-no" title="function not covered" >isSearchDuplicate(</span>
+  static isSearchDuplicate(
     existingSearches: SlskdSearchResponse[],
     newSearchText: string
   ): boolean {
-    const normalizedNew = <span class="cstat-no" title="statement not covered" >this.normalizeSearchText(newSearchText);</span>
-<span class="cstat-no" title="statement not covered" >    return existingSearches.some(</span>
-<span class="fstat-no" title="function not covered" >      (s</span>earch) =&gt;
-<span class="cstat-no" title="statement not covered" >        search.state === 'InProgress' &amp;&amp;</span>
+    const normalizedNew = this.normalizeSearchText(newSearchText);
+    return existingSearches.some(
+      (search) =&gt;
+        search.state === 'InProgress' &amp;&amp;
         this.normalizeSearchText(search.searchText) === normalizedNew
     );
   }
@@ -586,7 +586,7 @@ export class SlskdClientService {
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-02-25T21:38:18.262Z
+                at 2026-02-26T19:10:24.410Z
             </div>
         <script src="../prettify.js"></script>
         <script>

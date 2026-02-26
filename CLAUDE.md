@@ -14,17 +14,24 @@ npm run dev              # Start Vite dev server on port 8080
 npm run build            # Production build
 npm run lint             # ESLint
 
-# Testing (tests in src/services/__tests__/)
-npx vitest run           # Run all tests
-npx vitest run --coverage # Run with coverage
-npx vitest <pattern>     # Run specific test file
-npx vitest run trackMatchingEval  # Run matching Eval suite
+# Testing
+npx vitest run                    # Run all tests
+npx vitest run --coverage         # Run with coverage (threshold: 60%)
+npx vitest run src/services/__tests__/tokenPersistenceGateway.service.test.ts  # Single file
+npx vitest run <pattern>          # Run by filename pattern
+npm run eval:matching             # Run track matching eval suite (verbose)
 
 # Agents framework (code validation)
 npm run agents:validate  # Validate all agents
 npm run agents:test      # Run agent tests (from agents/ dir)
 npm run agents:fix       # Auto-fix violations
 ```
+
+### Test locations
+- `src/services/__tests__/` — service layer (in coverage scope)
+- `src/utils/__tests__/` — utilities (in coverage scope)
+- `src/hooks/__tests__/` — hook logic tests
+- `src/components/__tests__/` — component logic tests
 
 ## Architecture
 
@@ -55,8 +62,9 @@ npm run agents:fix       # Auto-fix violations
 - `trackMatchingEngine.ts` - Core matching engine (3-tier: exact, core title, fuzzy)
 - `trackMatching.service.ts` - Matching orchestration between Spotify and local files
 - `metadataExtractor.ts` - MP3 metadata extraction using music-metadata-browser
-- `spotifyAuthManager.service.ts` - Spotify connection management
+- `spotifyAuthManager.service.ts` - Spotify connection management (singleton via `getInstance()`)
 - `sessionCache.service.ts` - Auth session caching with timeouts
+- `tokenPersistenceGateway.service.ts` - Guards queries against stale tokens after refresh events; tracks `sessionVerified` to skip redundant `setSession` calls on subsequent auth events (e.g. visibility-triggered SIGNED_IN)
 
 ### Eval Framework
 Track matching accuracy is validated by an Eval suite (`src/services/__tests__/trackMatchingEval.test.ts`) with fixture-based test cases (`eval-cases.json`). The suite tracks false-negative rates and must never regress. Tighten `MAX_FALSE_NEGATIVE_RATE` as matching improves.
@@ -82,10 +90,14 @@ import { supabase } from '@/integrations/supabase/client';
 ```
 
 ### Query Timeouts
-Use `withTimeout` for database operations to prevent hangs (45+ seconds for edge functions with cold starts):
+Use `withTimeout` for database operations to prevent hangs (45+ seconds for edge functions with cold starts). Supabase `PostgrestFilterBuilder` is not a native `Promise` — call `.then(r => r)` to convert it before passing to `withTimeout`:
 ```typescript
 import { withTimeout } from '@/utils/promiseUtils';
-const result = await withTimeout(promise, 60000, 'Operation timed out');
+const result = await withTimeout(
+  supabase.from('table').select('*').eq('user_id', id).then(r => r),
+  60000,
+  'Operation timed out'
+);
 ```
 
 ### Batch Processing
@@ -104,6 +116,19 @@ Track matching relies on normalized metadata. The `NormalizationService` handles
 - Case folding, accent removal
 - Feature artist extraction ("feat.", "ft.")
 - Mix/version extraction from parentheses
+
+### Concurrent DB Query Contention
+Long-running scan operations (hash loading, batch upserts) compete with UI table queries on the same Supabase connection pool. When a scan starts, suppress in-flight UI queries by aborting their `AbortController` and skipping new fetches until the scan finishes. See `isScanInProgress` prop in `LocalTracksTable` and `onScanningChange` in `FileUploadScanner`.
+
+### Auth Events During Long Operations
+A tab visibility change triggers `_onVisibilityChanged` → `_recoverAndRefresh`, which emits `TOKEN_REFRESHED` then `SIGNED_IN` in sequence. The Supabase client's internal `setSession` lock (up to 1000ms) may still be held after `TOKEN_REFRESHED` fires. Listen for **both** events and wait for a settle window (1500ms from the last event) before issuing the next DB write:
+```typescript
+supabase.auth.onAuthStateChange((event) => {
+  if (event === 'TOKEN_REFRESHED' || event === 'SIGNED_IN') {
+    tokenRefreshSettledAt = Date.now() + 1500;
+  }
+});
+```
 
 ## Routes
 

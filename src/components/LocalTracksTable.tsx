@@ -65,9 +65,10 @@ interface LocalTracksTableProps {
   selectedTrack: LocalTrack | null;
   refreshTrigger?: number;
   isActive?: boolean; // For lazy loading - only fetch when tab is active
+  isScanInProgress?: boolean; // Suppress fetches while scanner is running
 }
 
-const LocalTracksTable = ({ onTrackSelect, selectedTrack, refreshTrigger, isActive = true }: LocalTracksTableProps) => {
+const LocalTracksTable = ({ onTrackSelect, selectedTrack, refreshTrigger, isActive = true, isScanInProgress = false }: LocalTracksTableProps) => {
   const [tracks, setTracks] = useState<LocalTrack[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
@@ -107,10 +108,22 @@ const LocalTracksTable = ({ onTrackSelect, selectedTrack, refreshTrigger, isActi
   const { toast } = useToast();
   const { user, isAuthenticated, loading: authLoading, initialDataReady } = useAuth();
 
+  // Abort in-flight fetch when scan starts, so the scanner's DB queries aren't
+  // competing with the table's count/data queries on the same connection pool.
+  useEffect(() => {
+    if (isScanInProgress && fetchAbortController.current) {
+      fetchAbortController.current.abort();
+      fetchAbortController.current = null;
+      setLoading(false);
+    }
+  }, [isScanInProgress]);
+
   // Main data fetching effect - consolidated with debounce for text inputs
   useEffect(() => {
     // Guard: Wait for auth to be ready AND tab to be active
     if (authLoading || !initialDataReady || !isActive) return;
+    // Suppress fetches while a scan is running — scanner owns the DB connection
+    if (isScanInProgress) return;
 
     if (!isAuthenticated || !user) {
       setTracks([]);
@@ -133,7 +146,7 @@ const LocalTracksTable = ({ onTrackSelect, selectedTrack, refreshTrigger, isActi
     return () => {
       if (timeoutId) clearTimeout(timeoutId);
     };
-  }, [authLoading, initialDataReady, isActive, isAuthenticated, user?.id, currentPage, sortField, sortDirection, selectedSuperGenre, selectedArtist, selectedAlbum, selectedGenre, bitrateFilter, missingMetadata, refreshTrigger, searchQuery, yearFrom, yearTo]);
+  }, [authLoading, initialDataReady, isActive, isScanInProgress, isAuthenticated, user?.id, currentPage, sortField, sortDirection, selectedSuperGenre, selectedArtist, selectedAlbum, selectedGenre, bitrateFilter, missingMetadata, refreshTrigger, searchQuery, yearFrom, yearTo]);
 
   // Filter options fetch - only once when tab becomes active
   useEffect(() => {

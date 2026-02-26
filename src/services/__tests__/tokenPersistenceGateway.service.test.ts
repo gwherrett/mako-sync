@@ -294,6 +294,96 @@ describe('TokenPersistenceGatewayService', () => {
       expect(result).toBe(true);
       expect(service.isReady()).toBe(true);
     });
+
+    it('should call setSession on first sign-in when sessionVerified is false', async () => {
+      localStorageMock['sb-test-auth-token'] = JSON.stringify({
+        access_token: 'test-access-token-12345'
+      });
+
+      const { supabase } = await import('@/integrations/supabase/client');
+      vi.mocked(supabase.auth.setSession).mockResolvedValue({ data: {} as any, error: null });
+
+      await service.waitForTokenPersistence(mockSession, 100);
+
+      expect(supabase.auth.setSession).toHaveBeenCalledWith({
+        access_token: mockSession.access_token,
+        refresh_token: mockSession.refresh_token,
+      });
+    });
+
+    it('should skip setSession on subsequent events once sessionVerified is true', async () => {
+      localStorageMock['sb-test-auth-token'] = JSON.stringify({
+        access_token: 'test-access-token-12345'
+      });
+
+      const { supabase } = await import('@/integrations/supabase/client');
+      vi.mocked(supabase.auth.setSession).mockResolvedValue({ data: {} as any, error: null });
+
+      // First call — should call setSession and set sessionVerified = true
+      await service.waitForTokenPersistence(mockSession, 100);
+      expect(supabase.auth.setSession).toHaveBeenCalledTimes(1);
+
+      vi.mocked(supabase.auth.setSession).mockClear();
+
+      // Second call (e.g. visibility-change SIGNED_IN) — sessionVerified is now true,
+      // so setSession must be skipped entirely
+      const result = await service.waitForTokenPersistence(mockSession, 100);
+      expect(result).toBe(true);
+      expect(supabase.auth.setSession).not.toHaveBeenCalled();
+    });
+
+    it('should skip setSession when caller passes skipSetSession option', async () => {
+      localStorageMock['sb-test-auth-token'] = JSON.stringify({
+        access_token: 'test-access-token-12345'
+      });
+
+      const { supabase } = await import('@/integrations/supabase/client');
+
+      // TOKEN_REFRESHED callers opt out of setSession — Supabase has already
+      // refreshed internally so calling setSession again is redundant
+      const result = await service.waitForTokenPersistence(mockSession, 100, { skipSetSession: true });
+
+      expect(result).toBe(true);
+      expect(supabase.auth.setSession).not.toHaveBeenCalled();
+    });
+
+    it('should set sessionVerified to true after setSession error so it is not retried', async () => {
+      localStorageMock['sb-test-auth-token'] = JSON.stringify({
+        access_token: 'test-access-token-12345'
+      });
+
+      const { supabase } = await import('@/integrations/supabase/client');
+      vi.mocked(supabase.auth.setSession).mockRejectedValue(new Error('Auth error'));
+
+      // First call — setSession throws, but sessionVerified should still be set
+      await service.waitForTokenPersistence(mockSession, 100);
+      vi.mocked(supabase.auth.setSession).mockClear();
+
+      // Second call — should not retry setSession
+      await service.waitForTokenPersistence(mockSession, 100);
+      expect(supabase.auth.setSession).not.toHaveBeenCalled();
+    });
+
+    it('should reset sessionVerified on reset() so next sign-in re-verifies', async () => {
+      localStorageMock['sb-test-auth-token'] = JSON.stringify({
+        access_token: 'test-access-token-12345'
+      });
+
+      const { supabase } = await import('@/integrations/supabase/client');
+      vi.mocked(supabase.auth.setSession).mockResolvedValue({ data: {} as any, error: null });
+
+      // Verify once — sessionVerified = true
+      await service.waitForTokenPersistence(mockSession, 100);
+      expect(supabase.auth.setSession).toHaveBeenCalledTimes(1);
+      vi.mocked(supabase.auth.setSession).mockClear();
+
+      // Reset (sign-out path)
+      service.reset();
+
+      // After reset, next call should verify again
+      await service.waitForTokenPersistence(mockSession, 100);
+      expect(supabase.auth.setSession).toHaveBeenCalledTimes(1);
+    });
   });
 
   describe('exported singleton', () => {

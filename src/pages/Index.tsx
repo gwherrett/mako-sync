@@ -61,6 +61,7 @@ const Index = () => {
   const [selectedLocalTrack, setSelectedLocalTrack] = useState<LocalTrack | null>(null);
   const [isDashboardCollapsed, setIsDashboardCollapsed] = useState(false);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const [isScanInProgress, setIsScanInProgress] = useState(false);
 
   // Get initial tab from URL query param or default to 'spotify'
   const initialTab = searchParams.get('tab') || 'spotify';
@@ -317,12 +318,16 @@ const Index = () => {
 
           {/* Tab 2: Local Files */}
           <TabsContent value="local" className="space-y-8">
-            <FileUploadScanner onScanComplete={() => setRefreshTrigger(prev => prev + 1)} />
+            <FileUploadScanner
+              onScanComplete={() => setRefreshTrigger(prev => prev + 1)}
+              onScanningChange={setIsScanInProgress}
+            />
             <LocalTracksTable
               onTrackSelect={setSelectedLocalTrack}
               selectedTrack={selectedLocalTrack}
               refreshTrigger={refreshTrigger}
               isActive={activeTab === 'local'}
+              isScanInProgress={isScanInProgress}
             />
             {selectedLocalTrack && (
               <div className="bg-expos-dark-elevated/30 rounded-lg border border-expos-blue/20 p-6">

@@ -57,7 +57,8 @@ npm run agents:test              # Run framework tests
 ## Build Commands
 
 - `npm run build:dev` - Development build with different mode
-- No test runner configured - only acceptance test documentation in `src/__tests__/`
+- `npx vitest run` - Run all tests (Vitest, coverage threshold 60%)
+- `npm run eval:matching` - Run track matching eval suite
 
 ## Unified Spotify Authentication
 
