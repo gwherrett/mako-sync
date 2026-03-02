@@ -118,6 +118,47 @@ export function useSlskdSync() {
   }, [syncToSlskdAsync, toast]);
 
   /**
+   * Push a single album to slskd wishlist (no progress modal — single-shot)
+   */
+  const syncAlbumToSlskd = useCallback(async (track: SlskdTrackToSync): Promise<void> => {
+    const config = SlskdStorageService.getConfig();
+
+    if (!config.apiEndpoint || !config.apiKey) {
+      toast({
+        title: 'slskd not configured',
+        description: 'Go to Settings → Security to configure slskd.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    const album = track.album;
+    if (!album) {
+      toast({ title: 'No album info', description: 'This track has no album name.', variant: 'destructive' });
+      return;
+    }
+
+    const artist = track.primary_artist || track.artist;
+    const searchText = SlskdClientService.formatAlbumSearchQuery(artist, album, config.searchFormat);
+
+    try {
+      const existingSearches = await SlskdClientService.getExistingSearches(config);
+      if (SlskdClientService.isSearchDuplicate(existingSearches, searchText)) {
+        toast({ title: 'Already queued', description: `"${searchText}" is already in slskd.` });
+        return;
+      }
+      await SlskdClientService.addToWishlist(config, searchText);
+      toast({ title: 'Album added', description: `"${searchText}" added to slskd wishlist.` });
+    } catch (error) {
+      toast({
+        title: 'Failed to add album',
+        description: error instanceof Error ? error.message : 'Unknown error',
+        variant: 'destructive',
+      });
+    }
+  }, [toast]);
+
+  /**
    * Reset sync state
    */
   const reset = useCallback(() => {
@@ -129,6 +170,7 @@ export function useSlskdSync() {
   return {
     syncToSlskd,
     syncToSlskdAsync,
+    syncAlbumToSlskd,
     isSyncing,
     syncResult,
     syncError,

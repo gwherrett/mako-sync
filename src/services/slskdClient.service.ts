@@ -142,6 +142,30 @@ export class SlskdClientService {
   }
 
   /**
+   * Format search query for slskd album search
+   *
+   * @param artist - Full artist string from Spotify
+   * @param album - Album name
+   * @param format - 'primary' strips featured artists, 'full' uses complete artist string
+   */
+  static formatAlbumSearchQuery(
+    artist: string,
+    album: string,
+    format: 'primary' | 'full' = 'primary'
+  ): string {
+    let processedArtist = artist;
+
+    if (format === 'primary') {
+      processedArtist = artist.split(',')[0].trim();
+      processedArtist = processedArtist.split(/\s+(?:feat\.?|ft\.?)\s+/i)[0].trim();
+    }
+
+    const sanitize = (str: string) => str.replace(/["]/g, '').trim();
+
+    return `${sanitize(processedArtist)} - ${sanitize(album)}`;
+  }
+
+  /**
    * Normalize search text for duplicate detection
    * Removes special characters and normalizes whitespace
    */

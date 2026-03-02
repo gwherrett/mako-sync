@@ -70,6 +70,7 @@ export interface SlskdTrackToSync {
   title: string;
   artist: string;
   primary_artist?: string;
+  album?: string | null;
 }
 
 // =============================================================================
