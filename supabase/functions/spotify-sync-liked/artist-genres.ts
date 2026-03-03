@@ -1,47 +1,55 @@
+const CONCURRENCY_CAP = 5
+
+// NOTE: The `genres` field on the single-artist endpoint (GET /v1/artists/{id}) is
+// now deprecated by Spotify — monitor for removal in future API changes.
 export async function fetchArtistGenres(accessToken: string, artistIds: string[]): Promise<Map<string, string[]>> {
   const genreMap = new Map<string, string[]>()
-  
-  // Spotify allows up to 50 artist IDs per request
-  const batchSize = 50
-  
-  for (let i = 0; i < artistIds.length; i += batchSize) {
-    const batch = artistIds.slice(i, i + batchSize)
-    const idsParam = batch.join(',')
-    
-    console.log(`Fetching genres for ${batch.length} artists (batch ${Math.floor(i/batchSize) + 1})`)
-    
-    const response = await fetch(`https://api.spotify.com/v1/artists?ids=${idsParam}`, {
+
+  console.log(`Fetching genres for ${artistIds.length} artists individually (concurrency: ${CONCURRENCY_CAP})`)
+
+  async function fetchOne(artistId: string): Promise<void> {
+    const response = await fetch(`https://api.spotify.com/v1/artists/${artistId}`, {
       headers: {
         'Authorization': `Bearer ${accessToken}`,
         'Content-Type': 'application/json',
-        'User-Agent': 'SpotifyMetadataSync/1.0'
       },
     })
 
     if (!response.ok) {
       const errorText = await response.text()
-      console.error(`Failed to fetch artist data: ${response.status} ${response.statusText} - ${errorText}`)
-      
+      console.error(`Failed to fetch artist ${artistId}: ${response.status} ${response.statusText} - ${errorText}`)
+
       if (response.status === 401) {
         throw new Error('Spotify token invalid')
       }
-      
-      // Continue with other batches on non-auth errors
-      console.warn(`Skipping batch due to error: ${errorText}`)
-      continue
+
+      // Skip this artist on non-auth errors
+      console.warn(`Skipping artist ${artistId} due to error: ${errorText}`)
+      return
     }
 
-    const data = await response.json()
-    
-    if (data.artists) {
-      data.artists.forEach((artist: any) => {
-        if (artist && artist.id) {
-          genreMap.set(artist.id, artist.genres || [])
-        }
-      })
+    const artist = await response.json()
+    if (artist && artist.id) {
+      genreMap.set(artist.id, artist.genres || [])
     }
   }
-  
+
+  // Process in windows of CONCURRENCY_CAP using Promise.allSettled
+  for (let i = 0; i < artistIds.length; i += CONCURRENCY_CAP) {
+    const window = artistIds.slice(i, i + CONCURRENCY_CAP)
+    const results = await Promise.allSettled(window.map(fetchOne))
+
+    for (const result of results) {
+      if (result.status === 'rejected') {
+        // Re-throw auth errors so the caller can handle them
+        if (result.reason?.message === 'Spotify token invalid') {
+          throw result.reason
+        }
+        console.warn('Artist fetch rejected:', result.reason)
+      }
+    }
+  }
+
   console.log(`Fetched genres for ${genreMap.size} artists`)
   return genreMap
 }

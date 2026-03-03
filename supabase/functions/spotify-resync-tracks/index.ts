@@ -114,13 +114,15 @@ serve(async (req) => {
         .eq('user_id', user.id);
     }
 
-    // Fetch track details from Spotify API
+    // Fetch track details from Spotify API.
+    // NOTE: GET /v1/tracks (batch) has been removed by Spotify. This intentionally
+    // uses the single-track endpoint GET /v1/tracks/{id} for each track.
     const results = [];
-    
+
     for (const spotifyId of spotifyIds) {
       try {
         console.log('Fetching track:', spotifyId);
-        
+
         const trackResponse = await fetch(
           `https://api.spotify.com/v1/tracks/${spotifyId}`,
           {

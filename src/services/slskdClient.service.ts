@@ -178,9 +178,9 @@ export class SlskdClientService {
   }
 
   /**
-   * Check if an active (InProgress) search already exists
-   * Only skips if a search is currently running — completed/timed-out/cancelled
-   * searches are not considered duplicates since slskd has no real wishlist persistence
+   * Check if a search already exists and should not be re-added.
+   * Blocks InProgress (currently running) and Completed (already found results).
+   * Allows retry for TimedOut, Cancelled, and Errored searches.
    */
   static isSearchDuplicate(
     existingSearches: SlskdSearchResponse[],
@@ -189,7 +189,7 @@ export class SlskdClientService {
     const normalizedNew = this.normalizeSearchText(newSearchText);
     return existingSearches.some(
       (search) =>
-        search.state === 'InProgress' &&
+        (search.state === 'InProgress' || search.state === 'Completed') &&
         this.normalizeSearchText(search.searchText) === normalizedNew
     );
   }
