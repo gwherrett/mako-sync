@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Loader2, Download, Music, Users, Filter, Upload } from 'lucide-react';
+import { Loader2, Download, Music, Users, Filter, Upload, Disc } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { TrackMatchingService } from '@/services/trackMatching.service';
 import { supabase } from '@/integrations/supabase/client';
@@ -54,7 +54,7 @@ const MissingTracksAnalyzer: React.FC<MissingTracksAnalyzerProps> = ({
   const [selectedArtists, setSelectedArtists] = useState<Set<string>>(new Set());
   const [showSyncModal, setShowSyncModal] = useState(false);
   const { isConfigured } = useSlskdConfig();
-  const { syncToSlskd, isSyncing, syncResult, progress, reset } = useSlskdSync();
+  const { syncToSlskd, syncAlbumToSlskd, isSyncing, syncResult, progress, reset } = useSlskdSync();
 
   // Cascading filter state: supergenre -> genre -> artist
   const [genreFilter, setGenreFilter] = useState<string>('all');
@@ -623,10 +623,33 @@ const MissingTracksAnalyzer: React.FC<MissingTracksAnalyzerProps> = ({
                     {/* Track List */}
                     <div className={`space-y-1 ${isConfigured ? 'ml-7' : ''}`}>
                       {group.tracks.map((track, idx) => (
-                        <div key={idx} className="text-sm text-muted-foreground">
-                          <span className="font-medium">{track.spotifyTrack.title}</span>
+                        <div key={idx} className="flex items-center gap-2 text-sm text-muted-foreground">
+                          <span className="font-medium text-foreground">{track.spotifyTrack.title}</span>
                           {track.spotifyTrack.album && (
-                            <span className="ml-2">• {track.spotifyTrack.album}</span>
+                            <span
+                              className="text-xs bg-muted px-1.5 py-0.5 rounded truncate max-w-[200px]"
+                              title={track.spotifyTrack.album}
+                            >
+                              {track.spotifyTrack.album}
+                            </span>
+                          )}
+                          {isConfigured && track.spotifyTrack.album && (
+                            <button
+                              type="button"
+                              title={`Push album "${track.spotifyTrack.album}" to slskd`}
+                              className="ml-auto shrink-0 p-0.5 rounded hover:bg-accent hover:text-accent-foreground transition-colors"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                syncAlbumToSlskd({
+                                  id: track.spotifyTrack.id,
+                                  title: track.spotifyTrack.title,
+                                  artist: track.spotifyTrack.artist,
+                                  album: track.spotifyTrack.album,
+                                });
+                              }}
+                            >
+                              <Disc className="w-3.5 h-3.5" />
+                            </button>
                           )}
                         </div>
                       ))}
