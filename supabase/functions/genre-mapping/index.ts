@@ -203,6 +203,18 @@ serve(async (req) => {
         throw error;
       }
 
+      // Propagate the new super_genre to all existing tracks with this genre
+      const { error: updateError } = await adminSupabase
+        .from('spotify_liked')
+        .update({ super_genre })
+        .eq('user_id', user.id)
+        .eq('genre', cleanedGenre);
+
+      if (updateError) {
+        console.error(`Error propagating super_genre update for "${cleanedGenre}":`, updateError);
+        throw updateError;
+      }
+
       return new Response(JSON.stringify(data), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
@@ -249,6 +261,31 @@ serve(async (req) => {
       if (error) {
         console.error(`Error deleting override for "${cleanedGenre}":`, error);
         throw error;
+      }
+
+      // Revert tracks to the base mapping's super_genre
+      const { data: baseGenre, error: baseError } = await adminSupabase
+        .from('spotify_genre_map_base')
+        .select('super_genre')
+        .eq('spotify_genre', cleanedGenre)
+        .maybeSingle();
+
+      if (baseError) {
+        console.error(`Error fetching base genre for "${cleanedGenre}":`, baseError);
+        throw baseError;
+      }
+
+      if (baseGenre) {
+        const { error: updateError } = await adminSupabase
+          .from('spotify_liked')
+          .update({ super_genre: baseGenre.super_genre })
+          .eq('user_id', user.id)
+          .eq('genre', cleanedGenre);
+
+        if (updateError) {
+          console.error(`Error reverting super_genre for "${cleanedGenre}":`, updateError);
+          throw updateError;
+        }
       }
 
       return new Response(JSON.stringify({ success: true }), {
