@@ -322,11 +322,7 @@ export class SpotifyAuthManager {
 
       const scopes = [
         'user-read-private',
-        'user-read-email',
         'user-library-read',
-        'playlist-read-private',
-        'playlist-read-collaborative',
-        'user-top-read'
       ].join(' ');
 
       const redirectUri = import.meta.env.VITE_SPOTIFY_REDIRECT_URI ||

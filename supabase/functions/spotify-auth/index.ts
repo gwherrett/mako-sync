@@ -225,7 +225,6 @@ serve(async (req) => {
       userId: user.id,
       spotifyUserId: profileData.id,
       displayName: profileData.display_name,
-      email: profileData.email
     });
 
     // Store tokens securely in Vault using Postgres driver for direct SQL access
@@ -374,7 +373,7 @@ serve(async (req) => {
       scope: tokenData.scope,
       token_type: tokenData.token_type || 'Bearer',
       display_name: profileData.display_name,
-      email: profileData.email,
+      email: user.email ?? null,
     }
 
     logWithContext('info', 'Storing connection in database', {
