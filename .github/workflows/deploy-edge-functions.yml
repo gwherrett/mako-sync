@@ -24,8 +24,6 @@ jobs:
         run: |
           supabase link --project-ref bzzstdpfmyqttnzhgaoa
           supabase functions deploy spotify-auth
-          supabase functions deploy spotify-callback
           supabase functions deploy spotify-sync-liked
-          supabase functions deploy spotify-resync-tracks
           supabase functions deploy genre-mapping
           supabase functions deploy ai-track-genre-suggest
