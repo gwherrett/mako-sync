@@ -44,9 +44,8 @@ npm run agents:fix       # Auto-fix violations
 ### Backend
 - **Supabase**: Auth, PostgreSQL database, Edge Functions, Vault (for OAuth tokens)
 - **Edge Functions** (`supabase/functions/`):
-  - `spotify-auth` / `spotify-callback` - OAuth flow
+  - `spotify-auth` - OAuth flow
   - `spotify-sync-liked` - Sync liked songs with progress tracking
-  - `spotify-resync-tracks` - Re-apply genre mappings
   - `genre-mapping` - Fetch/export genre mappings
   - `ai-track-genre-suggest` - AI genre recommendations
 
