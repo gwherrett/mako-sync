@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Loader2, Download, Music, Users, Filter, Upload, Disc } from 'lucide-react';
+import { Loader2, Download, Music, Users, Filter, Upload } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { TrackMatchingService } from '@/services/trackMatching.service';
 import { supabase } from '@/integrations/supabase/client';
@@ -214,7 +214,7 @@ const MissingTracksAnalyzer: React.FC<MissingTracksAnalyzerProps> = ({
     loadUser();
   }, []);
 
-  // Group tracks by artist
+  // Group tracks by artist, sorting tracks by album then title
   const groupByArtist = (tracks: MissingTrack[]): ArtistGroup[] => {
     const groups = tracks.reduce((acc, track) => {
       const artist = track.spotifyTrack.artist;
@@ -238,9 +238,30 @@ const MissingTracksAnalyzer: React.FC<MissingTracksAnalyzerProps> = ({
     return Object.values(groups)
       .map(group => ({
         ...group,
-        genres: Array.from(group.genres)
+        genres: Array.from(group.genres),
+        tracks: group.tracks.slice().sort((a, b) => {
+          const albumA = a.spotifyTrack.album || '';
+          const albumB = b.spotifyTrack.album || '';
+          if (albumA !== albumB) return albumA.localeCompare(albumB);
+          return a.spotifyTrack.title.localeCompare(b.spotifyTrack.title);
+        }),
       }))
       .sort((a, b) => b.tracks.length - a.tracks.length);
+  };
+
+  // Group an artist's sorted tracks by album for rendering
+  const groupTracksByAlbum = (tracks: MissingTrack[]): { album: string | null; tracks: MissingTrack[] }[] => {
+    const result: { album: string | null; tracks: MissingTrack[] }[] = [];
+    for (const track of tracks) {
+      const album = track.spotifyTrack.album ?? null;
+      const last = result[result.length - 1];
+      if (last && last.album === album) {
+        last.tracks.push(track);
+      } else {
+        result.push({ album, tracks: [track] });
+      }
+    }
+    return result;
   };
 
   const analyzeMissingTracks = async () => {
@@ -620,37 +641,42 @@ const MissingTracksAnalyzer: React.FC<MissingTracksAnalyzerProps> = ({
                       </div>
                     )}
 
-                    {/* Track List */}
-                    <div className={`space-y-1 ${isConfigured ? 'ml-7' : ''}`}>
-                      {group.tracks.map((track, idx) => (
-                        <div key={idx} className="flex items-center gap-2 text-sm text-muted-foreground">
-                          <span className="font-medium text-foreground">{track.spotifyTrack.title}</span>
-                          {track.spotifyTrack.album && (
-                            <span
-                              className="text-xs bg-muted px-1.5 py-0.5 rounded truncate max-w-[200px]"
-                              title={track.spotifyTrack.album}
-                            >
-                              {track.spotifyTrack.album}
-                            </span>
+                    {/* Track List grouped by album */}
+                    <div className={`space-y-3 ${isConfigured ? 'ml-7' : ''}`}>
+                      {groupTracksByAlbum(group.tracks).map(({ album, tracks: albumTracks }) => (
+                        <div key={album ?? '__no_album__'} className="space-y-1">
+                          {album && (
+                            <div className="flex items-center justify-between gap-2">
+                              <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide truncate">
+                                {album}
+                              </span>
+                              {isConfigured && (
+                                <button
+                                  type="button"
+                                  title={`Push "${album}" to slskd`}
+                                  className="shrink-0 flex items-center gap-1 text-xs px-2 py-0.5 rounded border border-border hover:bg-accent hover:text-accent-foreground transition-colors"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    syncAlbumToSlskd({
+                                      id: albumTracks[0].spotifyTrack.id,
+                                      title: albumTracks[0].spotifyTrack.title,
+                                      artist: albumTracks[0].spotifyTrack.artist,
+                                      primary_artist: albumTracks[0].spotifyTrack.artist,
+                                      album,
+                                    });
+                                  }}
+                                >
+                                  <Upload className="w-3 h-3" />
+                                  Push album
+                                </button>
+                              )}
+                            </div>
                           )}
-                          {isConfigured && track.spotifyTrack.album && (
-                            <button
-                              type="button"
-                              title={`Push album "${track.spotifyTrack.album}" to slskd`}
-                              className="ml-auto shrink-0 p-0.5 rounded hover:bg-accent hover:text-accent-foreground transition-colors"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                syncAlbumToSlskd({
-                                  id: track.spotifyTrack.id,
-                                  title: track.spotifyTrack.title,
-                                  artist: track.spotifyTrack.artist,
-                                  album: track.spotifyTrack.album,
-                                });
-                              }}
-                            >
-                              <Disc className="w-3.5 h-3.5" />
-                            </button>
-                          )}
+                          {albumTracks.map((track, idx) => (
+                            <div key={idx} className="text-sm text-muted-foreground pl-2">
+                              • <span className="text-foreground">{track.spotifyTrack.title}</span>
+                            </div>
+                          ))}
                         </div>
                       ))}
                     </div>
