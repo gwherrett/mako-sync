@@ -1,5 +1,10 @@
 const CONCURRENCY_CAP = 5
 
+// Cache TTL: re-fetch artist genres after this many days.
+// Ensures stale genre data (e.g. after Spotify updates an artist's tags, or after
+// new genre map entries are added) is eventually refreshed from the API.
+const CACHE_TTL_DAYS = 30
+
 // NOTE: The `genres` field on the single-artist endpoint (GET /v1/artists/{id}) is
 // now deprecated by Spotify — monitor for removal in future API changes.
 export async function fetchArtistGenres(accessToken: string, artistIds: string[]): Promise<Map<string, string[]>> {
@@ -55,22 +60,26 @@ export async function fetchArtistGenres(accessToken: string, artistIds: string[]
 }
 
 export async function getCachedArtistGenres(artistIds: string[], supabaseClient: any): Promise<Map<string, string[]>> {
+  const cutoff = new Date()
+  cutoff.setDate(cutoff.getDate() - CACHE_TTL_DAYS)
+
   const { data, error } = await supabaseClient
     .from('artist_genres')
     .select('spotify_artist_id, genres')
     .in('spotify_artist_id', artistIds)
-  
+    .gte('cached_at', cutoff.toISOString())
+
   if (error) {
     console.error('Error fetching cached artist genres:', error)
     return new Map()
   }
-  
+
   const genreMap = new Map<string, string[]>()
   data?.forEach((row: any) => {
     genreMap.set(row.spotify_artist_id, row.genres || [])
   })
-  
-  console.log(`Found ${genreMap.size} cached artist genres out of ${artistIds.length} requested`)
+
+  console.log(`Found ${genreMap.size} cached artist genres out of ${artistIds.length} requested (TTL: ${CACHE_TTL_DAYS}d)`)
   return genreMap
 }
 
@@ -98,34 +107,41 @@ export async function cacheArtistGenres(genreMap: Map<string, string[]>, supabas
   }
 }
 
-export async function getArtistGenresWithCache(accessToken: string, artistIds: string[], supabaseClient: any): Promise<Map<string, string[]>> {
+export interface ArtistGenreResult {
+  genreMap: Map<string, string[]>
+  cacheHits: number
+  apiFetches: number
+}
+
+export async function getArtistGenresWithCache(accessToken: string, artistIds: string[], supabaseClient: any): Promise<ArtistGenreResult> {
   // Remove duplicates
   const uniqueArtistIds = [...new Set(artistIds)]
-  
+
   console.log(`Getting genres for ${uniqueArtistIds.length} unique artists`)
-  
-  // Get cached genres first
+
+  // Get cached genres first (TTL-filtered — stale entries count as misses)
   const cachedGenres = await getCachedArtistGenres(uniqueArtistIds, supabaseClient)
-  
-  // Find artists that need fresh data
+  const cacheHits = cachedGenres.size
+
+  // Find artists that need fresh data (not in cache or cache expired)
   const uncachedArtistIds = uniqueArtistIds.filter(id => !cachedGenres.has(id))
-  
+
   if (uncachedArtistIds.length === 0) {
-    console.log('All artist genres found in cache')
-    return cachedGenres
+    console.log(`All ${cacheHits} artist genres served from cache — 0 Spotify API calls needed`)
+    return { genreMap: cachedGenres, cacheHits, apiFetches: 0 }
   }
-  
-  console.log(`Fetching fresh data for ${uncachedArtistIds.length} uncached artists`)
-  
+
+  console.log(`Cache: ${cacheHits} hits, ${uncachedArtistIds.length} misses — fetching ${uncachedArtistIds.length} from Spotify API`)
+
   // Fetch missing artist data from Spotify
   const freshGenres = await fetchArtistGenres(accessToken, uncachedArtistIds)
-  
+
   // Cache the fresh data
   await cacheArtistGenres(freshGenres, supabaseClient)
-  
+
   // Combine cached and fresh data
   const allGenres = new Map([...cachedGenres, ...freshGenres])
-  
-  console.log(`Total genres available: ${allGenres.size} out of ${uniqueArtistIds.length} requested`)
-  return allGenres
+
+  console.log(`Total genres available: ${allGenres.size}/${uniqueArtistIds.length} (${cacheHits} cached, ${uncachedArtistIds.length} fetched)`)
+  return { genreMap: allGenres, cacheHits, apiFetches: uncachedArtistIds.length }
 }

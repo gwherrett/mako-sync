@@ -281,6 +281,13 @@ export const useUnifiedSpotifyAuth = (config: UseUnifiedSpotifyAuthConfig = {}):
       const result = await authManager.current.syncLikedSongs(forceFullSync);
 
       if (result.success) {
+        if (result.data?.genre_health_warning) {
+          toast({
+            title: "Genre data warning",
+            description: result.data.genre_health_warning,
+            variant: "destructive",
+          });
+        }
         const syncType = forceFullSync ? 'Full' : 'Incremental';
         toast({
           title: "Sync Complete",

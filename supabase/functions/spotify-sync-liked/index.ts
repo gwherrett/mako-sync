@@ -245,6 +245,14 @@ serve(async (req) => {
     let isFullSync = forceFullSync
     let manualGenreMap = new Map<string, string>() // Declare at function scope
 
+    // Genre health-check counters — detect silent removal of artist.genres from Spotify API
+    let healthArtistTotal = 0
+    let healthArtistWithGenres = 0
+
+    // Cache efficiency stats — measure API calls saved by cache-first strategy
+    let totalCacheHits = 0
+    let totalApiFetches = 0
+
     if (existingSync) {
       console.log(`📝 Resuming sync from offset ${existingSync.last_offset}`)
       syncId = existingSync.sync_id
@@ -515,7 +523,15 @@ serve(async (req) => {
         const artistIds = extractUniqueArtistIds(allChunkTracks)
         console.log(`Found ${artistIds.length} unique artists for this chunk`)
 
-        const artistGenreMap = await getArtistGenresWithCache(accessToken, artistIds, supabaseClient)
+        const { genreMap: artistGenreMap, cacheHits: chunkCacheHits, apiFetches: chunkApiFetches } = await getArtistGenresWithCache(accessToken, artistIds, supabaseClient)
+        totalCacheHits += chunkCacheHits
+        totalApiFetches += chunkApiFetches
+
+        // Accumulate genre health-check stats
+        for (const genres of artistGenreMap.values()) {
+          healthArtistTotal++
+          if (genres.length > 0) healthArtistWithGenres++
+        }
 
         // Fetch genre mapping
         const { data: genreMappingData } = await supabaseClient
@@ -659,7 +675,15 @@ serve(async (req) => {
       const artistIds = extractUniqueArtistIds(allChunkTracks)
       console.log(`Found ${artistIds.length} unique artists for final batch`)
 
-      const artistGenreMap = await getArtistGenresWithCache(accessToken, artistIds, supabaseClient)
+      const { genreMap: artistGenreMap, cacheHits: finalCacheHits, apiFetches: finalApiFetches } = await getArtistGenresWithCache(accessToken, artistIds, supabaseClient)
+      totalCacheHits += finalCacheHits
+      totalApiFetches += finalApiFetches
+
+      // Accumulate genre health-check stats
+      for (const genres of artistGenreMap.values()) {
+        healthArtistTotal++
+        if (genres.length > 0) healthArtistWithGenres++
+      }
 
       // Fetch genre mapping
       const { data: genreMappingData } = await supabaseClient
@@ -831,6 +855,23 @@ serve(async (req) => {
       }
     }
 
+    // Log cache efficiency summary
+    const totalArtistsLookedUp = totalCacheHits + totalApiFetches
+    if (totalArtistsLookedUp > 0) {
+      const hitRate = Math.round((totalCacheHits / totalArtistsLookedUp) * 100)
+      console.log(`[CACHE STATS] Artist genres: ${totalCacheHits} cache hits, ${totalApiFetches} API calls (${hitRate}% cache hit rate — ${totalApiFetches} Spotify requests saved by cache)`)
+    }
+
+    // Genre health-check: warn if all artists returned empty genre arrays across the full run
+    const MIN_ARTISTS_FOR_HEALTH_CHECK = 20
+    let genreHealthWarning: string | undefined
+    if (healthArtistTotal >= MIN_ARTISTS_FOR_HEALTH_CHECK && healthArtistWithGenres === 0) {
+      genreHealthWarning = `All ${healthArtistTotal} artists returned empty genre arrays during this sync. The Spotify artist genres field may have been silently removed. Genre auto-mapping will not work until resolved — use AI genre classification as a fallback.`
+      console.warn(`[GENRE HEALTH CHECK] ${genreHealthWarning}`)
+    } else if (healthArtistTotal > 0) {
+      console.log(`[GENRE HEALTH CHECK] ${healthArtistWithGenres}/${healthArtistTotal} artists have genres (${Math.round((healthArtistWithGenres / healthArtistTotal) * 100)}%)`)
+    }
+
     // Mark sync as completed with timestamp
     await supabaseClient
       .from('sync_progress')
@@ -872,7 +913,15 @@ serve(async (req) => {
         sync_id: syncId,
         duplicates_removed: duplicatesRemoved,
         genres_cached: manualGenreMap.size,
-        verification_warnings: verificationWarnings.length > 0 ? verificationWarnings : undefined
+        verification_warnings: verificationWarnings.length > 0 ? verificationWarnings : undefined,
+        genre_health_warning: genreHealthWarning,
+        genre_cache_stats: {
+          cache_hits: totalCacheHits,
+          api_fetches: totalApiFetches,
+          hit_rate_pct: totalCacheHits + totalApiFetches > 0
+            ? Math.round((totalCacheHits / (totalCacheHits + totalApiFetches)) * 100)
+            : null
+        }
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
