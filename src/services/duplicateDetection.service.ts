@@ -9,7 +9,7 @@ export interface DuplicateTrack {
   normalized_artist: string | null;
   bitrate: number | null;
   file_size: number | null;
-  audio_format?: string | null; // populated after MAK-19 migration
+  audio_format: string | null;
 }
 
 export interface DuplicateGroup {
@@ -27,7 +27,7 @@ export class DuplicateDetectionService {
   static async findDuplicates(userId: string): Promise<DuplicateGroup[]> {
     const { data, error } = await supabase
       .from('local_mp3s')
-      .select('id, file_path, title, artist, normalized_title, normalized_artist, bitrate, file_size')
+      .select('id, file_path, title, artist, normalized_title, normalized_artist, bitrate, file_size, audio_format')
       .eq('user_id', userId)
       .not('normalized_title', 'is', null)
       .not('normalized_artist', 'is', null)
