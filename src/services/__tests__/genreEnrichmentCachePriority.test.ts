@@ -7,7 +7,9 @@ function makeSupabaseMock(cachedRows: { spotify_artist_id: string; genres: strin
   return {
     from: vi.fn().mockReturnValue({
       select: vi.fn().mockReturnValue({
-        in: vi.fn().mockResolvedValue({ data: cachedRows, error: null }),
+        in: vi.fn().mockReturnValue({
+          gte: vi.fn().mockResolvedValue({ data: cachedRows, error: null }),
+        }),
       }),
       upsert: vi.fn().mockResolvedValue({ error: null }),
     }),
@@ -37,8 +39,8 @@ describe('getArtistGenresWithCache — cache-first priority', () => {
     const result = await getArtistGenresWithCache(TOKEN, ['artist1', 'artist2'], supabase);
 
     expect(fetchMock).not.toHaveBeenCalled();
-    expect(result.get('artist1')).toEqual(['rock']);
-    expect(result.get('artist2')).toEqual(['pop']);
+    expect(result.genreMap.get('artist1')).toEqual(['rock']);
+    expect(result.genreMap.get('artist2')).toEqual(['pop']);
   });
 
   it('only fetches uncached artists from Spotify', async () => {
@@ -67,8 +69,8 @@ describe('getArtistGenresWithCache — cache-first priority', () => {
     expect(calledUrl).toMatch(/\/v1\/artists\/uncached-artist$/);
     expect(calledUrl).not.toMatch(/\/v1\/artists\/cached-artist$/);
 
-    expect(result.get('cached-artist')).toEqual(['jazz']);
-    expect(result.get('uncached-artist')).toEqual(['electronic']);
+    expect(result.genreMap.get('cached-artist')).toEqual(['jazz']);
+    expect(result.genreMap.get('uncached-artist')).toEqual(['electronic']);
   });
 
   it('returns combined map of cached + fresh genres', async () => {
@@ -86,9 +88,9 @@ describe('getArtistGenresWithCache — cache-first priority', () => {
 
     const result = await getArtistGenresWithCache(TOKEN, ['a1', 'a2'], supabase);
 
-    expect(result.size).toBe(2);
-    expect(result.get('a1')).toEqual(['blues']);
-    expect(result.get('a2')).toEqual(['classical']);
+    expect(result.genreMap.size).toBe(2);
+    expect(result.genreMap.get('a1')).toEqual(['blues']);
+    expect(result.genreMap.get('a2')).toEqual(['classical']);
   });
 
   it('deduplicates artist IDs before querying cache or Spotify', async () => {
@@ -120,7 +122,9 @@ describe('getArtistGenresWithCache — cache-first priority', () => {
     const supabase = {
       from: vi.fn().mockReturnValue({
         select: vi.fn().mockReturnValue({
-          in: vi.fn().mockResolvedValue({ data: [], error: null }),
+          in: vi.fn().mockReturnValue({
+            gte: vi.fn().mockResolvedValue({ data: [], error: null }),
+          }),
         }),
         upsert: upsertMock,
       }),
@@ -148,6 +152,6 @@ describe('getArtistGenresWithCache — cache-first priority', () => {
     const result = await getArtistGenresWithCache(TOKEN, ids, supabase);
 
     expect(fetchMock).not.toHaveBeenCalled();
-    expect(result.size).toBe(100);
+    expect(result.genreMap.size).toBe(100);
   });
 });
