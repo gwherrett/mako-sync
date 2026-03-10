@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { MoreHorizontal, ChevronUp, ChevronDown, Filter, X, Edit, Trash2, FileCheck, AlertCircle } from 'lucide-react';
+import { MoreHorizontal, ChevronUp, ChevronDown, Filter, X, Edit, Trash2, FileCheck, AlertCircle, Copy } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { TrackFilters, FilterConfig, FilterState, FilterOptions, FilterCallbacks } from '@/components/common/TrackFilters';
 import { SUPER_GENRES } from '@/types/genreMapping';
 import { Button } from '@/components/ui/button';
@@ -544,15 +545,23 @@ const LocalTracksTable = ({ onTrackSelect, selectedTrack, refreshTrigger, isActi
       <CardHeader>
         <CardTitle className="flex items-center justify-between">
           <span>Local Library ({totalTracks} tracks)</span>
-          {selectedTracks.size > 0 && (
-            <div className="flex gap-2">
-              <Badge variant="secondary">{selectedTracks.size} selected</Badge>
-              <Button variant="destructive" size="sm" onClick={handleBulkDelete}>
-                <Trash2 className="h-4 w-4 mr-1" />
-                Delete Selected
-              </Button>
-            </div>
-          )}
+          <div className="flex gap-2 items-center">
+            <Button variant="outline" size="sm" asChild>
+              <Link to="/duplicates">
+                <Copy className="h-4 w-4 mr-1" />
+                Find Duplicates
+              </Link>
+            </Button>
+            {selectedTracks.size > 0 && (
+              <>
+                <Badge variant="secondary">{selectedTracks.size} selected</Badge>
+                <Button variant="destructive" size="sm" onClick={handleBulkDelete}>
+                  <Trash2 className="h-4 w-4 mr-1" />
+                  Delete Selected
+                </Button>
+              </>
+            )}
+          </div>
         </CardTitle>
       </CardHeader>
       <CardContent>

@@ -13,6 +13,7 @@ import { UnifiedSpotifyCallback } from "./components/spotify/UnifiedSpotifyCallb
 import NotFound from "./pages/NotFound";
 import { GenreMapping } from "./pages/GenreMapping";
 import Security from "./pages/Security";
+import { DuplicateTracksManager } from "./components/DuplicateTracksManager";
 
 const queryClient = new QueryClient();
 
@@ -39,6 +40,11 @@ function AppContent() {
         <Route path="/security" element={
           <NewProtectedRoute>
             <Security />
+          </NewProtectedRoute>
+        } />
+        <Route path="/duplicates" element={
+          <NewProtectedRoute>
+            <DuplicateTracksManager />
           </NewProtectedRoute>
         } />
         <Route path="*" element={<NotFound />} />
