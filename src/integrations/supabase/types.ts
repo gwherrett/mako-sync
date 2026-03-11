@@ -54,12 +54,14 @@ export type Database = {
         Row: {
           album: string | null
           artist: string | null
+          audio_format: string | null
           bitrate: number | null
           bpm: number | null
           comment: string | null
           core_title: string | null
           created_at: string | null
           date_added: string | null
+          duration_seconds: number | null
           featured_artists: string[] | null
           file_path: string
           file_size: number | null
@@ -74,6 +76,7 @@ export type Database = {
           play_count: number | null
           primary_artist: string | null
           rating: number | null
+          sample_rate: number | null
           super_genre: string | null
           title: string | null
           user_id: string
@@ -82,12 +85,14 @@ export type Database = {
         Insert: {
           album?: string | null
           artist?: string | null
+          audio_format?: string | null
           bitrate?: number | null
           bpm?: number | null
           comment?: string | null
           core_title?: string | null
           created_at?: string | null
           date_added?: string | null
+          duration_seconds?: number | null
           featured_artists?: string[] | null
           file_path: string
           file_size?: number | null
@@ -102,6 +107,7 @@ export type Database = {
           play_count?: number | null
           primary_artist?: string | null
           rating?: number | null
+          sample_rate?: number | null
           super_genre?: string | null
           title?: string | null
           user_id: string
@@ -110,12 +116,14 @@ export type Database = {
         Update: {
           album?: string | null
           artist?: string | null
+          audio_format?: string | null
           bitrate?: number | null
           bpm?: number | null
           comment?: string | null
           core_title?: string | null
           created_at?: string | null
           date_added?: string | null
+          duration_seconds?: number | null
           featured_artists?: string[] | null
           file_path?: string
           file_size?: number | null
@@ -130,6 +138,7 @@ export type Database = {
           play_count?: number | null
           primary_artist?: string | null
           rating?: number | null
+          sample_rate?: number | null
           super_genre?: string | null
           title?: string | null
           user_id?: string

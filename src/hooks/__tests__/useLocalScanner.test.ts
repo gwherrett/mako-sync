@@ -248,6 +248,89 @@ describe('useLocalScanner — onScanComplete callback', () => {
   });
 });
 
+// ─── Upsert payload — audio format fields ────────────────────────────────────
+
+/**
+ * Mirrors the upsert payload construction: { ...track, user_id }.
+ * Asserts that sample_rate, duration_seconds, and audio_format from the
+ * extractor are present in the final record sent to local_mp3s.
+ */
+interface ScannedTrackStub {
+  file_path: string;
+  title: string | null;
+  artist: string | null;
+  hash: string | null;
+  file_size: number;
+  last_modified: string;
+  bitrate: number | null;
+  sample_rate: number | null;
+  duration_seconds: number | null;
+  audio_format: string | null;
+  normalized_title: string;
+  normalized_artist: string;
+  core_title: string;
+  primary_artist: string;
+  featured_artists: string[];
+  mix: string | null;
+  [key: string]: unknown;
+}
+
+function buildUpsertRecord(track: ScannedTrackStub, userId: string) {
+  return { ...track, user_id: userId };
+}
+
+describe('useLocalScanner — upsert payload contains audio format fields', () => {
+  it('includes audio_format in the upsert record', () => {
+    const track: ScannedTrackStub = {
+      file_path: 'track.mp3', title: 'Test', artist: 'Artist',
+      hash: 'abc', file_size: 1024, last_modified: new Date().toISOString(),
+      bitrate: 320, sample_rate: 44100, duration_seconds: 213.5,
+      audio_format: 'mp3', normalized_title: 'test', normalized_artist: 'artist',
+      core_title: 'test', primary_artist: 'artist', featured_artists: [], mix: null,
+    };
+    const record = buildUpsertRecord(track, 'user-1');
+    expect(record.audio_format).toBe('mp3');
+  });
+
+  it('includes sample_rate in the upsert record', () => {
+    const track: ScannedTrackStub = {
+      file_path: 'track.mp3', title: 'Test', artist: 'Artist',
+      hash: 'abc', file_size: 1024, last_modified: new Date().toISOString(),
+      bitrate: 320, sample_rate: 44100, duration_seconds: 213.5,
+      audio_format: 'mp3', normalized_title: 'test', normalized_artist: 'artist',
+      core_title: 'test', primary_artist: 'artist', featured_artists: [], mix: null,
+    };
+    const record = buildUpsertRecord(track, 'user-1');
+    expect(record.sample_rate).toBe(44100);
+  });
+
+  it('includes duration_seconds in the upsert record', () => {
+    const track: ScannedTrackStub = {
+      file_path: 'track.mp3', title: 'Test', artist: 'Artist',
+      hash: 'abc', file_size: 1024, last_modified: new Date().toISOString(),
+      bitrate: 320, sample_rate: 44100, duration_seconds: 213.5,
+      audio_format: 'mp3', normalized_title: 'test', normalized_artist: 'artist',
+      core_title: 'test', primary_artist: 'artist', featured_artists: [], mix: null,
+    };
+    const record = buildUpsertRecord(track, 'user-1');
+    expect(record.duration_seconds).toBe(213.5);
+  });
+
+  it('preserves null audio format fields when extractor returns null', () => {
+    const track: ScannedTrackStub = {
+      file_path: 'track.mp3', title: null, artist: null,
+      hash: 'abc', file_size: 1024, last_modified: new Date().toISOString(),
+      bitrate: null, sample_rate: null, duration_seconds: null,
+      audio_format: null, normalized_title: '', normalized_artist: '',
+      core_title: '', primary_artist: '', featured_artists: [], mix: null,
+    };
+    const record = buildUpsertRecord(track, 'user-1');
+    expect(record.sample_rate).toBeNull();
+    expect(record.duration_seconds).toBeNull();
+    expect(record.audio_format).toBeNull();
+  });
+});
+
 // ─── Hash load pagination ─────────────────────────────────────────────────────
 
 /**
