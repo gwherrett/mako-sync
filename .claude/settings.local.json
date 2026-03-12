@@ -55,7 +55,8 @@
       "Bash(ANON_KEY=\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ6enN0ZHBmbXlxdHRuemhnYW9hIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDg0NzI5NzMsImV4cCI6MjA2NDA0ODk3M30.NXT4XRuPilV2AV6KYY56-vk3AqZ8I2DQKkVjfbMcWoI\")",
       "Bash(__NEW_LINE_2499761a5e31c772__ curl -s \"$SUPABASE_URL/rest/v1/spotify_liked?artist=ilike.*High%20Contrast*&select=title,artist,primary_artist,album,normalized_artist,normalized_title&limit=5\" -H \"apikey: $ANON_KEY\" -H \"Authorization: Bearer $ANON_KEY\")",
       "Bash(npx tsc:*)",
-      "Bash(gh pr:*)"
+      "Bash(gh pr:*)",
+      "Bash(git stash:*)"
     ]
   }
 }

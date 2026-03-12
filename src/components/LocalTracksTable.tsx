@@ -1,7 +1,7 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { MoreHorizontal, ChevronUp, ChevronDown, Filter, X, Edit, Trash2, FileCheck, AlertCircle, Copy } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { TrackFilters, FilterConfig, FilterState, FilterOptions, FilterCallbacks } from '@/components/common/TrackFilters';
+import { TrackFilters } from '@/components/common/TrackFilters';
 import { SUPER_GENRES } from '@/types/genreMapping';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -102,9 +102,6 @@ const LocalTracksTable = ({ onTrackSelect, selectedTrack, refreshTrigger, isActi
   const [artists, setArtists] = useState<string[]>([]); // Filtered by supergenre + genre
   const [genres, setGenres] = useState<string[]>([]); // Filtered by supergenre
   const [albums, setAlbums] = useState<string[]>([]);
-  // Supergenre to genre mapping for cascading filter
-  const [superGenreToGenres, setSuperGenreToGenres] = useState<Map<string, string[]>>(new Map());
-  
   // Abort controller for in-flight fetch cancellation
   const fetchAbortController = useRef<AbortController | null>(null);
   const hasInitiallyLoaded = useRef(false);
@@ -841,7 +838,7 @@ const LocalTracksTable = ({ onTrackSelect, selectedTrack, refreshTrigger, isActi
                     )}
                   </div>
                 </TableHead>
-                <TableHead className="hidden lg:table-cell">Status</TableHead>
+                <TableHead className="hidden lg:table-cell min-w-[110px]">Status</TableHead>
                 <TableHead className="w-[50px]"></TableHead>
               </TableRow>
             </TableHeader>
@@ -915,7 +912,7 @@ const LocalTracksTable = ({ onTrackSelect, selectedTrack, refreshTrigger, isActi
                   <TableCell className="hidden xl:table-cell">
                     {formatFileSize(track.file_size)}
                   </TableCell>
-                  <TableCell className="hidden lg:table-cell">
+                  <TableCell className="hidden lg:table-cell whitespace-nowrap">
                     {getMissingMetadataCount(track) === 0 ? (
                       <Badge variant="default" className="bg-green-500/10 text-green-400 border-green-500/30">
                         <FileCheck className="h-3 w-3 mr-1" />
