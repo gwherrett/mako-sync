@@ -886,16 +886,9 @@ const LocalTracksTable = ({ onTrackSelect, selectedTrack, refreshTrigger, isActi
                     {track.super_genre || <span className="text-muted-foreground">—</span>}
                   </TableCell>
                   <TableCell className="hidden xl:table-cell">
-                    {track.bitrate || track.sample_rate ? (
+                    {track.bitrate ? (
                       <span className="text-sm">
-                        {track.bitrate
-                          ? (track.audio_format?.toLowerCase() === 'flac' ? 'lossless' : `${track.bitrate} kbps`)
-                          : null}
-                        {track.sample_rate ? (
-                          <span className="text-muted-foreground">
-                            {track.bitrate ? ' / ' : ''}{(track.sample_rate / 1000).toFixed(1)} kHz
-                          </span>
-                        ) : null}
+                        {track.audio_format?.toLowerCase() === 'flac' ? 'lossless' : `${track.bitrate} kbps`}
                       </span>
                     ) : (
                       <span className="text-muted-foreground">—</span>
