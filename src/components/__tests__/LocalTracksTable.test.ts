@@ -31,6 +31,9 @@ interface LocalTrack {
   bitrate: number | null;
   file_path: string;
   file_size: number | null;
+  audio_format: string | null;
+  sample_rate: number | null;
+  duration_seconds: number | null;
 }
 
 function applyFilters(
@@ -44,6 +47,7 @@ function applyFilters(
     selectedAlbum?: string;
     selectedGenre?: string;
     bitrateFilter?: 'low' | 'medium' | 'high' | '';
+    formatFilter?: string;
     missingMetadata?: 'title' | 'artist' | 'album' | 'year' | 'genre' | 'any' | '';
   }
 ): LocalTrack[] {
@@ -66,6 +70,7 @@ function applyFilters(
     if (filters.bitrateFilter === 'low' && (track.bitrate === null || track.bitrate >= 192)) return false;
     if (filters.bitrateFilter === 'medium' && (track.bitrate === null || track.bitrate < 192 || track.bitrate >= 320)) return false;
     if (filters.bitrateFilter === 'high' && (track.bitrate === null || track.bitrate < 320)) return false;
+    if (filters.formatFilter && track.audio_format?.toLowerCase() !== filters.formatFilter.toLowerCase()) return false;
     if (filters.missingMetadata === 'title' && track.title !== null) return false;
     if (filters.missingMetadata === 'artist' && track.artist !== null) return false;
     if (filters.missingMetadata === 'album' && track.album !== null) return false;
@@ -118,6 +123,9 @@ function makeTrack(overrides: Partial<LocalTrack> & { id: string }): LocalTrack 
     bitrate: 320,
     file_path: `/music/${overrides.id}.mp3`,
     file_size: 1048576,
+    audio_format: 'mp3',
+    sample_rate: 44100,
+    duration_seconds: null,
     ...overrides,
   };
 }
@@ -597,6 +605,112 @@ describe('LocalTracksTable – fetch cancellation logic (fetchAbortController)',
     newFetch(); // fetch #2 cancels #1, starts fresh
     newFetch(); // fetch #3 cancels #2, starts fresh
     expect(newFetchCount).toBe(3); // all 3 fetches ran
+  });
+});
+
+// ─── MAK-31: format badge, kHz display, format filter ────────────────────────
+
+/** Mirrors the format badge label logic in the component. */
+function getFormatBadgeLabel(audio_format: string | null): string | null {
+  if (!audio_format) return null;
+  return audio_format.toUpperCase();
+}
+
+/** Mirrors the bitrate cell display logic in the component. */
+function formatBitrateCell(bitrate: number | null, audio_format: string | null, sample_rate: number | null): string {
+  if (!bitrate && !sample_rate) return '—';
+  const bitrateStr = bitrate
+    ? audio_format?.toLowerCase() === 'flac' ? 'lossless' : `${bitrate} kbps`
+    : null;
+  const khzStr = sample_rate ? `${(sample_rate / 1000).toFixed(1)} kHz` : null;
+  return [bitrateStr, khzStr].filter(Boolean).join(' / ');
+}
+
+describe('LocalTracksTable – MAK-31 format badge', () => {
+  it('renders FLAC badge label when audio_format is flac', () => {
+    const track = makeTrack({ id: '1', audio_format: 'flac', bitrate: null });
+    expect(getFormatBadgeLabel(track.audio_format)).toBe('FLAC');
+  });
+
+  it('renders MP3 badge label when audio_format is mp3', () => {
+    const track = makeTrack({ id: '1', audio_format: 'mp3' });
+    expect(getFormatBadgeLabel(track.audio_format)).toBe('MP3');
+  });
+
+  it('renders M4A badge label when audio_format is m4a', () => {
+    const track = makeTrack({ id: '1', audio_format: 'm4a' });
+    expect(getFormatBadgeLabel(track.audio_format)).toBe('M4A');
+  });
+
+  it('returns null badge label when audio_format is null', () => {
+    const track = makeTrack({ id: '1', audio_format: null });
+    expect(getFormatBadgeLabel(track.audio_format)).toBeNull();
+  });
+});
+
+describe('LocalTracksTable – MAK-31 format filter', () => {
+  it('format filter "flac" shows only FLAC rows', () => {
+    const tracks = [
+      makeTrack({ id: '1', audio_format: 'flac' }),
+      makeTrack({ id: '2', audio_format: 'mp3' }),
+      makeTrack({ id: '3', audio_format: 'flac' }),
+      makeTrack({ id: '4', audio_format: 'm4a' }),
+    ];
+    const result = applyFilters(tracks, { formatFilter: 'flac' });
+    expect(result).toHaveLength(2);
+    result.forEach(t => expect(t.audio_format).toBe('flac'));
+  });
+
+  it('format filter "mp3" shows only MP3 rows', () => {
+    const tracks = [
+      makeTrack({ id: '1', audio_format: 'flac' }),
+      makeTrack({ id: '2', audio_format: 'mp3' }),
+      makeTrack({ id: '3', audio_format: 'mp3' }),
+    ];
+    const result = applyFilters(tracks, { formatFilter: 'mp3' });
+    expect(result).toHaveLength(2);
+    result.forEach(t => expect(t.audio_format).toBe('mp3'));
+  });
+
+  it('no format filter returns all rows', () => {
+    const tracks = [
+      makeTrack({ id: '1', audio_format: 'flac' }),
+      makeTrack({ id: '2', audio_format: 'mp3' }),
+      makeTrack({ id: '3', audio_format: 'm4a' }),
+    ];
+    expect(applyFilters(tracks, {})).toHaveLength(3);
+  });
+});
+
+describe('LocalTracksTable – MAK-31 kHz display', () => {
+  it('shows kHz when sample_rate is non-null', () => {
+    const result = formatBitrateCell(320, 'mp3', 44100);
+    expect(result).toBe('320 kbps / 44.1 kHz');
+  });
+
+  it('shows lossless label for FLAC with kHz', () => {
+    const result = formatBitrateCell(null, 'flac', 44100);
+    expect(result).toBe('44.1 kHz');
+  });
+
+  it('shows lossless kbps replaced with lossless for FLAC with bitrate', () => {
+    const result = formatBitrateCell(1411, 'flac', 44100);
+    expect(result).toBe('lossless / 44.1 kHz');
+  });
+
+  it('shows only bitrate when sample_rate is null', () => {
+    const result = formatBitrateCell(256, 'mp3', null);
+    expect(result).toBe('256 kbps');
+  });
+
+  it('shows dash when both bitrate and sample_rate are null', () => {
+    const result = formatBitrateCell(null, null, null);
+    expect(result).toBe('—');
+  });
+
+  it('formats 48000 Hz as 48.0 kHz', () => {
+    const result = formatBitrateCell(320, 'mp3', 48000);
+    expect(result).toBe('320 kbps / 48.0 kHz');
   });
 });
 

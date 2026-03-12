@@ -129,6 +129,14 @@ supabase.auth.onAuthStateChange((event) => {
 });
 ```
 
+## Linear Workflow
+
+| Stage | Linear Status |
+|-------|--------------|
+| Starting work | In Progress |
+| Checking in preview / staging | In Review |
+| Merged and confirmed | Done |
+
 ## Routes
 
 - `/` - Main dashboard (protected)

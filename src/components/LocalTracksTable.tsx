@@ -59,6 +59,9 @@ interface LocalTrack {
   rating: number | null;
   play_count: number | null;
   mix: string | null;
+  audio_format: string | null;
+  sample_rate: number | null;
+  duration_seconds: number | null;
 }
 
 interface LocalTracksTableProps {
@@ -89,6 +92,7 @@ const LocalTracksTable = ({ onTrackSelect, selectedTrack, refreshTrigger, isActi
   const [selectedAlbum, setSelectedAlbum] = useState<string>('');
   const [selectedGenre, setSelectedGenre] = useState<string>('');
   const [bitrateFilter, setBitrateFilter] = useState<string>('');
+  const [formatFilter, setFormatFilter] = useState<string>('');
   const [missingMetadata, setMissingMetadata] = useState<string>('');
   const [filtersOpen, setFiltersOpen] = useState(false);
 
@@ -147,7 +151,7 @@ const LocalTracksTable = ({ onTrackSelect, selectedTrack, refreshTrigger, isActi
     return () => {
       if (timeoutId) clearTimeout(timeoutId);
     };
-  }, [authLoading, initialDataReady, isActive, isScanInProgress, isAuthenticated, user?.id, currentPage, sortField, sortDirection, selectedSuperGenre, selectedArtist, selectedAlbum, selectedGenre, bitrateFilter, missingMetadata, refreshTrigger, searchQuery, yearFrom, yearTo]);
+  }, [authLoading, initialDataReady, isActive, isScanInProgress, isAuthenticated, user?.id, currentPage, sortField, sortDirection, selectedSuperGenre, selectedArtist, selectedAlbum, selectedGenre, bitrateFilter, formatFilter, missingMetadata, refreshTrigger, searchQuery, yearFrom, yearTo]);
 
   // Filter options fetch - only once when tab becomes active
   useEffect(() => {
@@ -277,6 +281,7 @@ const LocalTracksTable = ({ onTrackSelect, selectedTrack, refreshTrigger, isActi
       if (bitrateFilter === 'low') query = query.lt('bitrate', 192);
       else if (bitrateFilter === 'medium') query = query.gte('bitrate', 192).lt('bitrate', 320);
       else if (bitrateFilter === 'high') query = query.gte('bitrate', 320);
+      if (formatFilter) query = query.ilike('audio_format', formatFilter);
       if (missingMetadata === 'title') query = query.is('title', null);
       else if (missingMetadata === 'artist') query = query.is('artist', null);
       else if (missingMetadata === 'album') query = query.is('album', null);
@@ -413,6 +418,7 @@ const LocalTracksTable = ({ onTrackSelect, selectedTrack, refreshTrigger, isActi
     setSelectedAlbum('');
     setSelectedGenre('');
     setBitrateFilter('');
+    setFormatFilter('');
     setMissingMetadata('');
     setCurrentPage(1);
     // Reset cascading filters
@@ -626,12 +632,13 @@ const LocalTracksTable = ({ onTrackSelect, selectedTrack, refreshTrigger, isActi
                 {filtersOpen ? <ChevronUp className="h-4 w-4 ml-2" /> : <ChevronDown className="h-4 w-4 ml-2" />}
               </Button>
             </CollapsibleTrigger>
-            {(yearFrom || yearTo || selectedAlbum || bitrateFilter || missingMetadata) && (
+            {(yearFrom || yearTo || selectedAlbum || bitrateFilter || formatFilter || missingMetadata) && (
               <Button variant="ghost" size="sm" onClick={() => {
                 setYearFrom('');
                 setYearTo('');
                 setSelectedAlbum('');
                 setBitrateFilter('');
+                setFormatFilter('');
                 setMissingMetadata('');
                 setCurrentPage(1);
               }}>
@@ -639,7 +646,7 @@ const LocalTracksTable = ({ onTrackSelect, selectedTrack, refreshTrigger, isActi
                 Clear Advanced
               </Button>
             )}
-            {(searchQuery || yearFrom || yearTo || selectedArtist || selectedAlbum || selectedGenre || bitrateFilter || missingMetadata) && (
+            {(searchQuery || yearFrom || yearTo || selectedArtist || selectedAlbum || selectedGenre || bitrateFilter || formatFilter || missingMetadata) && (
               <Button variant="ghost" size="sm" onClick={clearFilters}>
                 <X className="h-4 w-4 mr-1" />
                 Clear All
@@ -703,6 +710,22 @@ const LocalTracksTable = ({ onTrackSelect, selectedTrack, refreshTrigger, isActi
                     <SelectItem value="low">Low (&lt; 192 kbps)</SelectItem>
                     <SelectItem value="medium">Medium (192-320 kbps)</SelectItem>
                     <SelectItem value="high">High (320+ kbps)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Format Filter */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Format</label>
+                <Select value={formatFilter || 'all'} onValueChange={(value) => { setFormatFilter(value === 'all' ? '' : value); setCurrentPage(1); }}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="All formats" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All formats</SelectItem>
+                    <SelectItem value="mp3">MP3</SelectItem>
+                    <SelectItem value="flac">FLAC</SelectItem>
+                    <SelectItem value="m4a">M4A</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -806,6 +829,7 @@ const LocalTracksTable = ({ onTrackSelect, selectedTrack, refreshTrigger, isActi
                     )}
                   </div>
                 </TableHead>
+                <TableHead className="hidden xl:table-cell">Format</TableHead>
                 <TableHead
                   className="hidden xl:table-cell cursor-pointer hover:bg-muted/50 select-none"
                   onClick={() => handleSort('file_size')}
@@ -862,8 +886,35 @@ const LocalTracksTable = ({ onTrackSelect, selectedTrack, refreshTrigger, isActi
                     {track.super_genre || <span className="text-muted-foreground">—</span>}
                   </TableCell>
                   <TableCell className="hidden xl:table-cell">
-                    {track.bitrate ? (
-                      <span className="text-sm">{track.bitrate}</span>
+                    {track.bitrate || track.sample_rate ? (
+                      <span className="text-sm">
+                        {track.bitrate
+                          ? (track.audio_format?.toLowerCase() === 'flac' ? 'lossless' : `${track.bitrate} kbps`)
+                          : null}
+                        {track.sample_rate ? (
+                          <span className="text-muted-foreground">
+                            {track.bitrate ? ' / ' : ''}{(track.sample_rate / 1000).toFixed(1)} kHz
+                          </span>
+                        ) : null}
+                      </span>
+                    ) : (
+                      <span className="text-muted-foreground">—</span>
+                    )}
+                  </TableCell>
+                  <TableCell className="hidden xl:table-cell">
+                    {track.audio_format ? (
+                      <Badge
+                        variant="outline"
+                        className={
+                          track.audio_format.toLowerCase() === 'flac'
+                            ? 'bg-blue-500/10 text-blue-400 border-blue-500/30'
+                            : track.audio_format.toLowerCase() === 'm4a'
+                            ? 'bg-purple-500/10 text-purple-400 border-purple-500/30'
+                            : 'bg-muted text-muted-foreground'
+                        }
+                      >
+                        {track.audio_format.toUpperCase()}
+                      </Badge>
                     ) : (
                       <span className="text-muted-foreground">—</span>
                     )}
