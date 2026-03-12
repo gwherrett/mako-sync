@@ -331,6 +331,60 @@ describe('metadataExtractor', () => {
       expect(result.bitrate).toBe(256);
     });
 
+    it('extracts sample_rate and returns audio_format mp3 for .mp3 file', async () => {
+      const mockMetadata = {
+        common: { title: 'Test', artist: 'Artist' },
+        format: { bitrate: 320000, sampleRate: 44100, duration: 213.5 },
+        native: {},
+      };
+
+      vi.mocked(parseBlob).mockResolvedValue(mockMetadata as any);
+
+      const file = new File(['test'], 'track.mp3', { type: 'audio/mpeg' });
+      Object.defineProperty(file, 'lastModified', { value: Date.now() });
+
+      const result = await extractMetadata(file);
+
+      expect(result.audio_format).toBe('mp3');
+      expect(result.sample_rate).toBe(44100);
+      expect(result.sample_rate).not.toBeNull();
+    });
+
+    it('returns audio_format flac for .flac file', async () => {
+      const mockMetadata = {
+        common: { title: 'Test', artist: 'Artist' },
+        format: { sampleRate: 96000, duration: 180.0, container: 'FLAC' },
+        native: {},
+      };
+
+      vi.mocked(parseBlob).mockResolvedValue(mockMetadata as any);
+
+      const file = new File(['test'], 'track.flac', { type: 'audio/flac' });
+      Object.defineProperty(file, 'lastModified', { value: Date.now() });
+
+      const result = await extractMetadata(file);
+
+      expect(result.audio_format).toBe('flac');
+    });
+
+    it('extracts duration_seconds as a positive number', async () => {
+      const mockMetadata = {
+        common: { title: 'Test', artist: 'Artist' },
+        format: { sampleRate: 44100, duration: 245.7 },
+        native: {},
+      };
+
+      vi.mocked(parseBlob).mockResolvedValue(mockMetadata as any);
+
+      const file = new File(['test'], 'track.mp3', { type: 'audio/mpeg' });
+      Object.defineProperty(file, 'lastModified', { value: Date.now() });
+
+      const result = await extractMetadata(file);
+
+      expect(result.duration_seconds).toBeGreaterThan(0);
+      expect(result.duration_seconds).toBe(245.7);
+    });
+
     it('handles vorbis tags (FLAC/OGG)', async () => {
       const mockMetadata = {
         common: {},

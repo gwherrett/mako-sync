@@ -70,6 +70,9 @@ const metadataSchema = z.object({
   bitrate: z.number().int().min(0).max(10000).nullable(),
   bpm: z.number().min(0).max(500).nullable(),
   key: z.string().max(50).nullable(),
+  sample_rate: z.number().int().min(0).max(384000).nullable(),
+  duration_seconds: z.number().min(0).nullable(),
+  audio_format: z.string().max(10).nullable(),
   normalized_title: z.string().max(500),
   normalized_artist: z.string().max(500),
   core_title: z.string().max(500),
@@ -93,6 +96,9 @@ export interface ScannedTrack {
   bpm: number | null;
   key: string | null;
   bitrate: number | null;
+  sample_rate: number | null;
+  duration_seconds: number | null;
+  audio_format: string | null;
   hash: string | null;
   file_size: number;
   last_modified: string;
@@ -233,9 +239,16 @@ export const extractMetadata = async (file: File): Promise<ScannedTrack> => {
       }
     }
 
-    // Extract format metadata (bitrate, etc.)
+    // Extract format metadata (bitrate, sample rate, duration, audio format)
+    let sample_rate = null;
+    let duration_seconds = null;
+    let audio_format = null;
     if (metadata.format) {
       bitrate = metadata.format.bitrate ? Math.round(metadata.format.bitrate / 1000) : null;
+      sample_rate = metadata.format.sampleRate ?? null;
+      duration_seconds = metadata.format.duration ?? null;
+      const ext = file.name.split('.').pop()?.toLowerCase() ?? null;
+      audio_format = ext ?? (metadata.format.container ? metadata.format.container.toLowerCase() : null);
       if (VERBOSE_LOGGING) {
         console.log(`🎵 Format metadata for "${file.name}":`, {
           bitrate: metadata.format.bitrate,
@@ -322,6 +335,9 @@ export const extractMetadata = async (file: File): Promise<ScannedTrack> => {
       bpm,
       key,
       bitrate,
+      sample_rate,
+      duration_seconds,
+      audio_format,
       hash,
       file_size: file.size,
       last_modified: new Date(file.lastModified).toISOString(),
@@ -362,6 +378,9 @@ export const extractMetadata = async (file: File): Promise<ScannedTrack> => {
       bpm: null,
       key: null,
       bitrate: null,
+      sample_rate: null,
+      duration_seconds: null,
+      audio_format: null,
       hash: await generateFileHash(file),
       file_size: file.size,
       last_modified: new Date(file.lastModified).toISOString(),
