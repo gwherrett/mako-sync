@@ -134,20 +134,10 @@ const LocalTracksTable = ({ onTrackSelect, selectedTrack, refreshTrigger, isActi
       return;
     }
 
-    // For text-based filters, use debounce
-    const needsDebounce = searchQuery || yearFrom || yearTo;
-    const timeoutId = needsDebounce
-      ? setTimeout(() => fetchTracks(user.id), 300)
-      : null;
-
-    // For non-text filters, fetch immediately
-    if (!needsDebounce) {
-      fetchTracks(user.id);
-    }
-
-    return () => {
-      if (timeoutId) clearTimeout(timeoutId);
-    };
+    // Debounce all fetches: longer for text input, short batch window for everything else
+    const delay = searchQuery || yearFrom || yearTo ? 400 : 150;
+    const timeoutId = setTimeout(() => fetchTracks(user.id), delay);
+    return () => clearTimeout(timeoutId);
   }, [authLoading, initialDataReady, isActive, isScanInProgress, isAuthenticated, user?.id, currentPage, sortField, sortDirection, selectedSuperGenre, selectedArtist, selectedAlbum, selectedGenre, bitrateFilter, formatFilter, missingMetadata, refreshTrigger, searchQuery, yearFrom, yearTo]);
 
   // Filter options fetch - only once when tab becomes active
@@ -912,7 +902,7 @@ const LocalTracksTable = ({ onTrackSelect, selectedTrack, refreshTrigger, isActi
                   <TableCell className="hidden xl:table-cell">
                     {formatFileSize(track.file_size)}
                   </TableCell>
-                  <TableCell className="hidden lg:table-cell whitespace-nowrap">
+                  <TableCell className="hidden lg:table-cell whitespace-nowrap min-w-[110px]">
                     {getMissingMetadataCount(track) === 0 ? (
                       <Badge variant="default" className="bg-green-500/10 text-green-400 border-green-500/30">
                         <FileCheck className="h-3 w-3 mr-1" />
