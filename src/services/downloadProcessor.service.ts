@@ -23,6 +23,7 @@ import type {
 } from '@/types/slskd';
 import type { FileWithHandle } from './directoryHandle.service';
 import { isSupportedAudioFile, stripAudioExtension } from './fileScanner';
+import { writeFlacGroupingTag } from './flacTagWriter';
 
 // Make Buffer available globally for music-metadata-browser
 if (typeof window !== 'undefined') {
@@ -36,8 +37,9 @@ const PARSE_TIMEOUT_MS = 30000;
 const DEFAULT_BATCH_SIZE = 5;
 
 /**
- * Read the existing Grouping (TIT1) tag from a file
+ * Read the existing Grouping tag from a file
  * Used to check if we need to write or can skip
+ * Uses metadata.common.grouping which works across MP3, FLAC, and M4A
  */
 async function getExistingGroupingTag(file: File): Promise<string | null> {
   try {
@@ -50,18 +52,7 @@ async function getExistingGroupingTag(file: File): Promise<string | null> {
       `Metadata parsing timed out for ${file.name}`
     );
 
-    // Check native ID3v2 tags for TIT1 (Grouping)
-    const id3v23 = metadata.native['ID3v2.3'] || [];
-    const id3v24 = metadata.native['ID3v2.4'] || [];
-    const id3v2Native = [...id3v23, ...id3v24];
-
-    for (const tag of id3v2Native) {
-      if (tag.id === 'TIT1' && tag.value) {
-        return typeof tag.value === 'string' ? tag.value : String(tag.value);
-      }
-    }
-
-    return null;
+    return metadata.common.grouping ?? null;
   } catch {
     // If we can't read metadata, assume we need to write
     return null;
@@ -464,7 +455,7 @@ export function reprocessWithUpdatedMap(
 }
 
 /**
- * Write SuperGenre to Grouping (TIT1) ID3 tag while preserving existing tags
+ * Write SuperGenre to Grouping (TIT1) ID3 tag for MP3 files while preserving existing tags
  *
  * Grouping (TIT1) is a standard ID3 field supported by all major DJ software
  * (Serato, Rekordbox, Traktor) and media players (MediaMonkey, iTunes).
@@ -478,7 +469,7 @@ export function reprocessWithUpdatedMap(
  * @param superGenre - The SuperGenre to write
  * @returns A new Blob with the updated ID3 tag
  */
-async function writeSuperGenreTag(file: File, superGenre: string): Promise<Blob> {
+async function writeMp3SuperGenreTag(file: File, superGenre: string): Promise<Blob> {
   // First, read existing metadata so we can preserve it
   const metadata = await parseBlob(file, {
     includeChapters: false,
@@ -486,6 +477,19 @@ async function writeSuperGenreTag(file: File, superGenre: string): Promise<Blob>
   });
 
   return writeSuperGenreTagFromMetadata(file, superGenre, metadata);
+}
+
+/**
+ * Format-dispatching entry point for writing SuperGenre to any supported audio format.
+ * Routes MP3 to the ID3 writer and FLAC to the Vorbis Comment writer.
+ */
+async function writeSuperGenreTag(file: File, superGenre: string): Promise<Blob> {
+  const ext = file.name.toLowerCase().split('.').pop();
+  if (ext === 'flac') {
+    const buffer = await file.arrayBuffer();
+    return writeFlacGroupingTag(buffer, superGenre);
+  }
+  return writeMp3SuperGenreTag(file, superGenre);
 }
 
 /**
@@ -607,23 +611,17 @@ async function writeTagForSingleFile(
     `Metadata parsing timed out for ${file.filename}`
   );
 
-  // Check existing grouping tag from the already-parsed metadata
-  const id3v23 = metadata.native['ID3v2.3'] || [];
-  const id3v24 = metadata.native['ID3v2.4'] || [];
-  const id3v2Native = [...id3v23, ...id3v24];
-
-  for (const tag of id3v2Native) {
-    if (tag.id === 'TIT1' && tag.value) {
-      const existingGrouping = typeof tag.value === 'string' ? tag.value : String(tag.value);
-      if (existingGrouping === file.superGenre) {
-        return 'skipped';
-      }
-      break;
-    }
+  // Check existing grouping tag using metadata.common.grouping (works across MP3, FLAC, M4A)
+  if (metadata.common.grouping === file.superGenre) {
+    return 'skipped';
   }
 
-  // Write tag using the already-parsed metadata (no second parse)
-  const taggedBlob = await writeSuperGenreTagFromMetadata(file.file, file.superGenre!, metadata);
+  // Write tag — FLAC uses the Vorbis Comment writer; MP3/M4A use the ID3 path
+  const ext = file.file.name.toLowerCase().split('.').pop();
+  const taggedBlob =
+    ext === 'flac'
+      ? writeFlacGroupingTag(await file.file.arrayBuffer(), file.superGenre!)
+      : await writeSuperGenreTagFromMetadata(file.file, file.superGenre!, metadata);
 
   // Write back to original file using the handle
   const writable = await file.fileHandle!.createWritable();
@@ -786,6 +784,7 @@ export const _testExports = {
   processFile,
   filterAudioFiles,
   writeSuperGenreTag,
+  writeMp3SuperGenreTag,
   getExistingGroupingTag,
 };
 
