@@ -93,7 +93,9 @@ class TokenPersistenceGatewayService {
       } catch (error) {
         const elapsed = Date.now() - startTime;
         console.warn(`🔐 TOKEN GATEWAY: setSession failed/timeout after ${elapsed}ms, proceeding anyway:`, error);
-        // Still proceed - token is in localStorage, client might work
+        // Supabase's internal setSession lock may still be held — wait for it to release
+        // before marking ready so DB writes don't fire into a locked client.
+        await new Promise<void>(resolve => setTimeout(resolve, 1500));
         this.sessionVerified = true; // don't retry setSession on subsequent events
         this.markTokenReady();
         return true;

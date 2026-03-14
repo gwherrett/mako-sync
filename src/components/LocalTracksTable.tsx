@@ -108,7 +108,7 @@ const LocalTracksTable = ({ onTrackSelect, selectedTrack, refreshTrigger, isActi
   
   const tracksPerPage = 100;
   const { toast } = useToast();
-  const { user, isAuthenticated, loading: authLoading, initialDataReady } = useAuth();
+  const { user, isAuthenticated, loading: authLoading, initialDataReady, dataFetchEnabled } = useAuth();
 
   // Abort in-flight fetch when scan starts, so the scanner's DB queries aren't
   // competing with the table's count/data queries on the same connection pool.
@@ -121,9 +121,12 @@ const LocalTracksTable = ({ onTrackSelect, selectedTrack, refreshTrigger, isActi
   }, [isScanInProgress]);
 
   // Main data fetching effect - consolidated with debounce for text inputs
+  // dataFetchEnabled is false during the token-refresh settle window — prevents queries firing
+  // into a locked Supabase client. When it transitions back to true, this effect re-runs
+  // automatically for "show stale data then auto-refresh" behaviour on tab restore.
   useEffect(() => {
-    // Guard: Wait for auth to be ready AND tab to be active
-    if (authLoading || !initialDataReady || !isActive) return;
+    // Guard: Wait for auth to be ready, token settle, AND tab to be active
+    if (authLoading || !dataFetchEnabled || !isActive) return;
     // Suppress fetches while a scan is running — scanner owns the DB connection
     if (isScanInProgress) return;
 
@@ -138,16 +141,16 @@ const LocalTracksTable = ({ onTrackSelect, selectedTrack, refreshTrigger, isActi
     const delay = searchQuery || yearFrom || yearTo ? 400 : 150;
     const timeoutId = setTimeout(() => fetchTracks(user.id), delay);
     return () => clearTimeout(timeoutId);
-  }, [authLoading, initialDataReady, isActive, isScanInProgress, isAuthenticated, user?.id, currentPage, sortField, sortDirection, selectedSuperGenre, selectedArtist, selectedAlbum, selectedGenre, bitrateFilter, formatFilter, missingMetadata, refreshTrigger, searchQuery, yearFrom, yearTo]);
+  }, [authLoading, dataFetchEnabled, isActive, isScanInProgress, isAuthenticated, user?.id, currentPage, sortField, sortDirection, selectedSuperGenre, selectedArtist, selectedAlbum, selectedGenre, bitrateFilter, formatFilter, missingMetadata, refreshTrigger, searchQuery, yearFrom, yearTo]);
 
   // Filter options fetch - only once when tab becomes active
   useEffect(() => {
-    if (authLoading || !initialDataReady || !isActive || !isAuthenticated || !user) return;
+    if (authLoading || !dataFetchEnabled || !isActive || !isAuthenticated || !user) return;
     if (hasInitiallyLoaded.current) return; // Only fetch once
-    
+
     hasInitiallyLoaded.current = true;
     fetchFilterOptions(user.id);
-  }, [authLoading, initialDataReady, isActive, isAuthenticated, user?.id]);
+  }, [authLoading, dataFetchEnabled, isActive, isAuthenticated, user?.id]);
 
   // Re-fetch filter options when refreshTrigger changes (after scan)
   useEffect(() => {

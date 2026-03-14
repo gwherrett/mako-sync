@@ -78,7 +78,7 @@ const TracksTable = ({ onTrackSelect, selectedTrack, sharedSearchQuery = '', sha
 
   const tracksPerPage = 50;
   const { toast } = useToast();
-  const { user, isAuthenticated, loading: authLoading, initialDataReady } = useAuth();
+  const { user, isAuthenticated, loading: authLoading, initialDataReady, dataFetchEnabled } = useAuth();
   const { isInitialCheckComplete: spotifyCheckComplete } = useUnifiedSpotifyAuth();
   const { hasOverride } = useGenreMappingOverrides();
 
@@ -92,9 +92,12 @@ const TracksTable = ({ onTrackSelect, selectedTrack, sharedSearchQuery = '', sha
   }, [sharedSearchQuery, sharedSuperGenre]);
 
   // Consolidated fetch effect - debounces search, immediate for other filters
-  // Wait for initialDataReady AND Spotify connection check to prevent concurrent request deadlock
+  // Wait for dataFetchEnabled AND Spotify connection check to prevent concurrent request deadlock.
+  // dataFetchEnabled is false during the token-refresh settle window, which prevents queries from
+  // firing into the locked Supabase client. When it transitions back to true, this effect re-runs
+  // automatically, giving "show stale data then auto-refresh" behaviour on tab restore.
   useEffect(() => {
-    if (authLoading || !initialDataReady || !spotifyCheckComplete) return;
+    if (authLoading || !dataFetchEnabled || !spotifyCheckComplete) return;
     if (!isAuthenticated || !user) {
       setTracks([]);
       setTotalTracks(0);
@@ -108,13 +111,13 @@ const TracksTable = ({ onTrackSelect, selectedTrack, sharedSearchQuery = '', sha
     }, effectiveSearchQuery ? 300 : 0);
 
     return () => clearTimeout(timeoutId);
-  }, [authLoading, initialDataReady, spotifyCheckComplete, isAuthenticated, user?.id, currentPage, sortField, sortDirection, selectedArtist, selectedGenre, effectiveSuperGenre, dateFilter, noSuperGenre, noGenre, effectiveSearchQuery]);
+  }, [authLoading, dataFetchEnabled, spotifyCheckComplete, isAuthenticated, user?.id, currentPage, sortField, sortDirection, selectedArtist, selectedGenre, effectiveSuperGenre, dateFilter, noSuperGenre, noGenre, effectiveSearchQuery]);
 
   // Separate useEffect for filter options that updates when genre changes
   useEffect(() => {
-    if (authLoading || !initialDataReady || !spotifyCheckComplete || !isAuthenticated || !user) return;
+    if (authLoading || !dataFetchEnabled || !spotifyCheckComplete || !isAuthenticated || !user) return;
     fetchFilterOptions();
-  }, [authLoading, initialDataReady, spotifyCheckComplete, isAuthenticated, user?.id, selectedGenre, effectiveSuperGenre]);
+  }, [authLoading, dataFetchEnabled, spotifyCheckComplete, isAuthenticated, user?.id, selectedGenre, effectiveSuperGenre]);
 
   // Subscribe to sync_progress to refresh when sync completes
   useEffect(() => {

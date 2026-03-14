@@ -25,6 +25,7 @@ export interface AuthContextType {
   role: 'admin' | 'user' | null;
   loading: boolean;
   initialDataReady: boolean; // Signals that auth initialization is complete and data queries can start
+  dataFetchEnabled: boolean; // False during token-refresh settle window — gates data queries
 
   // Auth states
   isAuthenticated: boolean;
@@ -84,12 +85,16 @@ export const NewAuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [role, setRole] = useState<'admin' | 'user' | null>(null);
   const [loading, setLoading] = useState(true);
   const [initialDataReady, setInitialDataReady] = useState(false); // Signals data queries can start
+  const [dataFetchEnabled, setDataFetchEnabled] = useState(false); // Blocks queries during token-refresh settle window
+  const dataFetchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const initialDataReadyRef = useRef(false); // Ref so onAuthStateChange closure always sees current value
 
   // Update refs when state changes
   useEffect(() => { userRef.current = user; }, [user]);
   useEffect(() => { sessionRef.current = session; }, [session]);
   useEffect(() => { profileRef.current = profile; }, [profile]);
   useEffect(() => { roleRef.current = role; }, [role]);
+  useEffect(() => { initialDataReadyRef.current = initialDataReady; }, [initialDataReady]);
 
   // Error handling
   const { error, setError, clearError, setLoading: setErrorLoading, handleError } = useAuthErrors();
@@ -272,6 +277,7 @@ export const NewAuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     } finally {
       setLoading(false);
       setInitialDataReady(true); // Signal that data queries can now start
+      setDataFetchEnabled(true); // Allow data queries (no token-refresh in progress)
       logger.auth('Ready');
     }
   }, [loadUserData, toast, clearUserData]);
@@ -335,8 +341,11 @@ export const NewAuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
                 userRef.current?.id === session.user.id ||
                 sessionRef.current?.user?.id === session.user.id;
 
-              // If same user recently signed in OR already authenticated, treat as token refresh
-              if (isSameUserRecently || (isAlreadyAuthenticated && initialDataReady)) {
+              // If same user recently signed in OR already authenticated, treat as token refresh.
+              // Use initialDataReadyRef (not the state value) so the closure always sees the
+              // current value — the onAuthStateChange handler is set up once at mount time and
+              // the state variable in the closure would otherwise always be the initial `false`.
+              if (isSameUserRecently || (isAlreadyAuthenticated && initialDataReadyRef.current)) {
                 // Just update the session/user state without full re-initialization
                 setSession(session);
                 setUser(session.user);
@@ -360,9 +369,11 @@ export const NewAuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
                 tokenPersistenceGateway.waitForTokenPersistence(session, 300)
                   .finally(() => {
                     setInitialDataReady(true); // Allow data queries to start
+                    setDataFetchEnabled(true);
                   });
               } else {
                 setInitialDataReady(true); // Allow data queries immediately
+                setDataFetchEnabled(true);
               }
 
               // Defer data loading to prevent deadlocks
@@ -378,6 +389,11 @@ export const NewAuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             if (featureFlags.isTokenPersistenceGatewayEnabled()) {
               tokenPersistenceGateway.reset(); // Reset gateway state for next sign-in
             }
+            if (dataFetchTimerRef.current) {
+              clearTimeout(dataFetchTimerRef.current);
+              dataFetchTimerRef.current = null;
+            }
+            setDataFetchEnabled(false); // Reset for next sign-in
             setLoading(false);
             setInitialDataReady(true); // Allow UI to reset properly
             break;
@@ -396,6 +412,19 @@ export const NewAuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
               // identity so a full updateAuthState() (which reloads user data) is not needed.
               setSession(session);
               setUser(session.user);
+
+              // Block data queries during the token-refresh settle window.
+              // The Supabase client's internal setSession lock may still be held when
+              // TOKEN_REFRESHED fires. Any DB query started before the lock is released
+              // will timeout. We gate queries for 1500ms to guarantee the lock has cleared.
+              // When dataFetchEnabled transitions false → true, query useEffects re-run
+              // automatically, giving the "render stale data then auto-refresh" behaviour.
+              setDataFetchEnabled(false);
+              if (dataFetchTimerRef.current) clearTimeout(dataFetchTimerRef.current);
+              dataFetchTimerRef.current = setTimeout(() => {
+                setDataFetchEnabled(true);
+                dataFetchTimerRef.current = null;
+              }, 1500);
 
               // Wait for token persistence before allowing queries.
               // Skip the redundant setSession call: Supabase has already refreshed
@@ -804,6 +833,7 @@ export const NewAuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     role,
     loading,
     initialDataReady,
+    dataFetchEnabled,
 
     // Auth states
     isAuthenticated,
