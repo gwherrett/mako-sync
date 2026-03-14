@@ -616,14 +616,10 @@ function getFormatBadgeLabel(audio_format: string | null): string | null {
   return audio_format.toUpperCase();
 }
 
-/** Mirrors the bitrate cell display logic in the component. */
-function formatBitrateCell(bitrate: number | null, audio_format: string | null, sample_rate: number | null): string {
-  if (!bitrate && !sample_rate) return '—';
-  const bitrateStr = bitrate
-    ? audio_format?.toLowerCase() === 'flac' ? 'lossless' : `${bitrate} kbps`
-    : null;
-  const khzStr = sample_rate ? `${(sample_rate / 1000).toFixed(1)} kHz` : null;
-  return [bitrateStr, khzStr].filter(Boolean).join(' / ');
+/** Mirrors the bitrate cell display logic in the component (sample_rate display was removed). */
+function formatBitrateCell(bitrate: number | null, audio_format: string | null): string {
+  if (!bitrate) return '—';
+  return audio_format?.toLowerCase() === 'flac' ? 'lossless' : `${bitrate} kbps`;
 }
 
 describe('LocalTracksTable – MAK-31 format badge', () => {
@@ -682,35 +678,143 @@ describe('LocalTracksTable – MAK-31 format filter', () => {
   });
 });
 
-describe('LocalTracksTable – MAK-31 kHz display', () => {
-  it('shows kHz when sample_rate is non-null', () => {
-    const result = formatBitrateCell(320, 'mp3', 44100);
-    expect(result).toBe('320 kbps / 44.1 kHz');
+describe('LocalTracksTable – bitrate cell display (sample_rate removed)', () => {
+  it('shows kbps for MP3', () => {
+    expect(formatBitrateCell(320, 'mp3')).toBe('320 kbps');
   });
 
-  it('shows lossless label for FLAC with kHz', () => {
-    const result = formatBitrateCell(null, 'flac', 44100);
-    expect(result).toBe('44.1 kHz');
+  it('shows lossless for FLAC', () => {
+    expect(formatBitrateCell(1411, 'flac')).toBe('lossless');
   });
 
-  it('shows lossless kbps replaced with lossless for FLAC with bitrate', () => {
-    const result = formatBitrateCell(1411, 'flac', 44100);
-    expect(result).toBe('lossless / 44.1 kHz');
+  it('shows kbps for M4A', () => {
+    expect(formatBitrateCell(256, 'm4a')).toBe('256 kbps');
   });
 
-  it('shows only bitrate when sample_rate is null', () => {
-    const result = formatBitrateCell(256, 'mp3', null);
-    expect(result).toBe('256 kbps');
+  it('shows dash when bitrate is null', () => {
+    expect(formatBitrateCell(null, 'flac')).toBe('—');
   });
 
-  it('shows dash when both bitrate and sample_rate are null', () => {
-    const result = formatBitrateCell(null, null, null);
-    expect(result).toBe('—');
+  it('shows dash when bitrate and format are both null', () => {
+    expect(formatBitrateCell(null, null)).toBe('—');
   });
 
-  it('formats 48000 Hz as 48.0 kHz', () => {
-    const result = formatBitrateCell(320, 'mp3', 48000);
-    expect(result).toBe('320 kbps / 48.0 kHz');
+  it('is case-insensitive for FLAC format', () => {
+    expect(formatBitrateCell(1411, 'FLAC')).toBe('lossless');
+  });
+
+  // Regression test: sample_rate must never appear in bitrate cell output
+  it('does not show kHz even when called with a track that has sample_rate (sample_rate display was removed)', () => {
+    // The function does not accept sample_rate — verify the output never contains kHz
+    expect(formatBitrateCell(320, 'mp3')).not.toContain('kHz');
+    expect(formatBitrateCell(320, 'mp3')).not.toContain('44');
+    expect(formatBitrateCell(1411, 'flac')).not.toContain('kHz');
+  });
+});
+
+// ─── Additional filter coverage ───────────────────────────────────────────────
+
+describe('LocalTracksTable – album filter', () => {
+  it('filters by album (exact match)', () => {
+    const tracks = [
+      makeTrack({ id: '1', album: 'Blue Lines' }),
+      makeTrack({ id: '2', album: 'Mezzanine' }),
+      makeTrack({ id: '3', album: 'Blue Lines' }),
+    ];
+    const result = applyFilters(tracks, { selectedAlbum: 'Blue Lines' });
+    expect(result).toHaveLength(2);
+    result.forEach(t => expect(t.album).toBe('Blue Lines'));
+  });
+
+  it('returns all tracks when no album filter is active', () => {
+    const tracks = makeTracks(5);
+    expect(applyFilters(tracks, {})).toHaveLength(5);
+  });
+
+  it('returns empty when album does not exist', () => {
+    const tracks = makeTracks(3, { album: 'Known Album' });
+    expect(applyFilters(tracks, { selectedAlbum: 'Nonexistent Album' })).toHaveLength(0);
+  });
+});
+
+describe('LocalTracksTable – year range edge cases', () => {
+  it('excludes tracks with null year when yearFrom is set', () => {
+    const tracks = [
+      makeTrack({ id: '1', year: null }),
+      makeTrack({ id: '2', year: 2000 }),
+    ];
+    const result = applyFilters(tracks, { yearFrom: 1990 });
+    expect(result).toHaveLength(1);
+    expect(result[0].id).toBe('2');
+  });
+
+  it('excludes tracks with null year when yearTo is set', () => {
+    const tracks = [
+      makeTrack({ id: '1', year: null }),
+      makeTrack({ id: '2', year: 2005 }),
+    ];
+    const result = applyFilters(tracks, { yearTo: 2010 });
+    expect(result).toHaveLength(1);
+    expect(result[0].id).toBe('2');
+  });
+
+  it('matches exactly when yearFrom equals yearTo', () => {
+    const tracks = [
+      makeTrack({ id: '1', year: 1999 }),
+      makeTrack({ id: '2', year: 2000 }),
+      makeTrack({ id: '3', year: 2001 }),
+    ];
+    expect(applyFilters(tracks, { yearFrom: 2000, yearTo: 2000 })).toHaveLength(1);
+    expect(applyFilters(tracks, { yearFrom: 2000, yearTo: 2000 })[0].id).toBe('2');
+  });
+
+  it('returns empty when yearFrom > yearTo (impossible range)', () => {
+    const tracks = makeTracks(5, { year: 2000 });
+    expect(applyFilters(tracks, { yearFrom: 2010, yearTo: 2000 })).toHaveLength(0);
+  });
+});
+
+describe('LocalTracksTable – search in file_path', () => {
+  it('finds tracks by file_path substring when title/artist/album do not match', () => {
+    const tracks = [
+      makeTrack({ id: '1', title: 'Track A', artist: 'Artist A', album: 'Album A', file_path: '/music/edm/banger.mp3' }),
+      makeTrack({ id: '2', title: 'Track B', artist: 'Artist B', album: 'Album B', file_path: '/music/jazz/classic.mp3' }),
+    ];
+    const result = applyFilters(tracks, { searchQuery: 'edm' });
+    expect(result).toHaveLength(1);
+    expect(result[0].id).toBe('1');
+  });
+
+  it('search is case-insensitive', () => {
+    const tracks = [
+      makeTrack({ id: '1', title: 'Blue Monday' }),
+      makeTrack({ id: '2', title: 'Red Alert' }),
+    ];
+    expect(applyFilters(tracks, { searchQuery: 'BLUE' })).toHaveLength(1);
+    expect(applyFilters(tracks, { searchQuery: 'blue' })).toHaveLength(1);
+  });
+});
+
+describe('LocalTracksTable – combined format + bitrate filter', () => {
+  it('format + bitrate filters are additive (AND logic)', () => {
+    const tracks = [
+      makeTrack({ id: '1', audio_format: 'flac', bitrate: 1411 }),
+      makeTrack({ id: '2', audio_format: 'mp3', bitrate: 320 }),
+      makeTrack({ id: '3', audio_format: 'mp3', bitrate: 128 }),
+    ];
+    const result = applyFilters(tracks, { formatFilter: 'mp3', bitrateFilter: 'high' });
+    expect(result).toHaveLength(1);
+    expect(result[0].id).toBe('2');
+  });
+
+  it('format filter with null audio_format tracks returns no match', () => {
+    const tracks = [
+      makeTrack({ id: '1', audio_format: null }),
+      makeTrack({ id: '2', audio_format: 'mp3' }),
+    ];
+    const result = applyFilters(tracks, { formatFilter: 'mp3' });
+    expect(result).toHaveLength(1);
+    expect(result[0].id).toBe('2');
   });
 });
 

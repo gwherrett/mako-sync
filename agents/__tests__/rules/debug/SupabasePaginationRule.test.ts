@@ -13,12 +13,9 @@ describe('SupabasePaginationRule', () => {
   });
 
   test('should detect query without limit or range', () => {
+    // Rule detects supabase + .from( on the same line; use single-line format
     const context: ValidationContext = {
-      fileContent: `
-        const data = await supabase
-          .from('tracks')
-          .select('*');
-      `,
+      fileContent: `const data = await supabase.from('tracks').select('*');`,
       filePath: '/test/service.ts',
       fileExtension: '.ts',
       projectRoot: '/test'
@@ -86,11 +83,7 @@ describe('SupabasePaginationRule', () => {
 
   test('should provide helpful suggested fix', () => {
     const context: ValidationContext = {
-      fileContent: `
-        const data = await supabase
-          .from('tracks')
-          .select('*');
-      `,
+      fileContent: `const data = await supabase.from('tracks').select('*');`,
       filePath: '/test/service.ts',
       fileExtension: '.ts',
       projectRoot: '/test'

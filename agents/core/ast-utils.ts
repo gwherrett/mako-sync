@@ -64,7 +64,7 @@ export function findNodes(
     results.push(node);
   }
 
-  ts.forEachChild(node, child => findNodes(child, kind, results));
+  ts.forEachChild(node, child => { findNodes(child, kind, results); });
   return results;
 }
 
