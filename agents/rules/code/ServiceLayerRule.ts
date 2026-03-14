@@ -41,9 +41,11 @@ export class ServiceLayerRule extends BaseRule {
 
       // Check for direct supabase queries in components
       if (
-        (line.includes('supabase.from(') ||
-         line.includes('supabase.rpc(') ||
-         line.includes('supabase.auth.') && !line.includes('getSession') && !line.includes('onAuthStateChange')) &&
+        (
+          line.includes('supabase.from(') ||
+          line.includes('supabase.rpc(') ||
+          (line.includes('supabase.auth.') && !(line.includes('getSession') || line.includes('onAuthStateChange')))
+        ) &&
         !line.includes('//')  // Not a comment
       ) {
         const snippet = this.extractCodeSnippet(fileContent, i + 1);

@@ -56,7 +56,10 @@
       "Bash(__NEW_LINE_2499761a5e31c772__ curl -s \"$SUPABASE_URL/rest/v1/spotify_liked?artist=ilike.*High%20Contrast*&select=title,artist,primary_artist,album,normalized_artist,normalized_title&limit=5\" -H \"apikey: $ANON_KEY\" -H \"Authorization: Bearer $ANON_KEY\")",
       "Bash(npx tsc:*)",
       "Bash(gh pr:*)",
-      "Bash(git stash:*)"
+      "Bash(git stash:*)",
+      "Bash(sudo apt-get:*)",
+      "mcp__linear-server__get_issue_status",
+      "Bash(npm run:*)"
     ]
   }
 }

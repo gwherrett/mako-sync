@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Mako-Sync is a web application built through an agentic development framework grounded in product requirements, automated quality validation, and enforceable coding guardrails. It helps music collectors identify gaps between their Spotify liked songs and local MP3 files. Core features include Spotify library sync, local file scanning with metadata extraction, genre mapping/normalization, and missing tracks analysis.
+Mako-Sync is a web application built through an agentic development framework grounded in product requirements, automated quality validation, and enforceable coding guardrails. It helps music collectors identify gaps between their Spotify liked songs and local audio files (MP3, FLAC, M4A). Core features include Spotify library sync, local file scanning with metadata extraction, genre mapping/normalization, and missing tracks analysis.
 
 ## Commands
 
@@ -51,7 +51,7 @@ npm run agents:fix       # Auto-fix violations
 
 ### Key Database Tables
 - `spotify_liked` - User's Spotify liked songs
-- `local_mp3s` - Scanned local files with metadata
+- `local_mp3s` - Scanned local audio files with metadata *(name is historical; stores MP3, FLAC, and M4A)*
 - `spotify_genre_map_base` / `spotify_genre_map_overrides` - Genre mappings
 - `spotify_connections` - OAuth tokens (encrypted in vault)
 - `sync_progress` - Tracks sync state for resume capability
@@ -60,7 +60,9 @@ npm run agents:fix       # Auto-fix violations
 - `normalization.service.ts` - Text normalization for track matching (critical for matching accuracy)
 - `trackMatchingEngine.ts` - Core matching engine (3-tier: exact, core title, fuzzy)
 - `trackMatching.service.ts` - Matching orchestration between Spotify and local files
-- `metadataExtractor.ts` - MP3 metadata extraction using music-metadata-browser
+- `metadataExtractor.ts` - Audio metadata extraction using music-metadata-browser (MP3, FLAC, M4A)
+- `downloadProcessor.service.ts` - Multi-format SuperGenre tag writing; `writeTagsInPlace()` uses a single-parse optimisation (metadata + grouping check in one pass); `writeSuperGenreTag()` dispatches by extension to the MP3 (ID3) or FLAC (Vorbis Comment) writer
+- `flacTagWriter.ts` - Browser-native FLAC Vorbis Comment writer; `writeFlacGroupingTag(buffer, superGenre)` parses FLAC metadata blocks, updates/creates the VORBIS_COMMENT block, and returns a new Blob
 - `spotifyAuthManager.service.ts` - Spotify connection management (singleton via `getInstance()`)
 - `sessionCache.service.ts` - Auth session caching with timeouts
 - `tokenPersistenceGateway.service.ts` - Guards queries against stale tokens after refresh events; tracks `sessionVerified` to skip redundant `setSession` calls on subsequent auth events (e.g. visibility-triggered SIGNED_IN)
@@ -128,6 +130,10 @@ supabase.auth.onAuthStateChange((event) => {
   }
 });
 ```
+
+## Deployment
+
+Hosted on **Vercel**. Pushing to `main` deploys to production and also generates a unique preview URL for that commit.
 
 ## Linear Workflow
 
