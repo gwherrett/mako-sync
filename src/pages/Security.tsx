@@ -1,5 +1,5 @@
 import React from 'react';
-import { Settings, ArrowLeft } from 'lucide-react';
+import { Settings, ArrowLeft, Copy } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -156,6 +156,23 @@ const Security = () => {
             </Table>
           </CardContent>
         </Card>
+
+        {/* Spotify Tools */}
+        {isConnected && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Spotify Tools</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Link to="/duplicates?tab=spotify">
+                <Button variant="outline" className="gap-2">
+                  <Copy className="h-4 w-4" />
+                  Find Spotify Duplicates
+                </Button>
+              </Link>
+            </CardContent>
+          </Card>
+        )}
 
         {/* slskd Configuration */}
         <SlskdConfigSection />

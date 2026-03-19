@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Settings, Loader2, LogOut, Copy } from 'lucide-react';
+import { Settings, Loader2, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
 import BrandLogo from '@/components/BrandLogo';
@@ -35,15 +35,6 @@ const SpotifyHeader = () => {
               <span className="hidden sm:inline">Settings</span>
             </Link>
           </Button>
-
-          {isConnected && (
-            <Button variant="outline" size="sm" asChild className="text-white border-white/20 hover:bg-white/10 min-h-[44px] sm:min-h-0">
-              <Link to="/duplicates?tab=spotify">
-                <Copy className="w-4 h-4 sm:mr-2" />
-                <span className="hidden sm:inline">Spotify Duplicates</span>
-              </Link>
-            </Button>
-          )}
 
           {isLoading ? (
             <Button disabled className="spotify-gradient text-black font-medium min-h-[44px] sm:min-h-0">
