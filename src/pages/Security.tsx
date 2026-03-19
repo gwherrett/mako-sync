@@ -34,8 +34,8 @@ const getStatusBadgeVariant = (status: TokenStatus) => {
 };
 
 const Security = () => {
-  const { session } = useAuth();
-  const { isConnected, connection } = useUnifiedSpotifyAuth();
+  const { session, signOut } = useAuth();
+  const { isConnected, connection, disconnectSpotify, isDisconnecting } = useUnifiedSpotifyAuth();
 
   // Determine Supabase token status
   const getSupabaseTokenInfo = (): TokenInfo => {
@@ -136,6 +136,7 @@ const Security = () => {
                   <TableHead>Token</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Expiration</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -149,6 +150,27 @@ const Security = () => {
                     </TableCell>
                     <TableCell className="text-muted-foreground">
                       {tokenInfo.expiration}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      {tokenInfo.token === 'Supabase' && (
+                        <Button variant="outline" size="sm" onClick={signOut}>
+                          Sign Out
+                        </Button>
+                      )}
+                      {tokenInfo.token === 'Spotify' && (
+                        isConnected ? (
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            onClick={disconnectSpotify}
+                            disabled={isDisconnecting}
+                          >
+                            {isDisconnecting ? 'Disconnecting...' : 'Disconnect'}
+                          </Button>
+                        ) : (
+                          <span className="text-muted-foreground text-sm">—</span>
+                        )
+                      )}
                     </TableCell>
                   </TableRow>
                 ))}
