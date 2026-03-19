@@ -28,6 +28,11 @@ export interface SpotifyAuthConfig {
   };
 }
 
+/** Returns true if the stored Spotify connection includes the given OAuth scope. */
+export function hasSpotifyScope(connection: SpotifyConnection | null, scope: string): boolean {
+  return !!connection?.scope?.split(' ').includes(scope);
+}
+
 export interface SpotifyOperationResult<T = any> {
   success: boolean;
   data?: T;
@@ -323,6 +328,7 @@ export class SpotifyAuthManager {
       const scopes = [
         'user-read-private',
         'user-library-read',
+        'user-library-modify',
       ].join(' ');
 
       const redirectUri = import.meta.env.VITE_SPOTIFY_REDIRECT_URI ||
