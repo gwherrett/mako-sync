@@ -29,9 +29,11 @@ const SpotifyHeader = () => {
             Welcome, {user?.email}
           </div>
 
-          <Button variant="outline" size="sm" className="text-white border-white/20 hover:bg-white/10 min-h-[44px] sm:min-h-0">
-            <Settings className="w-4 h-4 sm:mr-2" />
-            <span className="hidden sm:inline">Settings</span>
+          <Button variant="outline" size="sm" asChild className="text-white border-white/20 hover:bg-white/10 min-h-[44px] sm:min-h-0">
+            <Link to="/security">
+              <Settings className="w-4 h-4 sm:mr-2" />
+              <span className="hidden sm:inline">Settings</span>
+            </Link>
           </Button>
 
           {isConnected && (
