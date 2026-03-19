@@ -1,4 +1,5 @@
 import { supabase } from '@/integrations/supabase/client';
+import { withTimeout } from '@/utils/promiseUtils';
 
 export interface DuplicateTrack {
   id: string;
@@ -10,6 +11,29 @@ export interface DuplicateTrack {
   bitrate: number | null;
   file_size: number | null;
   audio_format: string | null;
+}
+
+export interface SpotifyDuplicateTrack {
+  id: string;
+  spotify_id: string;
+  title: string | null;
+  artist: string | null;
+  album: string | null;
+  normalized_title: string | null;
+  normalized_artist: string | null;
+  added_at: string | null;
+}
+
+export interface SpotifyDuplicateGroup {
+  normalized_title: string;
+  normalized_artist: string;
+  /** Tracks ordered by added_at DESC (most recently liked first) */
+  tracks: SpotifyDuplicateTrack[];
+}
+
+export interface SpotifyResolveResult {
+  removed: number;
+  errors: string[];
 }
 
 export interface DuplicateGroup {
@@ -67,6 +91,111 @@ export class DuplicateDetectionService {
     }
 
     return duplicates;
+  }
+
+  /**
+   * Find all Spotify liked songs that share the same normalized_title + normalized_artist.
+   * Returns groups ordered by artist then title, each group ordered by added_at DESC.
+   */
+  static async findSpotifyDuplicates(userId: string): Promise<SpotifyDuplicateGroup[]> {
+    const { data, error } = await withTimeout(
+      supabase
+        .from('spotify_liked')
+        .select('id, spotify_id, title, artist, album, normalized_title, normalized_artist, added_at')
+        .eq('user_id', userId)
+        .not('normalized_title', 'is', null)
+        .not('normalized_artist', 'is', null)
+        .order('normalized_artist', { ascending: true })
+        .order('normalized_title', { ascending: true })
+        .order('added_at', { ascending: false, nullsFirst: false })
+        .then(r => r),
+      45000,
+      'Spotify duplicate query timed out'
+    );
+
+    if (error) {
+      console.error('Error fetching Spotify tracks for duplicate detection:', error);
+      throw error;
+    }
+
+    const rows = (data || []) as SpotifyDuplicateTrack[];
+
+    const groupMap = new Map<string, SpotifyDuplicateTrack[]>();
+    for (const row of rows) {
+      const key = `${row.normalized_artist}\0${row.normalized_title}`;
+      const group = groupMap.get(key);
+      if (group) {
+        group.push(row);
+      } else {
+        groupMap.set(key, [row]);
+      }
+    }
+
+    const duplicates: SpotifyDuplicateGroup[] = [];
+    for (const [, tracks] of groupMap) {
+      if (tracks.length > 1) {
+        duplicates.push({
+          normalized_title: tracks[0].normalized_title!,
+          normalized_artist: tracks[0].normalized_artist!,
+          tracks,
+        });
+      }
+    }
+
+    return duplicates;
+  }
+
+  /**
+   * Unlike the specified Spotify tracks and remove them from the DB.
+   * The actual Spotify API call is proxied through the spotify-unlike-tracks Edge Function
+   * since the access token is stored in Supabase Vault (never available client-side).
+   * Throws if keepId is included in deleteIds (safety check).
+   */
+  static async resolveSpotifyDuplicate(
+    keepId: string,
+    deleteIds: string[],
+    userId: string
+  ): Promise<SpotifyResolveResult> {
+    if (deleteIds.includes(keepId)) {
+      throw new Error('keepId must not appear in deleteIds');
+    }
+    if (deleteIds.length === 0) return { removed: 0, errors: [] };
+
+    // Fetch the spotify_id values for the rows we want to delete
+    const { data: rows, error: fetchError } = await supabase
+      .from('spotify_liked')
+      .select('id, spotify_id')
+      .in('id', deleteIds)
+      .eq('user_id', userId);
+
+    if (fetchError) throw fetchError;
+
+    const spotifyIds = (rows || []).map(r => r.spotify_id as string).filter(Boolean);
+
+    // Proxy the DELETE call through the Edge Function (vault token read happens server-side)
+    const { data: result, error: fnError } = await supabase.functions.invoke(
+      'spotify-unlike-tracks',
+      { body: { spotifyIds } }
+    );
+
+    if (fnError) throw fnError;
+
+    const { removed, errors } = result as SpotifyResolveResult;
+
+    // Remove the successfully unliked rows from the DB
+    if (removed > 0) {
+      const { error: deleteError } = await supabase
+        .from('spotify_liked')
+        .delete()
+        .in('id', deleteIds)
+        .eq('user_id', userId);
+
+      if (deleteError) {
+        return { removed, errors: [...errors, `DB delete error: ${deleteError.message}`] };
+      }
+    }
+
+    return { removed, errors };
   }
 
   /**
