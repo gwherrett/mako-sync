@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { ExternalLink, ChevronUp, ChevronDown } from 'lucide-react';
+import { ExternalLink, ChevronUp, ChevronDown, Copy } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { TrackFilters, FilterConfig, FilterState, FilterOptions, FilterCallbacks } from '@/components/common/TrackFilters';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
@@ -398,6 +399,12 @@ const TracksTable = ({ onTrackSelect, selectedTrack, sharedSearchQuery = '', sha
             </svg>
             Your Liked Songs ({totalTracks} tracks)
           </span>
+          <Button variant="outline" size="sm" asChild>
+            <Link to="/duplicates?tab=spotify">
+              <Copy className="h-4 w-4 mr-1" />
+              Find Duplicates
+            </Link>
+          </Button>
         </CardTitle>
       </CardHeader>
       <CardContent>
