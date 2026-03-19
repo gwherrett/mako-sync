@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { ArrowLeft, Copy, Trash2, CheckCircle, AlertCircle, Music } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -40,6 +40,8 @@ function formatPath(filePath: string): string {
 export function DuplicateTracksManager() {
   const { user, initialDataReady } = useAuth();
   const { toast } = useToast();
+  const [searchParams] = useSearchParams();
+  const defaultTab = searchParams.get('tab') === 'spotify' ? 'spotify' : 'local';
 
   const [groups, setGroups] = useState<DuplicateGroup[]>([]);
   const [keepSelections, setKeepSelections] = useState<Record<string, string>>({});
@@ -233,7 +235,7 @@ export function DuplicateTracksManager() {
         </div>
 
         {/* Tabs */}
-        <Tabs defaultValue="local">
+        <Tabs defaultValue={defaultTab}>
           <TabsList>
             <TabsTrigger value="local">Local Files</TabsTrigger>
             <TabsTrigger value="spotify">Spotify Library</TabsTrigger>
