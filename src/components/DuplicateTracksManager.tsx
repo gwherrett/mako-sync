@@ -140,35 +140,6 @@ export function DuplicateTracksManager() {
     }
   };
 
-  const handleResolveAll = async () => {
-    const pending = groups.filter(g => !resolvedKeys.has(groupKey(g)));
-    if (pending.length === 0) return;
-
-    setIsResolving(true);
-    let resolved = 0;
-    let failed = 0;
-    for (const group of pending) {
-      const key = groupKey(group);
-      const keepId = keepSelections[key];
-      const deleteIds = group.tracks.map(t => t.id).filter(id => id !== keepId);
-      try {
-        await DuplicateDetectionService.resolveDuplicate(keepId, deleteIds);
-        setResolvedKeys(prev => new Set([...prev, key]));
-        resolved++;
-      } catch {
-        failed++;
-      }
-    }
-    setIsResolving(false);
-    if (resolved > 0) {
-      toast({
-        title: 'Bulk resolve complete',
-        description: `Resolved ${resolved} group${resolved !== 1 ? 's' : ''}${failed > 0 ? `, ${failed} failed` : ''}.`,
-        variant: failed > 0 ? 'destructive' : 'default',
-      });
-    }
-  };
-
   const handleResolveSpotifyGroup = async (group: SpotifyDuplicateGroup) => {
     if (!user) return;
     const key = spotifyGroupKey(group);
@@ -222,16 +193,6 @@ export function DuplicateTracksManager() {
             </div>
           </div>
 
-          {pendingGroups.length > 0 && (
-            <Button
-              variant="destructive"
-              onClick={handleResolveAll}
-              disabled={isResolving}
-            >
-              <Trash2 className="w-4 h-4 mr-2" />
-              Resolve All ({pendingGroups.length} groups, {totalFilesToRemove} files to remove)
-            </Button>
-          )}
         </div>
 
         {/* Tabs */}
