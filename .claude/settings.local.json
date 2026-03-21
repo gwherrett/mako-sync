@@ -59,7 +59,14 @@
       "Bash(git stash:*)",
       "Bash(sudo apt-get:*)",
       "mcp__linear-server__get_issue_status",
-      "Bash(npm run:*)"
+      "Bash(npm run:*)",
+      "mcp__linear-server__save_project",
+      "Bash(gh run:*)",
+      "Bash(supabase functions:*)",
+      "Bash(for file:*)",
+      "Bash(do grep:*)",
+      "Bash(echo \"$file\")",
+      "Bash(ls /workspaces/mako-sync/*.env*)"
     ]
   }
 }
