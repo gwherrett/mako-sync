@@ -317,17 +317,17 @@ serve(async (req) => {
       if (isFullSync) {
         console.log('💾 PHASE 1: Caching manually assigned genres before full sync deletion...')
         
-        // Fetch ALL genres with pagination (Supabase default limit is 1000)
+        // Fetch ALL manually overridden genres with pagination (Supabase default limit is 1000)
         let allManualGenres: {spotify_id: string, super_genre: string}[] = []
         let offset = 0
         const PAGE_SIZE = 1000
-        
+
         while (true) {
           const { data: page, error: pageError } = await supabaseAdmin
             .from('spotify_liked')
             .select('spotify_id, super_genre')
             .eq('user_id', user.id)
-            .not('super_genre', 'is', null)
+            .eq('super_genre_manual_override', true)
             .range(offset, offset + PAGE_SIZE - 1)
             .order('spotify_id')
           
@@ -551,7 +551,7 @@ serve(async (req) => {
         const songsToInsert = processSongsData(allChunkTracks, user.id, artistGenreMap, new Map(), genreMapping)
         newTracksCount += songsToInsert.length
 
-        // For incremental sync, fetch existing tracks with manual genres from DB
+        // For incremental sync, fetch existing tracks with manual genre overrides from DB
         // For full sync, use the cached map from before deletion
         if (!isFullSync) {
           const spotifyIds = songsToInsert.map(s => s.spotify_id)
@@ -560,7 +560,7 @@ serve(async (req) => {
             .select('spotify_id, super_genre')
             .eq('user_id', user.id)
             .in('spotify_id', spotifyIds)
-            .not('super_genre', 'is', null)
+            .eq('super_genre_manual_override', true)
           
           // Add to manual genre map
           if (existingTracks) {
@@ -702,7 +702,7 @@ serve(async (req) => {
       // Process songs data
       const songsToInsert = processSongsData(allChunkTracks, user.id, artistGenreMap, new Map(), genreMapping)
       
-      // For incremental sync, fetch existing tracks with manual genres from DB
+      // For incremental sync, fetch existing tracks with manual genre overrides from DB
       if (!isFullSync) {
         const spotifyIds = songsToInsert.map(s => s.spotify_id)
         const { data: existingTracks } = await supabaseClient
@@ -710,7 +710,7 @@ serve(async (req) => {
           .select('spotify_id, super_genre')
           .eq('user_id', user.id)
           .in('spotify_id', spotifyIds)
-          .not('super_genre', 'is', null)
+          .eq('super_genre_manual_override', true)
         
         if (existingTracks) {
           existingTracks.forEach(track => {
