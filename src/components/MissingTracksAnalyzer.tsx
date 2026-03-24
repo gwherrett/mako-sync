@@ -4,13 +4,17 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Loader2, Download, Music, Users, Filter, Upload } from 'lucide-react';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { Loader2, Download, Music, Users, Filter, Upload, MoreVertical, Pencil, Pin } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { TrackMatchingService } from '@/services/trackMatching.service';
 import { supabase } from '@/integrations/supabase/client';
 import { useSlskdConfig } from '@/hooks/useSlskdConfig';
 import { useSlskdSync } from '@/hooks/useSlskdSync';
 import { SlskdSyncProgress } from '@/components/SlskdSyncProgress';
+import { EditSpotifyTrackGenreDialog } from '@/components/EditSpotifyTrackGenreDialog';
+import type { SpotifyTrackForGenreEdit } from '@/components/EditSpotifyTrackGenreDialog';
+import type { SuperGenre } from '@/types/genreMapping';
 import type { SlskdTrackToSync } from '@/types/slskd';
 
 interface MissingTracksAnalyzerProps {
@@ -28,6 +32,7 @@ interface MissingTrack {
     album: string | null;
     genre: string | null;
     super_genre: string | null;
+    super_genre_manual_override: boolean;
   };
   reason: string;
 }
@@ -55,6 +60,38 @@ const MissingTracksAnalyzer: React.FC<MissingTracksAnalyzerProps> = ({
   const [showSyncModal, setShowSyncModal] = useState(false);
   const { isConfigured } = useSlskdConfig();
   const { syncToSlskd, syncAlbumToSlskd, isSyncing, syncResult, progress, reset } = useSlskdSync();
+
+  // Edit SuperGenre dialog state
+  const [editDialogTrack, setEditDialogTrack] = useState<SpotifyTrackForGenreEdit | null>(null);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+
+  const handleEditSuperGenre = (track: MissingTrack) => {
+    setEditDialogTrack({
+      id: track.spotifyTrack.id,
+      title: track.spotifyTrack.title,
+      artist: track.spotifyTrack.artist,
+      genre: track.spotifyTrack.genre,
+      super_genre: track.spotifyTrack.super_genre as SuperGenre | null,
+      super_genre_manual_override: track.spotifyTrack.super_genre_manual_override,
+    });
+    setEditDialogOpen(true);
+  };
+
+  const handleGenreSaved = (trackId: string, superGenre: SuperGenre | null, isOverride: boolean) => {
+    setMissingTracks(prev => prev.map(t =>
+      t.spotifyTrack.id === trackId
+        ? { ...t, spotifyTrack: { ...t.spotifyTrack, super_genre: superGenre, super_genre_manual_override: isOverride } }
+        : t
+    ));
+    setArtistGroups(prev => prev.map(group => ({
+      ...group,
+      tracks: group.tracks.map(t =>
+        t.spotifyTrack.id === trackId
+          ? { ...t, spotifyTrack: { ...t.spotifyTrack, super_genre: superGenre, super_genre_manual_override: isOverride } }
+          : t
+      ),
+    })));
+  };
 
   // Cascading filter state: supergenre -> genre -> artist
   const [genreFilter, setGenreFilter] = useState<string>('all');
@@ -673,8 +710,36 @@ const MissingTracksAnalyzer: React.FC<MissingTracksAnalyzerProps> = ({
                             </div>
                           )}
                           {albumTracks.map((track, idx) => (
-                            <div key={idx} className="text-sm text-muted-foreground pl-2">
-                              • <span className="text-foreground">{track.spotifyTrack.title}</span>
+                            <div key={idx} className="flex items-center justify-between gap-2 text-sm text-muted-foreground pl-2 group">
+                              <div className="flex items-center gap-1.5 min-w-0">
+                                <span>•</span>
+                                <span className="text-foreground truncate">{track.spotifyTrack.title}</span>
+                                {track.spotifyTrack.super_genre_manual_override && (
+                                  <Pin className="h-3 w-3 shrink-0 text-primary" title="SuperGenre manually overridden" />
+                                )}
+                              </div>
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <button
+                                    type="button"
+                                    className="shrink-0 opacity-0 group-hover:opacity-100 focus:opacity-100 p-0.5 rounded hover:bg-accent transition-opacity"
+                                    onClick={(e) => e.stopPropagation()}
+                                  >
+                                    <MoreVertical className="h-3.5 w-3.5" />
+                                  </button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                  <DropdownMenuItem
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleEditSuperGenre(track);
+                                    }}
+                                  >
+                                    <Pencil className="h-4 w-4 mr-2" />
+                                    Edit SuperGenre
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
                             </div>
                           ))}
                         </div>
@@ -708,6 +773,14 @@ const MissingTracksAnalyzer: React.FC<MissingTracksAnalyzerProps> = ({
         isSyncing={isSyncing}
         progress={progress}
         result={syncResult ?? null}
+      />
+
+      {/* Edit SuperGenre Dialog */}
+      <EditSpotifyTrackGenreDialog
+        track={editDialogTrack}
+        open={editDialogOpen}
+        onOpenChange={setEditDialogOpen}
+        onSaved={handleGenreSaved}
       />
     </div>
   );
