@@ -288,16 +288,16 @@ describe('TrackGenreService', () => {
   });
 
   describe('assignGenreToTrack', () => {
-    it('should update track with genre', async () => {
-      vi.mocked(supabase.from).mockReturnValue({
-        update: vi.fn().mockReturnValue({
-          eq: vi.fn().mockResolvedValue({ data: null, error: null })
-        })
-      } as any);
+    it('should update track with super_genre and set manual override flag', async () => {
+      const updateFn = vi.fn().mockReturnValue({
+        eq: vi.fn().mockResolvedValue({ data: null, error: null })
+      });
+      vi.mocked(supabase.from).mockReturnValue({ update: updateFn } as any);
 
       await TrackGenreService.assignGenreToTrack('track-123', 'Rock');
 
       expect(supabase.from).toHaveBeenCalledWith('spotify_liked');
+      expect(updateFn).toHaveBeenCalledWith({ super_genre: 'Rock', super_genre_manual_override: true });
     });
 
     it('should throw error when update fails', async () => {
@@ -311,6 +311,34 @@ describe('TrackGenreService', () => {
 
       await expect(
         TrackGenreService.assignGenreToTrack('track-123', 'Rock')
+      ).rejects.toEqual(mockError);
+    });
+  });
+
+  describe('resetGenreOverride', () => {
+    it('should set super_genre_manual_override to false', async () => {
+      const updateFn = vi.fn().mockReturnValue({
+        eq: vi.fn().mockResolvedValue({ data: null, error: null })
+      });
+      vi.mocked(supabase.from).mockReturnValue({ update: updateFn } as any);
+
+      await TrackGenreService.resetGenreOverride('track-123');
+
+      expect(supabase.from).toHaveBeenCalledWith('spotify_liked');
+      expect(updateFn).toHaveBeenCalledWith({ super_genre_manual_override: false });
+    });
+
+    it('should throw error when update fails', async () => {
+      const mockError = { message: 'Reset failed' };
+
+      vi.mocked(supabase.from).mockReturnValue({
+        update: vi.fn().mockReturnValue({
+          eq: vi.fn().mockResolvedValue({ data: null, error: mockError })
+        })
+      } as any);
+
+      await expect(
+        TrackGenreService.resetGenreOverride('track-123')
       ).rejects.toEqual(mockError);
     });
   });

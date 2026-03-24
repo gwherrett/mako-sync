@@ -135,16 +135,31 @@ export class TrackGenreService {
   }
 
   /**
-   * Assign a super genre directly to a track
+   * Assign a super genre directly to a track and pin it against sync overwrites.
    */
   static async assignGenreToTrack(trackId: string, superGenre: SuperGenre): Promise<void> {
     const { error } = await supabase
       .from('spotify_liked')
-      .update({ super_genre: superGenre })
+      .update({ super_genre: superGenre, super_genre_manual_override: true })
       .eq('id', trackId);
 
     if (error) {
       console.error('Error assigning genre to track:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Clear the manual override flag so the sync pipeline can re-derive super_genre.
+   */
+  static async resetGenreOverride(trackId: string): Promise<void> {
+    const { error } = await supabase
+      .from('spotify_liked')
+      .update({ super_genre_manual_override: false })
+      .eq('id', trackId);
+
+    if (error) {
+      console.error('Error resetting genre override:', error);
       throw error;
     }
   }
