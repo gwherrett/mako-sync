@@ -334,6 +334,7 @@ export type Database = {
           primary_artist: string | null
           spotify_id: string
           super_genre: Database["public"]["Enums"]["super_genre"] | null
+          super_genre_manual_override: boolean
           title: string
           user_id: string
           year: number | null
@@ -356,6 +357,7 @@ export type Database = {
           primary_artist?: string | null
           spotify_id: string
           super_genre?: Database["public"]["Enums"]["super_genre"] | null
+          super_genre_manual_override?: boolean
           title: string
           user_id: string
           year?: number | null
@@ -378,6 +380,7 @@ export type Database = {
           primary_artist?: string | null
           spotify_id?: string
           super_genre?: Database["public"]["Enums"]["super_genre"] | null
+          super_genre_manual_override?: boolean
           title?: string
           user_id?: string
           year?: number | null
