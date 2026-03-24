@@ -27,6 +27,7 @@ export interface SpotifyTrack {
   album: string | null;
   genre: string | null;
   super_genre: string | null;
+  super_genre_manual_override: boolean;
 }
 
 export interface MatchResult {

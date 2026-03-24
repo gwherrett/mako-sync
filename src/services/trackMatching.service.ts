@@ -68,7 +68,7 @@ export class TrackMatchingService {
   ): Promise<SpotifyTrack[]> {
     let query = supabase
       .from('spotify_liked')
-      .select('id, title, artist, primary_artist, album, genre, super_genre')
+      .select('id, title, artist, primary_artist, album, genre, super_genre, super_genre_manual_override')
       .eq('user_id', userId)
       .limit(50000); // Override default 1000 limit to handle large collections
 
