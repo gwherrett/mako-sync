@@ -495,6 +495,12 @@ export class SpotifyAuthManager {
         throw new Error(response.error.message);
       }
 
+      // Partial sync: function hit the 120s time budget, progress saved — resume automatically
+      if (response.data?.partial) {
+        logger.spotify('Sync paused for resume', { resume_offset: response.data.resume_offset });
+        return this.performSync(forceFullSync);
+      }
+
       logger.spotify('Sync completed successfully');
       return {
         success: true,

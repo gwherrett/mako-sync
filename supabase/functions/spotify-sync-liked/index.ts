@@ -391,6 +391,20 @@ serve(async (req) => {
       }
     }
 
+    // Fetch genre mapping once before the sync loop (stable during sync)
+    const { data: genreMappingData } = await supabaseClient
+      .from('v_effective_spotify_genre_map')
+      .select('spotify_genre, super_genre')
+    const genreMapping = new Map<string, string>()
+    if (genreMappingData) {
+      genreMappingData.forEach(item => {
+        if (item.spotify_genre && item.super_genre) {
+          genreMapping.set(item.spotify_genre, item.super_genre)
+        }
+      })
+    }
+    console.log(`📋 Genre mapping loaded: ${genreMapping.size} entries`)
+
     // Fetch tracks in chunks
     let currentOffset = startOffset
     let hasMore = true
@@ -399,8 +413,22 @@ serve(async (req) => {
     let olderTracksCount = 0 // Count tracks older than last sync to determine when to stop
     const allSpotifyIds = new Set<string>() // Track all Spotify IDs from this sync for deletion detection
     let duplicatesRemoved = 0 // Track duplicates removed during sync
+    const syncStartTime = Date.now()
+    const BUDGET_MS = 120_000 // Stop at 120s to return before Supabase's 150s hard limit
 
     while (hasMore) {
+      // Time-budget check: exit gracefully before the hard 150s edge-function timeout
+      if (Date.now() - syncStartTime > BUDGET_MS) {
+        console.log(`⏱️ Approaching time limit at offset ${currentOffset} — saving progress and exiting for resume`)
+        await supabaseClient
+          .from('sync_progress')
+          .update({ last_offset: currentOffset, tracks_fetched: currentOffset })
+          .eq('sync_id', syncId)
+        return new Response(
+          JSON.stringify({ success: true, partial: true, message: 'Sync paused — will resume on next trigger', tracks_processed: newTracksCount, resume_offset: currentOffset }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      }
       const url = `https://api.spotify.com/v1/me/tracks?limit=50&offset=${currentOffset}`
       console.log(`📥 Fetching tracks at offset ${currentOffset}`)
 
@@ -531,20 +559,6 @@ serve(async (req) => {
         for (const genres of artistGenreMap.values()) {
           healthArtistTotal++
           if (genres.length > 0) healthArtistWithGenres++
-        }
-
-        // Fetch genre mapping
-        const { data: genreMappingData } = await supabaseClient
-          .from('v_effective_spotify_genre_map')
-          .select('spotify_genre, super_genre')
-
-        const genreMapping = new Map<string, string>()
-        if (genreMappingData) {
-          genreMappingData.forEach(item => {
-            if (item.spotify_genre && item.super_genre) {
-              genreMapping.set(item.spotify_genre, item.super_genre)
-            }
-          })
         }
 
         // Process songs data
@@ -683,20 +697,6 @@ serve(async (req) => {
       for (const genres of artistGenreMap.values()) {
         healthArtistTotal++
         if (genres.length > 0) healthArtistWithGenres++
-      }
-
-      // Fetch genre mapping
-      const { data: genreMappingData } = await supabaseClient
-        .from('v_effective_spotify_genre_map')
-        .select('spotify_genre, super_genre')
-
-      const genreMapping = new Map<string, string>()
-      if (genreMappingData) {
-        genreMappingData.forEach(item => {
-          if (item.spotify_genre && item.super_genre) {
-            genreMapping.set(item.spotify_genre, item.super_genre)
-          }
-        })
       }
 
       // Process songs data
