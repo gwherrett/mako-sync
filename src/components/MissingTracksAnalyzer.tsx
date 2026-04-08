@@ -5,9 +5,10 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { Loader2, Download, Music, Users, Filter, Upload, MoreVertical, Pencil, Pin } from 'lucide-react';
+import { Loader2, Download, Music, Users, Filter, Upload, MoreVertical, Pencil, Pin, Trash2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { TrackMatchingService } from '@/services/trackMatching.service';
+import { DuplicateDetectionService } from '@/services/duplicateDetection.service';
 import { supabase } from '@/integrations/supabase/client';
 import { useSlskdConfig } from '@/hooks/useSlskdConfig';
 import { useSlskdSync } from '@/hooks/useSlskdSync';
@@ -64,6 +65,27 @@ const MissingTracksAnalyzer: React.FC<MissingTracksAnalyzerProps> = ({
   // Edit SuperGenre dialog state
   const [editDialogTrack, setEditDialogTrack] = useState<SpotifyTrackForGenreEdit | null>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
+
+  // Unlike state
+  const [unlikingTrackId, setUnlikingTrackId] = useState<string | null>(null);
+
+  const handleUnlikeTrack = async (track: MissingTrack) => {
+    if (!user || !track.spotifyTrack.id) return;
+    setUnlikingTrackId(track.spotifyTrack.id);
+    try {
+      await DuplicateDetectionService.unlikeTrack(track.spotifyTrack.id, user.id);
+      setMissingTracks(prev => prev.filter(t => t.spotifyTrack.id !== track.spotifyTrack.id));
+      setArtistGroups(prev => prev
+        .map(group => ({ ...group, tracks: group.tracks.filter(t => t.spotifyTrack.id !== track.spotifyTrack.id) }))
+        .filter(group => group.tracks.length > 0)
+      );
+      toast({ title: 'Unliked', description: `"${track.spotifyTrack.title}" removed from your Spotify library.` });
+    } catch (err: any) {
+      toast({ title: 'Failed to unlike', description: err.message, variant: 'destructive' });
+    } finally {
+      setUnlikingTrackId(null);
+    }
+  };
 
   const handleEditSuperGenre = (track: MissingTrack) => {
     setEditDialogTrack({
@@ -737,6 +759,20 @@ const MissingTracksAnalyzer: React.FC<MissingTracksAnalyzerProps> = ({
                                   >
                                     <Pencil className="h-4 w-4 mr-2" />
                                     Edit SuperGenre
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleUnlikeTrack(track);
+                                    }}
+                                    disabled={unlikingTrackId === track.spotifyTrack.id}
+                                    className="text-destructive focus:text-destructive"
+                                  >
+                                    {unlikingTrackId === track.spotifyTrack.id
+                                      ? <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                      : <Trash2 className="h-4 w-4 mr-2" />
+                                    }
+                                    Unlike on Spotify
                                   </DropdownMenuItem>
                                 </DropdownMenuContent>
                               </DropdownMenu>
