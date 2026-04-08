@@ -338,10 +338,18 @@ export function DownloadProcessingSection() {
       setTagsHaveBeenWritten(true);
 
       if (errors.length > 0) {
+        const m4aCount = errors.filter(e => e.error.startsWith('M4A tag writing')).length;
+        const failCount = errors.length - m4aCount;
+        const parts = [
+          success > 0 ? `${success} written` : null,
+          skipped > 0 ? `${skipped} skipped (already correct)` : null,
+          m4aCount > 0 ? `${m4aCount} M4A skipped (not supported — use a desktop tool)` : null,
+          failCount > 0 ? `${failCount} failed` : null,
+        ].filter(Boolean).join(', ');
         toast({
-          title: 'Tag Writing Complete (with errors)',
-          description: `${success} written, ${skipped} skipped (already correct), ${errors.length} failed`,
-          variant: 'destructive',
+          title: failCount > 0 ? 'Tag Writing Complete (with errors)' : 'Tag Writing Complete',
+          description: parts,
+          variant: failCount > 0 ? 'destructive' : 'default',
         });
       } else if (skipped > 0 && success === 0) {
         toast({

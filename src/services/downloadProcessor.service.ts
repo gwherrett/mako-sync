@@ -616,7 +616,7 @@ async function writeTagForSingleFile(
     return 'skipped';
   }
 
-  // Write tag — FLAC uses the Vorbis Comment writer; MP3/M4A use the ID3 path
+  // Write tag — FLAC uses the Vorbis Comment writer; MP3 uses the ID3 path
   const ext = file.file.name.toLowerCase().split('.').pop();
   const taggedBlob =
     ext === 'flac'
@@ -647,14 +647,24 @@ export async function writeTagsInPlace(
   files: ProcessedFile[],
   onProgress?: (progress: { current: number; total: number; filename: string; skipped?: boolean }) => void
 ): Promise<{ success: number; skipped: number; errors: Array<{ filename: string; error: string }> }> {
-  const mappedFiles = files.filter(
+  const allMapped = files.filter(
     (f) => f.status === 'mapped' && f.superGenre && f.fileHandle
   );
   const errors: Array<{ filename: string; error: string }> = [];
+
+  // M4A uses MP4 iTunes atoms, not ID3 — browser-side writing is not supported
+  const mappedFiles = allMapped.filter(f => {
+    if (f.filename.toLowerCase().endsWith('.m4a')) {
+      errors.push({ filename: f.filename, error: 'M4A tag writing not supported in the browser — use a desktop tool (e.g. Mp3tag, MusicBrainz Picard)' });
+      return false;
+    }
+    return true;
+  });
+
   let success = 0;
   let skipped = 0;
 
-  console.log(`📝 Processing ${mappedFiles.length} mapped files for tag writing...`);
+  console.log(`📝 Processing ${mappedFiles.length} mapped files for tag writing (${errors.length} M4A skipped)...`);
 
   // Process in parallel batches
   for (let i = 0; i < mappedFiles.length; i += TAG_WRITE_BATCH_SIZE) {
