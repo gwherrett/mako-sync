@@ -592,7 +592,8 @@ serve(async (req) => {
             // Use the cached manual genre assignment instead of the auto-mapped one
             return {
               ...song,
-              super_genre: manualGenreMap.get(song.spotify_id)
+              super_genre: manualGenreMap.get(song.spotify_id),
+              super_genre_manual_override: true
             }
           }
           return song
@@ -724,7 +725,7 @@ serve(async (req) => {
       // Preserve manual genre assignments
       const songsToUpsert = songsToInsert.map(song => {
         if (manualGenreMap.has(song.spotify_id)) {
-          return { ...song, super_genre: manualGenreMap.get(song.spotify_id) }
+          return { ...song, super_genre: manualGenreMap.get(song.spotify_id), super_genre_manual_override: true }
         }
         return song
       })
