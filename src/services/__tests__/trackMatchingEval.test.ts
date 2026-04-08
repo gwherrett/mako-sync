@@ -11,7 +11,7 @@ const fixture = evalCasesJson as unknown as EvalFixtureFile;
 // ---- Metrics ----
 
 // Tighten this as matching improves. Never loosen it.
-const MAX_FALSE_NEGATIVE_RATE = 1.0;
+const MAX_FALSE_NEGATIVE_RATE = 0.0;
 
 interface EvalMetrics {
   totalCases: number;

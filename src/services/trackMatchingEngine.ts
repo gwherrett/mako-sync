@@ -94,7 +94,13 @@ export function extractCoreTitle(title: string | null): string {
   const { core } = normalizationService.extractVersionInfo(cleaned);
   // Also strip trailing "Original Mix" / "Extended Mix" that may remain unparenthesized
   let coreClean = core.replace(/\s+original\s+mix\s*$/i, '').replace(/\s+extended\s+mix\s*$/i, '').trim();
-  return normalize(coreClean);
+  let coreNormalized = normalize(coreClean);
+  // Strip "radio edit" and remaster variants that appear without delimiters.
+  // Delimited forms (parentheses/brackets/hyphen) are already handled by extractVersionInfo.
+  coreNormalized = coreNormalized.replace(/\s+radio\s+edit$/, '').trim();
+  coreNormalized = coreNormalized.replace(/\s+\d{4}\s+remaster(?:ed)?$/, '').trim();
+  coreNormalized = coreNormalized.replace(/\s+remaster(?:ed)?(?:\s+\d{4})?$/, '').trim();
+  return coreNormalized;
 }
 
 /**

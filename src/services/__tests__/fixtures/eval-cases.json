@@ -1,7 +1,7 @@
 {
   "exportedAt": "2026-02-12T00:23:48Z",
   "description": "Unmatched tracks for House - exported for eval review",
-  "totalCases": 335,
+  "totalCases": 339,
   "cases": [
     {
       "id": "eval-001",
@@ -6161,6 +6161,106 @@
       "failureCategory": null,
       "notes": "",
       "superGenre": "Hip Hop"
+    },
+    {
+      "id": "eval-576",
+      "spotifyTrack": {
+        "id": "aaaaaaaa-0001-4000-a000-000000000001",
+        "title": "Sunrise (Radio Edit)",
+        "artist": "Artist A",
+        "primary_artist": null,
+        "album": "Test Album",
+        "genre": "house",
+        "super_genre": "House"
+      },
+      "expectedLocalMatch": {
+        "id": "local-0001",
+        "title": "Sunrise",
+        "artist": "Artist A",
+        "primary_artist": null,
+        "album": "Test Album",
+        "genre": null,
+        "file_path": "/music/Artist A/Sunrise.mp3"
+      },
+      "verdict": "false-negative",
+      "failureCategory": "radio-edit",
+      "notes": "Delimited radio edit — regression guard; extractVersionInfo already strips this",
+      "superGenre": "House"
+    },
+    {
+      "id": "eval-577",
+      "spotifyTrack": {
+        "id": "aaaaaaaa-0002-4000-a000-000000000002",
+        "title": "Sunrise Radio Edit",
+        "artist": "Artist A",
+        "primary_artist": null,
+        "album": "Test Album",
+        "genre": "house",
+        "super_genre": "House"
+      },
+      "expectedLocalMatch": {
+        "id": "local-0001",
+        "title": "Sunrise",
+        "artist": "Artist A",
+        "primary_artist": null,
+        "album": "Test Album",
+        "genre": null,
+        "file_path": "/music/Artist A/Sunrise.mp3"
+      },
+      "verdict": "false-negative",
+      "failureCategory": "radio-edit",
+      "notes": "Undelimited radio edit — no parentheses/brackets/hyphen; was not stripped before MAK-67 fix",
+      "superGenre": "House"
+    },
+    {
+      "id": "eval-578",
+      "spotifyTrack": {
+        "id": "aaaaaaaa-0003-4000-a000-000000000003",
+        "title": "Midnight (2011 Remaster)",
+        "artist": "Artist B",
+        "primary_artist": null,
+        "album": "Test Album",
+        "genre": "house",
+        "super_genre": "House"
+      },
+      "expectedLocalMatch": {
+        "id": "local-0002",
+        "title": "Midnight",
+        "artist": "Artist B",
+        "primary_artist": null,
+        "album": "Test Album",
+        "genre": null,
+        "file_path": "/music/Artist B/Midnight.mp3"
+      },
+      "verdict": "false-negative",
+      "failureCategory": "remaster",
+      "notes": "Delimited remaster — regression guard; extractVersionInfo already strips this",
+      "superGenre": "House"
+    },
+    {
+      "id": "eval-579",
+      "spotifyTrack": {
+        "id": "aaaaaaaa-0004-4000-a000-000000000004",
+        "title": "Midnight Remastered",
+        "artist": "Artist B",
+        "primary_artist": null,
+        "album": "Test Album",
+        "genre": "house",
+        "super_genre": "House"
+      },
+      "expectedLocalMatch": {
+        "id": "local-0002",
+        "title": "Midnight",
+        "artist": "Artist B",
+        "primary_artist": null,
+        "album": "Test Album",
+        "genre": null,
+        "file_path": "/music/Artist B/Midnight.mp3"
+      },
+      "verdict": "false-negative",
+      "failureCategory": "remaster",
+      "notes": "Undelimited remaster — no parentheses/brackets/hyphen; was not stripped before MAK-67 fix",
+      "superGenre": "House"
     }
   ]
 }
