@@ -29,7 +29,9 @@ if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
 
 // Custom fetch with timeout to prevent indefinite hangs
 const fetchWithTimeout = (url: RequestInfo | URL, options?: RequestInit): Promise<Response> => {
-  const timeout = 30000; // 30 second timeout for all requests
+  // Edge functions need up to 120s (our budget) + headroom; DB/auth calls use 30s
+  const isEdgeFunction = url.toString().includes('/functions/v1/');
+  const timeout = isEdgeFunction ? 150000 : 30000;
   const controller = new AbortController();
   const timeoutId = setTimeout(() => {
     console.warn('🚨 SUPABASE CLIENT: Request timeout, aborting:', url);
