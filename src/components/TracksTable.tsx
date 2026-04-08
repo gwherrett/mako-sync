@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ExternalLink, ChevronUp, ChevronDown, Copy } from 'lucide-react';
+import { ExternalLink, ChevronUp, ChevronDown, Copy, Trash2, Loader2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { TrackFilters, FilterConfig, FilterState, FilterOptions, FilterCallbacks } from '@/components/common/TrackFilters';
 import { Button } from '@/components/ui/button';
@@ -29,6 +29,7 @@ import { useAuth } from '@/contexts/NewAuthContext';
 import { useUnifiedSpotifyAuth } from '@/hooks/useUnifiedSpotifyAuth';
 import { IframeBanner } from '@/components/common/IframeBanner';
 import { openInNewTab, copyToClipboard } from '@/utils/linkUtils';
+import { DuplicateDetectionService } from '@/services/duplicateDetection.service';
 import { useGenreMappingOverrides } from '@/hooks/useGenreMappingOverrides';
 import { withQueryTimeout } from '@/utils/supabaseQuery';
 
@@ -77,6 +78,7 @@ const TracksTable = ({ onTrackSelect, selectedTrack, sharedSearchQuery = '', sha
   const [genres, setGenres] = useState<string[]>([]);
   const [superGenres, setSuperGenres] = useState<string[]>([]);
 
+  const [unlikingTrackId, setUnlikingTrackId] = useState<string | null>(null);
   const tracksPerPage = 50;
   const { toast } = useToast();
   const { user, isAuthenticated, loading: authLoading, initialDataReady, dataFetchEnabled } = useAuth();
@@ -367,12 +369,26 @@ const TracksTable = ({ onTrackSelect, selectedTrack, sharedSearchQuery = '', sha
   const handleCopySpotifyLink = async (spotifyId: string) => {
     const url = `https://open.spotify.com/track/${spotifyId}`;
     const success = await copyToClipboard(url);
-    
+
     if (success) {
       toast({
         title: "Link Copied",
         description: "Spotify link copied to clipboard!",
       });
+    }
+  };
+
+  const handleUnlikeTrack = async (track: SpotifyTrack) => {
+    if (!user || !track.spotify_id) return;
+    setUnlikingTrackId(track.id);
+    try {
+      await DuplicateDetectionService.unlikeTrack(track.spotify_id, user.id);
+      setTracks(prev => prev.filter(t => t.id !== track.id));
+      toast({ title: 'Unliked', description: `"${track.title}" removed from your Spotify library.` });
+    } catch (err: any) {
+      toast({ title: 'Failed to unlike', description: err.message, variant: 'destructive' });
+    } finally {
+      setUnlikingTrackId(null);
     }
   };
 
@@ -626,6 +642,19 @@ const TracksTable = ({ onTrackSelect, selectedTrack, sharedSearchQuery = '', sha
                               <rect width="14" height="14" x="8" y="8" rx="2" ry="2"/>
                               <path d="M4 16c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2h8c1.1 0 2 .9 2 2"/>
                             </svg>
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="hidden sm:inline-flex text-muted-foreground hover:text-destructive"
+                            onClick={(e) => { e.stopPropagation(); handleUnlikeTrack(track); }}
+                            disabled={unlikingTrackId === track.id}
+                            title="Unlike on Spotify"
+                          >
+                            {unlikingTrackId === track.id
+                              ? <Loader2 className="h-4 w-4 animate-spin" />
+                              : <Trash2 className="h-4 w-4" />
+                            }
                           </Button>
                         </div>
                       ) : (

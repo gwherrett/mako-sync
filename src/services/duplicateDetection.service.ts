@@ -173,9 +173,10 @@ export class DuplicateDetectionService {
     const spotifyIds = (rows || []).map(r => r.spotify_id as string).filter(Boolean);
 
     // Proxy the DELETE call through the Edge Function (vault token read happens server-side)
-    const { data: result, error: fnError } = await supabase.functions.invoke(
-      'spotify-unlike-tracks',
-      { body: { spotifyIds } }
+    const { data: result, error: fnError } = await withTimeout(
+      supabase.functions.invoke('spotify-unlike-tracks', { body: { spotifyIds } }).then(r => r),
+      30000,
+      'spotify-unlike-tracks timed out'
     );
 
     if (fnError) throw fnError;
@@ -196,6 +197,34 @@ export class DuplicateDetectionService {
     }
 
     return { removed, errors };
+  }
+
+  /**
+   * Unlike a single Spotify track and remove it from spotify_liked.
+   * Proxied through the spotify-unlike-tracks Edge Function (vault token read happens server-side).
+   */
+  static async unlikeTrack(spotifyId: string, userId: string): Promise<void> {
+    const { data: result, error: fnError } = await withTimeout(
+      supabase.functions.invoke('spotify-unlike-tracks', { body: { spotifyIds: [spotifyId] } }).then(r => r),
+      30000,
+      'spotify-unlike-tracks timed out'
+    );
+
+    if (fnError) throw fnError;
+
+    const { removed, errors } = result as SpotifyResolveResult;
+
+    if (errors?.length > 0) throw new Error(errors[0]);
+
+    if (removed > 0) {
+      const { error: deleteError } = await supabase
+        .from('spotify_liked')
+        .delete()
+        .eq('spotify_id', spotifyId)
+        .eq('user_id', userId);
+
+      if (deleteError) throw deleteError;
+    }
   }
 
   /**
