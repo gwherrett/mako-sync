@@ -27,15 +27,15 @@ Adds physical media (vinyl record) tracking to Mako Sync. The vinyl table drives
 | VIN-1 | [MAK-51](https://linear.app/mako-sync/issue/MAK-51) | Create `physical_media` and `discogs_connections` tables | 1 |
 | VIN-2 | [MAK-52](https://linear.app/mako-sync/issue/MAK-52) | `discogs-auth` Edge Function (OAuth 1.0a) | 2 |
 | VIN-3 | [MAK-53](https://linear.app/mako-sync/issue/MAK-53) | `useDiscogsAuth` hook + `/discogs-callback` route | 2 |
-| VIN-4 | [MAK-54](https://linear.app/mako-sync/issue/MAK-54) | `vinyl-image-identify` Edge Function (Claude Vision) | 4 |
-| VIN-5 | [MAK-55](https://linear.app/mako-sync/issue/MAK-55) | `CameraCapture` component | 4 |
+| VIN-4 | [MAK-54](https://linear.app/mako-sync/issue/MAK-54) | `vinyl-image-identify` Edge Function (Claude Vision) | 7 |
+| VIN-5 | [MAK-55](https://linear.app/mako-sync/issue/MAK-55) | `CameraCapture` component | 7 |
 | VIN-6 | [MAK-56](https://linear.app/mako-sync/issue/MAK-56) | `discogs-search` Edge Function | 3 |
-| VIN-7 | [MAK-57](https://linear.app/mako-sync/issue/MAK-57) | `DiscogsReleaseSelector` component | 5 |
-| VIN-8 | [MAK-58](https://linear.app/mako-sync/issue/MAK-58) | `AddVinylDialog` multi-step wizard | 5 |
+| VIN-7 | [MAK-57](https://linear.app/mako-sync/issue/MAK-57) | `DiscogsReleaseSelector` component | 4 |
+| VIN-8 | [MAK-58](https://linear.app/mako-sync/issue/MAK-58) | `AddVinylDialog` multi-step wizard (manual entry; camera added in Phase 7) | 4 |
 | VIN-9 | [MAK-59](https://linear.app/mako-sync/issue/MAK-59) | `usePhysicalMedia` TanStack Query hook | 3 |
-| VIN-10 | [MAK-60](https://linear.app/mako-sync/issue/MAK-60) | `useVinylMissingTracks` + `TrackMatchingService` extension | 6 |
-| VIN-11 | [MAK-61](https://linear.app/mako-sync/issue/MAK-61) | Push vinyl missing tracks to slskd | 6 |
-| VIN-12 | [MAK-62](https://linear.app/mako-sync/issue/MAK-62) | `/vinyl` route and collection page | 7 |
+| VIN-10 | [MAK-60](https://linear.app/mako-sync/issue/MAK-60) | `useVinylMissingTracks` + `TrackMatchingService` extension | 5 |
+| VIN-11 | [MAK-61](https://linear.app/mako-sync/issue/MAK-61) | Push vinyl missing tracks to slskd | 5 |
+| VIN-12 | [MAK-62](https://linear.app/mako-sync/issue/MAK-62) | `/vinyl` route and collection page | 6 |
 | VIN-13 | [MAK-63](https://linear.app/mako-sync/issue/MAK-63) | Discogs token row on Security page | 2 |
 
 ---
@@ -54,20 +54,20 @@ Adds physical media (vinyl record) tracking to Mako Sync. The vinyl table drives
 - **VIN-9**: `usePhysicalMedia` CRUD hook
 - **VIN-6**: `discogs-search` edge function
 
-### Phase 4 — Vision & Identification (independent path)
-- **VIN-4**: `vinyl-image-identify` edge function
-- **VIN-5**: `CameraCapture` component
-
-### Phase 5 — Add Flow (assembles Phases 3 + 4)
+### Phase 4 — Add Flow — manual entry only (no camera step yet)
 - **VIN-7**: `DiscogsReleaseSelector` component
-- **VIN-8**: `AddVinylDialog` 4-step wizard
+- **VIN-8**: `AddVinylDialog` 3-step wizard (artist/title → Discogs search → confirm); camera step omitted until Phase 7
 
-### Phase 6 — Cross-Reference & slskd
+### Phase 5 — Cross-Reference & slskd
 - **VIN-10**: `useVinylMissingTracks` + `TrackMatchingService.matchTracklistAgainstLocal()`
 - **VIN-11**: "Push missing to slskd" in `VinylDetailPanel`
 
-### Phase 7 — Collection UI (final assembly)
+### Phase 6 — Collection UI (final assembly)
 - **VIN-12**: `src/pages/Vinyl.tsx`, `VinylCard`, `VinylDetailPanel`, `/vinyl` route
+
+### Phase 7 — Vision & Camera (enhancement, Anthropic API dependency)
+- **VIN-4**: `vinyl-image-identify` edge function (Claude Vision / claude-sonnet-4-6)
+- **VIN-5**: `CameraCapture` component; adds camera step to `AddVinylDialog` as step 0
 
 ---
 
