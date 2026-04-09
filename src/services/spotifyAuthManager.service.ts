@@ -1,6 +1,7 @@
 import { supabase } from '@/integrations/supabase/client';
 import { sessionCache } from '@/services/sessionCache.service';
 import { logger } from '@/utils/logger';
+import { withTimeout } from '@/utils/promiseUtils';
 import type { SpotifyConnection } from '@/types/spotify';
 
 /**
@@ -172,49 +173,48 @@ export class SpotifyAuthManager {
 
       logger.spotify('Starting connection query');
       const connectionStartTime = Date.now();
-      let timeoutId: ReturnType<typeof setTimeout> | null = null;
-      let queryCompleted = false;
 
-      const { data: connection, error: connectionError } = await Promise.race([
-        (async () => {
-          try {
-            const result = await supabase
+      let queryResult: { data: any; error: any };
+      try {
+        queryResult = await withTimeout(
+          Promise.resolve(
+            supabase
               .from('spotify_connections')
               .select('*')
               .eq('user_id', user.id)
-              .maybeSingle();
+              .maybeSingle()
+          ),
+          45000,
+          'Connection query timeout'
+        );
+        const elapsed = Date.now() - connectionStartTime;
+        logger.spotify(`Connection query completed in ${elapsed}ms`);
+      } catch (err: any) {
+        const elapsed = Date.now() - connectionStartTime;
+        const isTimeout = err?.message === 'Connection query timeout';
 
-            queryCompleted = true;
-            if (timeoutId) {
-              clearTimeout(timeoutId);
-              timeoutId = null;
-            }
+        if (isTimeout) {
+          logger.spotify(`Connection query timeout after ${elapsed}ms`, undefined, 'warn');
+          // Preserve last known state rather than snapping to disconnected
+          this.updateState({
+            isLoading: false,
+            healthStatus: 'warning',
+            error: 'Connection check timed out',
+          });
+        } else {
+          logger.spotify(`Connection query failed after ${elapsed}ms`, { err }, 'error');
+          this.updateState({
+            isConnected: false,
+            connection: null,
+            error: `Database error: ${err?.message}`,
+            isLoading: false,
+            healthStatus: 'error',
+          });
+        }
+        return { success: false, error: err?.message };
+      }
 
-            const elapsed = Date.now() - connectionStartTime;
-            logger.spotify(`Connection query completed in ${elapsed}ms`);
-            return result;
-          } catch (error) {
-            queryCompleted = true;
-            if (timeoutId) {
-              clearTimeout(timeoutId);
-              timeoutId = null;
-            }
-
-            const elapsed = Date.now() - connectionStartTime;
-            logger.spotify(`Connection query failed after ${elapsed}ms`, { error }, 'error');
-            throw error;
-          }
-        })(),
-        new Promise<any>((resolve) => {
-          timeoutId = setTimeout(() => {
-            if (!queryCompleted) {
-              const elapsed = Date.now() - connectionStartTime;
-              logger.spotify(`Connection query timeout after ${elapsed}ms`, undefined, 'warn');
-              resolve({ data: null, error: { message: 'Connection query timeout' } });
-            }
-          }, 5000);
-        })
-      ]);
+      const { data: connection, error: connectionError } = queryResult;
 
       if (connectionError) {
         const error = `Database error: ${connectionError.message}`;
