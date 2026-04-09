@@ -58,7 +58,7 @@ export const useUnifiedSpotifyAuth = (config: UseUnifiedSpotifyAuthConfig = {}):
   } = config;
 
   // Get auth context to wait for initialization
-  const { loading: authLoading, initialDataReady, isAuthenticated } = useAuth();
+  const { loading: authLoading, initialDataReady, isAuthenticated, dataFetchEnabled } = useAuth();
 
   // Get SpotifyAuthManager instance
   const authManager = useRef<SpotifyAuthManager>(
@@ -74,6 +74,8 @@ export const useUnifiedSpotifyAuth = (config: UseUnifiedSpotifyAuthConfig = {}):
 
   // Track if initial check has been done to prevent multiple checks
   const initialCheckDone = useRef(false);
+  // Track previous dataFetchEnabled to detect false → true transition
+  const prevDataFetchEnabled = useRef(dataFetchEnabled);
   const [isInitialCheckComplete, setIsInitialCheckComplete] = useState(false);
   const [isConnecting, setIsConnecting] = useState(false);
   const [isDisconnecting, setIsDisconnecting] = useState(false);
@@ -148,6 +150,18 @@ export const useUnifiedSpotifyAuth = (config: UseUnifiedSpotifyAuthConfig = {}):
       setIsInitialCheckComplete(true);
     }
   }, [authLoading, initialDataReady, isAuthenticated]);
+
+  // Re-check connection when dataFetchEnabled transitions false → true (token refresh settle)
+  useEffect(() => {
+    if (prevDataFetchEnabled.current === false && dataFetchEnabled === true && isAuthenticated) {
+      console.log('🎵 SPOTIFY: dataFetchEnabled restored, re-checking connection...');
+      authManager.current.checkConnection(true).then(() => {
+        const state = authManager.current.getState();
+        console.log('🎵 SPOTIFY: ✓ Re-check complete', state.isConnected ? '(connected)' : '(not connected)');
+      });
+    }
+    prevDataFetchEnabled.current = dataFetchEnabled;
+  }, [dataFetchEnabled, isAuthenticated]);
 
   // Clear error function
   const clearError = useCallback(() => {
