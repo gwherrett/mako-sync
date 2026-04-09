@@ -4,7 +4,7 @@
  */
 
 import { BaseRule } from '../../core/Rule';
-import { RuleCategory, RuleSeverity, RuleViolation, ValidationContext } from '../../core/types';
+import { RuleCategory, RuleSeverity, RuleViolation, ValidationContext, getLines } from '../../core/types';
 import { parseCode, findCallExpressions, getNodePosition } from '../../core/ast-utils';
 import * as ts from 'typescript';
 
@@ -158,7 +158,7 @@ export class ConnectionCooldownRule extends BaseRule {
   private validateWithRegex(context: ValidationContext): RuleViolation[] {
     const violations: RuleViolation[] = [];
     const { fileContent } = context;
-    const lines = fileContent.split('\n');
+    const lines = getLines(context);
 
     // Find all checkConnection calls
     const checkConnectionPattern = /checkConnection\s*\(/g;

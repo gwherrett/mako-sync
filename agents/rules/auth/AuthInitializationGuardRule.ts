@@ -4,7 +4,7 @@
  */
 
 import { BaseRule } from '../../core/Rule';
-import { RuleCategory, RuleSeverity, RuleViolation, ValidationContext } from '../../core/types';
+import { RuleCategory, RuleSeverity, RuleViolation, ValidationContext, getLines } from '../../core/types';
 
 export class AuthInitializationGuardRule extends BaseRule {
   constructor() {
@@ -37,7 +37,7 @@ export class AuthInitializationGuardRule extends BaseRule {
       return violations;
     }
 
-    const lines = fileContent.split('\n');
+    const lines = getLines(context);
     let hasUseRef = false;
     let hasInitializationCheck = false;
 

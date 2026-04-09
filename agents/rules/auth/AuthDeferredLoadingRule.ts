@@ -4,7 +4,7 @@
  */
 
 import { BaseRule } from '../../core/Rule';
-import { RuleCategory, RuleSeverity, RuleViolation, ValidationContext } from '../../core/types';
+import { RuleCategory, RuleSeverity, RuleViolation, ValidationContext, getLines } from '../../core/types';
 import { CodeFix } from '../../core/AutoFix';
 
 export class AuthDeferredLoadingRule extends BaseRule {
@@ -39,7 +39,7 @@ export class AuthDeferredLoadingRule extends BaseRule {
       return violations;
     }
 
-    const lines = fileContent.split('\n');
+    const lines = getLines(context);
     let foundDeferredLoad = false;
 
     for (let i = 0; i < lines.length; i++) {
@@ -85,7 +85,7 @@ export class AuthDeferredLoadingRule extends BaseRule {
    */
   autofix(violation: RuleViolation, context: ValidationContext): CodeFix | null {
     const { fileContent } = context;
-    const lines = fileContent.split('\n');
+    const lines = getLines(context);
 
     if (!violation.line) {
       return null;

@@ -4,7 +4,7 @@
  */
 
 import { BaseRule } from '../../core/Rule';
-import { RuleCategory, RuleSeverity, RuleViolation, ValidationContext } from '../../core/types';
+import { RuleCategory, RuleSeverity, RuleViolation, ValidationContext, getLines } from '../../core/types';
 
 export class AuthContextConsolidationRule extends BaseRule {
   constructor() {
@@ -30,7 +30,7 @@ export class AuthContextConsolidationRule extends BaseRule {
     const violations: RuleViolation[] = [];
     const { fileContent } = context;
 
-    const lines = fileContent.split('\n');
+    const lines = getLines(context);
 
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i];

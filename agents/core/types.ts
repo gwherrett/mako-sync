@@ -15,6 +15,18 @@ export interface ValidationContext {
   metadata?: Record<string, unknown>;
 }
 
+const _linesCache = new WeakMap<ValidationContext, string[]>();
+
+/** Return fileContent split by newline, cached per context object. */
+export function getLines(context: ValidationContext): string[] {
+  let lines = _linesCache.get(context);
+  if (!lines) {
+    lines = context.fileContent.split('\n');
+    _linesCache.set(context, lines);
+  }
+  return lines;
+}
+
 export interface RuleViolation {
   /** Unique rule identifier */
   ruleId: string;

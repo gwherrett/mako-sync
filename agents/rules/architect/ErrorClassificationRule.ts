@@ -4,7 +4,7 @@
  */
 
 import { BaseRule } from '../../core/Rule';
-import { RuleCategory, RuleSeverity, RuleViolation, ValidationContext } from '../../core/types';
+import { RuleCategory, RuleSeverity, RuleViolation, ValidationContext, getLines } from '../../core/types';
 import { parseCode, findNodes, getNodePosition } from '../../core/ast-utils';
 import * as ts from 'typescript';
 
@@ -249,7 +249,7 @@ export class ErrorClassificationRule extends BaseRule {
   private validateWithRegex(context: ValidationContext): RuleViolation[] {
     const violations: RuleViolation[] = [];
     const { fileContent } = context;
-    const lines = fileContent.split('\n');
+    const lines = getLines(context);
 
     // Pattern for throw new Error(
     const genericErrorPattern = /throw\s+new\s+Error\s*\(/;

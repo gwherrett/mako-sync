@@ -4,7 +4,7 @@
  */
 
 import { BaseRule } from '../../core/Rule';
-import { RuleCategory, RuleSeverity, RuleViolation, ValidationContext } from '../../core/types';
+import { RuleCategory, RuleSeverity, RuleViolation, ValidationContext, getLines } from '../../core/types';
 
 export class SessionCacheDirectCallRule extends BaseRule {
   constructor() {
@@ -38,7 +38,7 @@ export class SessionCacheDirectCallRule extends BaseRule {
       return violations;
     }
 
-    const lines = fileContent.split('\n');
+    const lines = getLines(context);
 
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i];

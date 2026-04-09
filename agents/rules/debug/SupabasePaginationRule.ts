@@ -4,7 +4,7 @@
  */
 
 import { BaseRule } from '../../core/Rule';
-import { RuleCategory, RuleSeverity, RuleViolation, ValidationContext } from '../../core/types';
+import { RuleCategory, RuleSeverity, RuleViolation, ValidationContext, getLines } from '../../core/types';
 import { CodeFix } from '../../core/AutoFix';
 
 export class SupabasePaginationRule extends BaseRule {
@@ -35,7 +35,7 @@ export class SupabasePaginationRule extends BaseRule {
       return violations;
     }
 
-    const lines = fileContent.split('\n');
+    const lines = getLines(context);
 
     // Track if we're inside a multi-line query
     let queryStartLine = -1;

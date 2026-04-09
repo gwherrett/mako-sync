@@ -4,7 +4,7 @@
  */
 
 import { BaseRule } from '../../core/Rule';
-import { RuleCategory, RuleSeverity, RuleViolation, ValidationContext } from '../../core/types';
+import { RuleCategory, RuleSeverity, RuleViolation, ValidationContext, getLines } from '../../core/types';
 import { CodeFix } from '../../core/AutoFix';
 
 export class AuthImportPatternRule extends BaseRule {
@@ -32,7 +32,7 @@ export class AuthImportPatternRule extends BaseRule {
     const violations: RuleViolation[] = [];
     const { fileContent } = context;
 
-    const lines = fileContent.split('\n');
+    const lines = getLines(context);
 
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i];
@@ -83,7 +83,7 @@ export class AuthImportPatternRule extends BaseRule {
    */
   autofix(violation: RuleViolation, context: ValidationContext): CodeFix | null {
     const { fileContent } = context;
-    const lines = fileContent.split('\n');
+    const lines = getLines(context);
 
     if (!violation.line) {
       return null;
