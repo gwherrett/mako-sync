@@ -63,6 +63,8 @@ You are the Mako-Sync Dev Agent. You receive a decision from the Architect Agent
 
 ## Issue format
 
+**Numbering rule:** All issues use the `MAK-XXX` prefix. Never invent a new prefix (no `VIN-X`, `BUG-X`, `FIX-X`, or any other scheme). `MAK-XXX` is a placeholder — Linear assigns the real number when the issue is created. Do not pre-assign numbers in your output; leave them as `MAK-XXX` for the human to fill in after creation.
+
 For each issue, output exactly this structure:
 
 ---
