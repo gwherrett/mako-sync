@@ -4,6 +4,7 @@
 
 import * as fs from 'fs';
 import * as path from 'path';
+import { execSync } from 'child_process';
 import { ValidationContext } from '../core/types';
 
 export class FileScanner {
@@ -98,6 +99,26 @@ export class FileScanner {
     }
 
     return contexts;
+  }
+
+  /**
+   * Scan only files changed relative to baseRef (git diff --name-only)
+   */
+  async scanChangedFiles(baseRef = 'main'): Promise<ValidationContext[]> {
+    try {
+      const output = execSync(`git diff --name-only ${baseRef}...HEAD`, {
+        cwd: this.projectRoot,
+        encoding: 'utf-8'
+      });
+      const changedFiles = output
+        .split('\n')
+        .map(f => f.trim())
+        .filter(f => /\.(ts|tsx)$/.test(f));
+      return this.scanFiles(changedFiles);
+    } catch (error) {
+      console.warn('git diff failed, falling back to full scan:', error);
+      return this.scanDirectory();
+    }
   }
 
   private shouldExclude(name: string): boolean {

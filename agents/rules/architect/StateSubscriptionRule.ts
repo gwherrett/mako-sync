@@ -5,7 +5,7 @@
 
 import { BaseRule } from '../../core/Rule';
 import { RuleCategory, RuleSeverity, RuleViolation, ValidationContext, getLines } from '../../core/types';
-import { parseCode, findCallExpressions, findUseEffectHooks, hasCleanupFunction, getNodePosition, getNodeText } from '../../core/ast-utils';
+import { findCallExpressions, findUseEffectHooks, hasCleanupFunction, getNodePosition, getNodeText , getAST } from '../../core/ast-utils';
 import * as ts from 'typescript';
 
 export class StateSubscriptionRule extends BaseRule {
@@ -37,9 +37,9 @@ export class StateSubscriptionRule extends BaseRule {
     }
 
     try {
-      const astContext = parseCode(fileContent, filePath);
+      const astContext = getAST(context);
 
-      if (!astContext.tsAst) {
+      if (!astContext || !astContext.tsAst) {
         // If AST parsing failed, fall back to regex-based detection
         return this.validateWithRegex(context);
       }
@@ -201,16 +201,7 @@ export class StateSubscriptionRule extends BaseRule {
       const line = lines[i];
 
       if (subscribePattern.test(line)) {
-        // Check if we're in a useEffect (naive check)
-        let inUseEffect = false;
-
-        // Look backwards for useEffect
-        for (let j = Math.max(0, i - 20); j < i; j++) {
-          if (lines[j].includes('useEffect')) {
-            inUseEffect = true;
-            break;
-          }
-        }
+        const inUseEffect = this.isInUseEffectScope(lines, i);
 
         if (inUseEffect) {
           // Look for cleanup function (return statement in next 10 lines)
@@ -240,5 +231,21 @@ export class StateSubscriptionRule extends BaseRule {
     }
 
     return violations;
+  }
+
+  /**
+   * Brace-count scope tracking: walk backwards from subscribeLineIndex,
+   * exit when we cross a scope boundary, return true if useEffect found.
+   */
+  private isInUseEffectScope(lines: string[], subscribeLineIndex: number): boolean {
+    let braceCount = 0;
+    for (let i = subscribeLineIndex - 1; i >= 0; i--) {
+      const line = lines[i];
+      braceCount += (line.match(/\}/g) || []).length;
+      braceCount -= (line.match(/\{/g) || []).length;
+      if (braceCount > 0) break; // Exited current scope
+      if (line.includes('useEffect')) return true;
+    }
+    return false;
   }
 }

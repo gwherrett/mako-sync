@@ -5,7 +5,7 @@
 
 import { BaseRule } from '../../core/Rule';
 import { RuleCategory, RuleSeverity, RuleViolation, ValidationContext, getLines } from '../../core/types';
-import { parseCode, findCallExpressions, getNodePosition } from '../../core/ast-utils';
+import { findCallExpressions, getNodePosition , getAST } from '../../core/ast-utils';
 import * as ts from 'typescript';
 
 export class ConnectionCooldownRule extends BaseRule {
@@ -39,9 +39,9 @@ export class ConnectionCooldownRule extends BaseRule {
     }
 
     try {
-      const astContext = parseCode(fileContent, filePath);
+      const astContext = getAST(context);
 
-      if (!astContext.tsAst) {
+      if (!astContext || !astContext.tsAst) {
         return this.validateWithRegex(context);
       }
 

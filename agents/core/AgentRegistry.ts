@@ -81,13 +81,17 @@ export class AgentRegistry {
     }
 
     const duration = Date.now() - startTime;
+    const hasErrors = allViolations.some(v => v.severity === 'error');
+    const hasWarnings = allViolations.some(v => v.severity === 'warning');
+    const exitCode: 0 | 1 | 2 = hasErrors ? 2 : hasWarnings ? 1 : 0;
 
     return {
       filesScanned: contexts.length,
       violationCount: allViolations.length,
       violations: allViolations,
       duration,
-      success: allViolations.filter(v => v.severity === 'error').length === 0
+      success: !hasErrors,
+      exitCode
     };
   }
 

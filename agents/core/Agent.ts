@@ -5,6 +5,14 @@
 import { Rule } from './Rule';
 import { RuleViolation, ValidationContext } from './types';
 
+/** Accumulated timing data per rule ID, populated when timing is enabled. */
+export const ruleTiming: Map<string, { totalMs: number; count: number }> = new Map();
+export let timingEnabled = false;
+
+export function enableTiming(): void {
+  timingEnabled = true;
+}
+
 export interface AgentConfig {
   /** Unique agent identifier */
   id: string;
@@ -55,7 +63,15 @@ export abstract class BaseAgent implements Agent {
       }
 
       try {
+        const t0 = timingEnabled ? performance.now() : 0;
         const ruleViolations = await Promise.resolve(rule.validate(context));
+        if (timingEnabled) {
+          const elapsed = performance.now() - t0;
+          const entry = ruleTiming.get(rule.config.id) ?? { totalMs: 0, count: 0 };
+          entry.totalMs += elapsed;
+          entry.count += 1;
+          ruleTiming.set(rule.config.id, entry);
+        }
         violations.push(...ruleViolations);
       } catch (error) {
         console.error(`Error validating rule ${rule.config.id}:`, error);

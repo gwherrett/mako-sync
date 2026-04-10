@@ -5,7 +5,7 @@
 
 import { BaseRule } from '../../core/Rule';
 import { RuleCategory, RuleSeverity, RuleViolation, ValidationContext } from '../../core/types';
-import { parseCode, hasIdentifier } from '../../core/ast-utils';
+import { hasIdentifier , getAST } from '../../core/ast-utils';
 import * as ts from 'typescript';
 
 export class OAuthCallbackRule extends BaseRule {
@@ -39,7 +39,11 @@ export class OAuthCallbackRule extends BaseRule {
     }
 
     try {
-      const astContext = parseCode(fileContent, filePath);
+      const astContext = getAST(context);
+
+      if (!astContext || !astContext.tsAst) {
+        return violations;
+      }
 
       // Check for required OAuth flow steps
       const requiredSteps = {

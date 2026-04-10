@@ -6,6 +6,7 @@
 import * as ts from 'typescript';
 import { parse } from '@typescript-eslint/typescript-estree';
 import type { TSESTree } from '@typescript-eslint/typescript-estree';
+import type { ValidationContext } from './types';
 
 export interface ASTContext {
   /** Original source code */
@@ -50,6 +51,24 @@ export function parseCode(code: string, filePath: string): ASTContext {
   }
 
   return context;
+}
+
+const _astCache = new WeakMap<ValidationContext, ASTContext | null>();
+
+/**
+ * Return cached ASTContext for a ValidationContext, parsing lazily on first access.
+ * Returns null if parsing fails.
+ */
+export function getAST(context: ValidationContext): ASTContext | null {
+  if (_astCache.has(context)) return _astCache.get(context) ?? null;
+  try {
+    const ast = parseCode(context.fileContent, context.filePath);
+    _astCache.set(context, ast);
+    return ast;
+  } catch {
+    _astCache.set(context, null);
+    return null;
+  }
 }
 
 /**

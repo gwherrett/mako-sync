@@ -59,6 +59,8 @@ export interface ValidationResult {
   duration: number;
   /** Success status */
   success: boolean;
+  /** Structured exit code: 0=clean, 1=warnings only, 2=errors present */
+  exitCode: 0 | 1 | 2;
 }
 
 export enum RuleCategory {

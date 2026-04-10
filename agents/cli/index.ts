@@ -13,6 +13,7 @@ import { codeAgent } from '../agents/CodeAgent';
 import { architectAgent } from '../agents/ArchitectAgent';
 import { FileScanner } from './fileScanner';
 import { ViolationFormatter } from './formatters';
+import { enableTiming, ruleTiming } from '../core/Agent';
 
 interface CLIOptions {
   projectRoot?: string;
@@ -20,6 +21,9 @@ interface CLIOptions {
   files?: string[];
   agents?: string[];
   outputFormat?: 'text' | 'json';
+  changedOnly?: boolean;
+  changedBase?: string;
+  timing?: boolean;
 }
 
 class MakoAgentsCLI {
@@ -64,13 +68,20 @@ class MakoAgentsCLI {
   async run(): Promise<number> {
     console.log('\n🤖 Mako Agents - Code Validation Tool\n');
 
+    if (this.options.timing) enableTiming();
+
     const stats = this.registry.getStats();
     console.log(`Loaded ${stats.agentCount} agent(s) with ${stats.ruleCount} rule(s)\n`);
 
     // Scan files
-    const contexts = this.options.files
-      ? await this.scanner.scanFiles(this.options.files)
-      : await this.scanner.scanDirectory();
+    let contexts;
+    if (this.options.files) {
+      contexts = await this.scanner.scanFiles(this.options.files);
+    } else if (this.options.changedOnly) {
+      contexts = await this.scanner.scanChangedFiles(this.options.changedBase ?? 'main');
+    } else {
+      contexts = await this.scanner.scanDirectory();
+    }
 
     console.log(`Scanning ${contexts.length} file(s)...\n`);
 
@@ -84,8 +95,26 @@ class MakoAgentsCLI {
       this.printResults(result);
     }
 
-    // Return exit code
-    return result.success ? 0 : 1;
+    // Print timing table if requested
+    if (this.options.timing && ruleTiming.size > 0) {
+      this.printTimingTable();
+    }
+
+    return result.exitCode;
+  }
+
+  private printTimingTable(): void {
+    console.log('\n📊 Rule Timing\n');
+    const rows = Array.from(ruleTiming.entries())
+      .map(([id, { totalMs, count }]) => ({ id, avgMs: totalMs / count, count }))
+      .sort((a, b) => b.avgMs - a.avgMs);
+    const maxIdLen = Math.max(...rows.map(r => r.id.length), 4);
+    console.log(`${'Rule'.padEnd(maxIdLen)}  Avg ms  Files`);
+    console.log(`${'-'.repeat(maxIdLen)}  ------  -----`);
+    for (const { id, avgMs, count } of rows) {
+      console.log(`${id.padEnd(maxIdLen)}  ${avgMs.toFixed(2).padStart(6)}  ${count}`);
+    }
+    console.log('');
   }
 
   private printResults(result: any): void {
@@ -131,6 +160,12 @@ function parseArgs(): CLIOptions {
       options.agents = args[++i].split(',');
     } else if (arg === '--json') {
       options.outputFormat = 'json';
+    } else if (arg === '--changed-only') {
+      options.changedOnly = true;
+    } else if (arg === '--base') {
+      options.changedBase = args[++i];
+    } else if (arg === '--timing') {
+      options.timing = true;
     } else if (arg === '--help' || arg === '-h') {
       printHelp();
       process.exit(0);
@@ -152,7 +187,15 @@ Options:
   --files <paths>          Comma-separated list of specific files to validate
   -a, --agents <agents>    Comma-separated list of agents to run (default: all)
   --json                   Output results as JSON
+  --changed-only           Only validate files changed vs base ref (git diff)
+  --base <ref>             Base ref for --changed-only (default: main)
+  --timing                 Print per-rule avg execution time table
   -h, --help               Show this help message
+
+Exit codes:
+  0  No violations
+  1  Warnings only
+  2  One or more errors
 
 Examples:
   mako-agents                                    # Validate entire project
@@ -160,6 +203,8 @@ Examples:
   mako-agents --agents debug,auth                # Run only specific agents
   mako-agents --files src/App.tsx,src/Auth.tsx  # Validate specific files
   mako-agents --json > results.json              # Export results as JSON
+  mako-agents --changed-only                     # Validate only changed files
+  mako-agents --timing                           # Show rule execution times
   `);
 }
 

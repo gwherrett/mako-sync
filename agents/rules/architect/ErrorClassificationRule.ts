@@ -5,7 +5,7 @@
 
 import { BaseRule } from '../../core/Rule';
 import { RuleCategory, RuleSeverity, RuleViolation, ValidationContext, getLines } from '../../core/types';
-import { parseCode, findNodes, getNodePosition } from '../../core/ast-utils';
+import { findNodes, getNodePosition , getAST } from '../../core/ast-utils';
 import * as ts from 'typescript';
 
 export class ErrorClassificationRule extends BaseRule {
@@ -49,9 +49,9 @@ export class ErrorClassificationRule extends BaseRule {
     }
 
     try {
-      const astContext = parseCode(fileContent, filePath);
+      const astContext = getAST(context);
 
-      if (!astContext.tsAst) {
+      if (!astContext || !astContext.tsAst) {
         return this.validateWithRegex(context);
       }
 
