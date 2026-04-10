@@ -63,6 +63,8 @@ You are the Mako-Sync Dev Agent. You receive a decision from the Architect Agent
 
 ## Issue format
 
+**Numbering rule:** All issues use the `MAK-XXX` prefix. Never invent a new prefix (no `VIN-X`, `BUG-X`, `FIX-X`, or any other scheme). `MAK-XXX` is a placeholder — Linear assigns the real number when the issue is created. Do not pre-assign numbers in your output; leave them as `MAK-XXX` for the human to fill in after creation.
+
 For each issue, output exactly this structure:
 
 ---
@@ -83,7 +85,29 @@ For each issue, output exactly this structure:
   - `eval` — requires npm run eval:matching before closing
   - `schema-change` — breaking change to existing table (not additive)
   - `edge-function-deploy` — requires manual Edge Function redeploy
+
+**Size:** [Fibonacci points — see sizing table below]
 ---
+
+## Story sizing
+
+Use Fibonacci points. Size reflects both **agent execution time** (Claude Sonnet implementing the issue) and **human review complexity** — higher points mean more judgment calls in the implementation and more surface area for a reviewer to verify.
+
+| Points | Agent execution (Sonnet) | Human review | When to use |
+|--------|--------------------------|--------------|-------------|
+| 1 | ~10 min | < 5 min — glance | Single-file fix, no judgment calls. Trivial rename, constant change, copy-paste from an established pattern. |
+| 2 | ~20 min | ~10 min | 1–2 files, clear pattern to follow, no cross-cutting concerns. |
+| 3 | ~45 min | ~15 min | 2–4 files following an established pattern with minor adaptation. One integration point to verify. |
+| 5 | ~90 min | ~30 min | Multiple layers (service + hook + component). Some judgment calls. Reviewer must check integration points in preview. |
+| 8 | ~3 h | ~1 h — run locally | Cross-cutting change: new service, new hook, new component, DB migration, or non-trivial refactor. Reviewer should run the app locally. |
+| 13 | ~5 h | ~2 h — full session | Strongly consider splitting. If kept as one issue, reviewer needs a dedicated session. Flag this size in your output and suggest a split. |
+| 21 | — | — | Never ship as one issue. Must be split before starting. |
+
+**Sizing rules:**
+- A `migration` flag adds +1 to whatever the issue would otherwise score (migration verification is human-only work).
+- An `eval` flag adds +2 (eval run + human verification of the rate).
+- If you size an issue at 13, you must include a note suggesting how it could be split into two 5s or 8+3.
+- Never size an issue below 1 or above 13 without noting why it cannot be split.
 
 ## Rules for writing ACs
 
