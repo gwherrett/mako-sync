@@ -19,6 +19,8 @@ class StartupSessionValidatorService {
   private validationComplete = false;
   private validationPromise: Promise<ValidationResult> | null = null;
   private externallyValidated = false; // Set when TOKEN_REFRESHED confirms valid session
+  // Resolvers for in-flight getSession() races — resolved when TOKEN_REFRESHED fires early
+  private externalValidationResolvers: Array<(r: ValidationResult) => void> = [];
 
   static getInstance(): StartupSessionValidatorService {
     if (!this.instance) {
@@ -42,6 +44,11 @@ class StartupSessionValidatorService {
     console.log('✅ STARTUP VALIDATOR: Externally marked as validated (token refresh received)');
     this.externallyValidated = true;
     this.validationComplete = true;
+    // Unblock any in-flight getSession() race in performValidation()
+    const resolvers = this.externalValidationResolvers.splice(0);
+    resolvers.forEach(resolve =>
+      resolve({ isValid: true, wasCleared: false, reason: 'Externally validated (TOKEN_REFRESHED)' })
+    );
   }
 
   /**
@@ -114,19 +121,59 @@ class StartupSessionValidatorService {
 
       console.log('🔐 STARTUP VALIDATOR: Found cached tokens, validating with server...');
 
+      // Short-circuit: if TOKEN_REFRESHED already fired before we got here, skip getSession()
+      if (this.externallyValidated) {
+        console.log('✅ STARTUP VALIDATOR: Already externally validated - skipping getSession()');
+        return { isValid: true, wasCleared: false, reason: 'Externally validated (TOKEN_REFRESHED)' };
+      }
+
       // Step 2: Get cached session WITH TIMEOUT (critical fix for stale token hangs)
+      // Race getSession() against TOKEN_REFRESHED — whichever fires first wins.
+      // This prevents the validator from blocking initializeAuth() for the full 5s
+      // when a token refresh completes early (the common cold-start scenario).
       let session = null;
       let sessionError = null;
+      let externalResolve: ((r: ValidationResult) => void) | null = null;
 
       try {
-        const sessionResult = await withTimeout(
-          supabase.auth.getSession(),
-          5000, // 5 second timeout - fail fast for better UX
-          'Session fetch timeout'
-        );
-        session = sessionResult.data.session;
-        sessionError = sessionResult.error;
+        const externalValidationPromise = new Promise<ValidationResult>((resolve) => {
+          externalResolve = resolve;
+          this.externalValidationResolvers.push(resolve);
+        });
+
+        type RaceResult =
+          | { type: 'session'; data: Awaited<ReturnType<typeof supabase.auth.getSession>> }
+          | { type: 'external'; data: ValidationResult };
+
+        const raceResult = await Promise.race<RaceResult>([
+          withTimeout(
+            supabase.auth.getSession(),
+            5000,
+            'Session fetch timeout'
+          ).then(data => ({ type: 'session' as const, data })),
+          externalValidationPromise.then(data => ({ type: 'external' as const, data }))
+        ]);
+
+        // Clean up our resolver if getSession() won (markAsValidated already spliced it if external won)
+        if (externalResolve) {
+          const idx = this.externalValidationResolvers.indexOf(externalResolve);
+          if (idx > -1) this.externalValidationResolvers.splice(idx, 1);
+        }
+
+        if (raceResult.type === 'external') {
+          console.log('✅ STARTUP VALIDATOR: TOKEN_REFRESHED won the race - skipping remaining validation');
+          return raceResult.data;
+        }
+
+        session = raceResult.data.data.session;
+        sessionError = raceResult.data.error;
       } catch (timeoutError: any) {
+        // Clean up any stale resolver that wasn't removed before the throw
+        if (externalResolve) {
+          const idx = this.externalValidationResolvers.indexOf(externalResolve);
+          if (idx > -1) this.externalValidationResolvers.splice(idx, 1);
+        }
+
         console.log('⚠️ STARTUP VALIDATOR: getSession() timed out after 5s', {
           externallyValidated: this.externallyValidated,
           timestamp: new Date().toISOString()
@@ -340,6 +387,7 @@ class StartupSessionValidatorService {
     this.validationComplete = false;
     this.validationPromise = null;
     this.externallyValidated = false;
+    this.externalValidationResolvers = [];
     console.log('🔄 STARTUP VALIDATOR: Reset validation state');
   }
 }

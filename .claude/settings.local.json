@@ -66,7 +66,8 @@
       "Bash(for file:*)",
       "Bash(do grep:*)",
       "Bash(echo \"$file\")",
-      "Bash(ls /workspaces/mako-sync/*.env*)"
+      "Bash(ls /workspaces/mako-sync/*.env*)",
+      "mcp__linear-server__list_projects"
     ]
   }
 }
