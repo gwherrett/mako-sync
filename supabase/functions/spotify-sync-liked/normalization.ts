@@ -92,7 +92,8 @@ const mixKeywords = [
   'remix', 'mix', 'edit', 'rework', 'bootleg', 'mashup',
   'version', 'radio', 'club', 'extended', 'vocal', 'instrumental', 'dub', 'original',
   'live', 'acoustic', 'unplugged', 'session',
-  'remaster', 'remastered', 'demo', 'vip'
+  'remaster', 'remastered', 'demo', 'vip',
+  'deluxe', 'edition',
 ];
 
 // Artist feature keywords (negative indicators for mix info)

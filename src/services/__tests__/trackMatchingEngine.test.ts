@@ -359,6 +359,24 @@ describe('trackMatchingEngine – matchTrack() tier 2 (core title)', () => {
     expect(result.matched).toBe(true);
     expect(result.tier).toBeLessThanOrEqual(2);
   });
+
+  it('matches when Spotify title has (Deluxe Edition) but local does not (tier 2)', () => {
+    const local = makeLocal({ id: '1', title: 'Song Title', artist: 'Artist' });
+    const spotify = makeSpotify({ id: 'sp1', title: 'Song Title (Deluxe Edition)', artist: 'Artist' });
+    const index = buildLocalIndex([local]);
+    const result = matchTrack(spotify, index);
+    expect(result.matched).toBe(true);
+    expect(result.tier).toBeLessThanOrEqual(2);
+  });
+
+  it('matches when local title has (Deluxe Edition) but Spotify does not (tier 2)', () => {
+    const local = makeLocal({ id: '1', title: 'Song Title (Deluxe Edition)', artist: 'Artist' });
+    const spotify = makeSpotify({ id: 'sp1', title: 'Song Title', artist: 'Artist' });
+    const index = buildLocalIndex([local]);
+    const result = matchTrack(spotify, index);
+    expect(result.matched).toBe(true);
+    expect(result.tier).toBeLessThanOrEqual(2);
+  });
 });
 
 describe('trackMatchingEngine – matchTrack() tier 3 (fuzzy)', () => {

@@ -20,6 +20,7 @@ export class NormalizationService {
     'live', 'acoustic', 'unplugged', 'session',
     'remaster', 'remastered', 'demo', 'vip',
     'reprise', 'bonus track',
+    'deluxe', 'edition',
   ];
 
   // Artist feature keywords (negative indicators for mix info)

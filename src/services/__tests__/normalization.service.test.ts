@@ -181,6 +181,17 @@ describe('NormalizationService – extractVersionInfo edge cases', () => {
     const result = service.extractVersionInfo("Song (If This Ain't Love)");
     expect(result.mix).toBeNull();
   });
+
+  it('strips (Deluxe Edition) from core title', () => {
+    const result = service.extractVersionInfo('Album Title (Deluxe Edition)');
+    expect(result.core).toBe('Album Title');
+    expect(result.mix).toContain('Deluxe Edition');
+  });
+
+  it('strips (Deluxe) from core title', () => {
+    const result = service.extractVersionInfo('Song Title (Deluxe)');
+    expect(result.core).toBe('Song Title');
+  });
 });
 
 describe('NormalizationService – parseArtists edge cases', () => {
