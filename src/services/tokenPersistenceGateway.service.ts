@@ -67,6 +67,7 @@ class TokenPersistenceGatewayService {
         console.log('🔐 TOKEN GATEWAY: Token persisted, skipping setSession', {
           reason: options?.skipSetSession ? 'caller-opted-out' : 'already-verified'
         });
+        this.sessionVerified = true; // Prevent subsequent SIGNED_IN from redundantly calling setSession
         this.markTokenReady();
         return true;
       }

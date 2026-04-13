@@ -73,7 +73,7 @@ const Index = () => {
   const [user, setUser] = useState<any>(null);
 
   // Tab badge counts
-  const { initialDataReady } = useAuth();
+  const { initialDataReady, dataFetchEnabled } = useAuth();
   const [spotifyCount, setSpotifyCount] = useState<number | null>(null);
   const [localCount, setLocalCount] = useState<number | null>(null);
   const [noGenreCount, setNoGenreCount] = useState<number | null>(null);
@@ -105,7 +105,7 @@ const Index = () => {
 
   // Fetch tab badge counts
   useEffect(() => {
-    if (!initialDataReady) return;
+    if (!initialDataReady || !dataFetchEnabled) return;
 
     const fetchCounts = async () => {
       try {
