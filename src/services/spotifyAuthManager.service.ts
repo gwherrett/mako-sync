@@ -5,6 +5,23 @@ import { withTimeout } from '@/utils/promiseUtils';
 import type { SpotifyConnection } from '@/types/spotify';
 
 /**
+ * Extract a human-readable error message from a supabase.functions.invoke error.
+ * The default message is always "Edge Function returned a non-2xx status code" which
+ * hides the actual error body. This reads the response body to surface the real reason.
+ */
+async function extractFunctionError(error: any): Promise<string> {
+  try {
+    if (error?.context?.json) {
+      const body = await error.context.json();
+      return body?.error || body?.message || error.message;
+    }
+  } catch {
+    // body was not JSON or already consumed
+  }
+  return error?.message ?? 'Unknown error';
+}
+
+/**
  * Unified Spotify Authentication Manager
  *
  * Consolidates all Spotify authentication operations into a single service.
@@ -434,7 +451,7 @@ export class SpotifyAuthManager {
 
       const result = {
         success: !response.error,
-        error: response.error?.message
+        error: response.error ? await extractFunctionError(response.error) : undefined
       };
 
       if (result.success) {
@@ -492,7 +509,7 @@ export class SpotifyAuthManager {
       });
 
       if (response.error) {
-        throw new Error(response.error.message);
+        throw new Error(await extractFunctionError(response.error));
       }
 
       // Partial sync: function hit the 120s time budget, progress saved — resume automatically
@@ -542,7 +559,7 @@ export class SpotifyAuthManager {
       });
 
       if (response.error) {
-        throw new Error(response.error.message);
+        throw new Error(await extractFunctionError(response.error));
       }
 
       this.updateState({ healthStatus: 'healthy' });
