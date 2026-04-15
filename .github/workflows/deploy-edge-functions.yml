@@ -29,3 +29,5 @@ jobs:
           supabase functions deploy spotify-unlike-tracks
           supabase functions deploy genre-mapping
           supabase functions deploy ai-track-genre-suggest
+          supabase functions deploy discogs-auth
+          supabase functions deploy discogs-search
