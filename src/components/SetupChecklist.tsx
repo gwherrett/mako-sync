@@ -1,11 +1,11 @@
 import React from 'react';
-import { useAuth } from '@/contexts/NewAuthContext';
 import { useUnifiedSpotifyAuth } from '@/hooks/useUnifiedSpotifyAuth';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
-import { CheckCircle, Play, ArrowRight } from 'lucide-react';
+import { CheckCircle, Play, Disc, ArrowRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useDiscogsAuth } from '@/hooks/useDiscogsAuth';
 
 interface ChecklistItem {
   id: string;
@@ -18,16 +18,18 @@ interface ChecklistItem {
 }
 
 const SetupChecklist: React.FC = () => {
-  const { isEmailVerified } = useAuth();
+  const { isConnected: isDiscogsConnected, connectDiscogs } = useDiscogsAuth();
   const { isConnected, connectSpotify } = useUnifiedSpotifyAuth();
 
   const checklist: ChecklistItem[] = [
     {
-      id: 'email-verified',
-      title: 'Verify Email Address',
-      description: 'Confirm your email to secure your account',
-      icon: <CheckCircle className="w-5 h-5" />,
-      completed: isEmailVerified,
+      id: 'discogs-connected',
+      title: 'Connect Discogs Account',
+      description: 'Link your Discogs to sync your vinyl collection',
+      icon: <Disc className="w-5 h-5" />,
+      completed: isDiscogsConnected,
+      action: connectDiscogs,
+      actionLabel: 'Connect Discogs',
     },
     {
       id: 'spotify-connected',
