@@ -14,20 +14,26 @@ additional_redirect_urls = ["https://localhost:3000"]
 jwt_expiry = 3600
 enable_signup = true
 
-[functions.ai-track-genre-suggest]
-verify_jwt = true
-
-[functions.spotify-resync-tracks]
-verify_jwt = true
-
 [functions.spotify-auth]
 verify_jwt = true
 
 [functions.spotify-callback]
 verify_jwt = false
 
+[functions.spotify-resync-tracks]
+verify_jwt = true
+
 [functions.spotify-sync-liked]
 verify_jwt = true
 
+[functions.discogs-auth]
+verify_jwt = true
+
+[functions.discogs-search]
+verify_jwt = true
+
 [functions.genre-mapping]
+verify_jwt = true
+
+[functions.ai-track-genre-suggest]
 verify_jwt = true
