@@ -138,8 +138,14 @@ const Index = () => {
         }
 
         // Fetch No Genre count
-        const noGenre = await GenreMappingService.getNoGenreCount();
-        setNoGenreCount(noGenre);
+        const noGenreResult = await withQueryTimeout(
+          async (signal) => GenreMappingService.getNoGenreCount(signal),
+          10000,
+          'Index:noGenreCount'
+        );
+        if (noGenreResult.data !== null) {
+          setNoGenreCount(noGenreResult.data);
+        }
       } catch (error) {
         console.error('Failed to fetch tab counts:', error);
       }
@@ -166,7 +172,7 @@ const Index = () => {
       channel.unsubscribe();
       supabase.removeChannel(channel);
     };
-  }, [initialDataReady]);
+  }, [initialDataReady, dataFetchEnabled]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-expos-dark via-expos-dark-elevated to-black">

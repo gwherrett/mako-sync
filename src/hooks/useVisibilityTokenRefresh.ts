@@ -76,7 +76,7 @@ export function useVisibilityTokenRefresh(): void {
         const minutesUntilExpiry = Math.round(timeUntilExpiry / 60000);
 
         if (expiringSoon) {
-          logger.auth('SUPABASE token expiring soon, refreshing', {
+          logger.auth('SUPABASE token expiring soon, waiting for internal refresh', {
             expiresAt: data.session.expires_at
               ? new Date(data.session.expires_at * 1000).toISOString()
               : 'unknown',
@@ -84,6 +84,25 @@ export function useVisibilityTokenRefresh(): void {
             tokenType: 'SUPABASE_AUTH'
           });
 
+          // IMPORTANT: Supabase's internal _onVisibilityChanged → _recoverAndRefresh fires
+          // simultaneously and uses the same rotating refresh token. With noOpLock in client.ts,
+          // there is no serialization between this call and the internal refresh — both would
+          // compete for the same refresh token, and the loser gets "Invalid Refresh Token".
+          // Wait 1.5s for the internal handler to complete first, then re-check before acting.
+          await new Promise(resolve => setTimeout(resolve, 1500));
+
+          const { data: refreshedData } = await supabase.auth.getSession();
+          if (!refreshedData.session) return;
+
+          const { expiringSoon: stillExpiringSoon } = isTokenExpiringSoon(refreshedData.session);
+          if (!stillExpiringSoon) {
+            logger.auth('SUPABASE token already refreshed by internal handler, skipping manual refresh', {
+              tokenType: 'SUPABASE_AUTH'
+            });
+            return;
+          }
+
+          // Token is still expiring soon after Supabase's own refresh — force our own
           const { error: refreshError } = await supabase.auth.refreshSession();
 
           if (refreshError) {

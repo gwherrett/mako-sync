@@ -116,13 +116,19 @@ export class GenreMappingService {
   /**
    * Get count of tracks with no Spotify genre AND no manually assigned super_genre
    */
-  static async getNoGenreCount(): Promise<number> {
-    const { count, error } = await supabase
+  static async getNoGenreCount(signal?: AbortSignal): Promise<number> {
+    let query = supabase
       .from('spotify_liked')
       .select('*', { count: 'exact' })
       .is('genre', null)
       .is('super_genre', null)
       .range(0, 0);
+
+    if (signal) {
+      query = query.abortSignal(signal);
+    }
+
+    const { count, error } = await query;
 
     if (error) {
       console.error('Error fetching no-genre count:', error);
