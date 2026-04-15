@@ -60,7 +60,9 @@ export interface PhysicalMediaRecord {
   year: number | null;
   country: string | null;
   pressing: 'original' | 'reissue' | 'remaster' | null;
-  condition: 'M' | 'NM' | 'VG+' | 'VG' | 'G+' | 'G' | 'F' | 'P' | null;
+  rating: number | null;              // Discogs 1-5 scale (1=Poor, 5=Mint); null = unrated
+  discogs_instance_id: number | null; // Discogs collection instance ID after sync
+  discogs_synced_at: string | null;   // ISO timestamp of last Discogs sync
   format: 'LP' | '12"' | '7"' | '10"' | 'EP' | 'Single' | 'Other' | null;
   format_details: string | null;
   notes: string | null;

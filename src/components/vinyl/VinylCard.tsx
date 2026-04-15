@@ -9,19 +9,7 @@ interface VinylCardProps {
   onClick: () => void;
 }
 
-const CONDITION_VARIANTS: Record<string, string> = {
-  M: 'bg-green-600 text-white',
-  NM: 'bg-green-500 text-white',
-  'VG+': 'bg-blue-500 text-white',
-  VG: 'bg-yellow-500 text-white',
-  'G+': 'bg-orange-500 text-white',
-  G: 'bg-red-500 text-white',
-  F: 'bg-red-700 text-white',
-  P: 'bg-gray-500 text-white',
-};
-
 export const VinylCard: React.FC<VinylCardProps> = ({ record, onClick }) => {
-  const conditionClass = record.condition ? CONDITION_VARIANTS[record.condition] : 'bg-muted text-muted-foreground';
 
   return (
     <Card
@@ -41,9 +29,9 @@ export const VinylCard: React.FC<VinylCardProps> = ({ record, onClick }) => {
             <Disc3 className="h-12 w-12 text-muted-foreground/40" />
           </div>
         )}
-        {record.condition && (
-          <span className={`absolute top-2 right-2 text-xs font-bold px-1.5 py-0.5 rounded ${conditionClass}`}>
-            {record.condition}
+        {record.rating && (
+          <span className="absolute top-2 right-2 text-xs font-bold px-1.5 py-0.5 rounded bg-muted text-muted-foreground">
+            {'★'.repeat(record.rating)}{'☆'.repeat(5 - record.rating)}
           </span>
         )}
       </div>

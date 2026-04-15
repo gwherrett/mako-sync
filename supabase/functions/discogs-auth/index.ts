@@ -408,6 +408,13 @@ serve(async (req) => {
         .delete()
         .eq('user_id', user.id)
 
+      // Clear sync state on all physical_media records so re-connecting a different
+      // Discogs account doesn't leave stale instance IDs
+      await supabaseClient
+        .from('physical_media')
+        .update({ discogs_instance_id: null, discogs_synced_at: null })
+        .eq('user_id', user.id)
+
       // Clean up Vault secrets
       if (existing?.access_token_secret_id || existing?.access_secret_secret_id) {
         try {

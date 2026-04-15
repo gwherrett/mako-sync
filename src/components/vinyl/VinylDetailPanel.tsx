@@ -4,9 +4,11 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Loader2, Disc3, CheckCircle2, XCircle, Download, Trash2 } from 'lucide-react';
+import { Loader2, Disc3, CheckCircle2, XCircle, Download, Trash2, Cloud, CloudCheck } from 'lucide-react';
 import { useVinylMissingTracks } from '@/hooks/useVinylMissingTracks';
 import { useSlskdSync } from '@/hooks/useSlskdSync';
+import { useDiscogsAuth } from '@/hooks/useDiscogsAuth';
+import { useDiscogsAddToCollection } from '@/hooks/useDiscogsAddToCollection';
 import { SlskdStorageService } from '@/services/slskdStorage.service';
 import { usePhysicalMedia } from '@/hooks/usePhysicalMedia';
 import type { PhysicalMediaRecord } from '@/types/discogs';
@@ -18,16 +20,35 @@ interface VinylDetailPanelProps {
   onClose: () => void;
 }
 
-const CONDITION_LABELS: Record<string, string> = {
-  M: 'Mint', NM: 'Near Mint', 'VG+': 'Very Good Plus', VG: 'Very Good',
-  'G+': 'Good Plus', G: 'Good', F: 'Fair', P: 'Poor',
+const RATING_LABELS: Record<number, string> = {
+  5: 'Mint',
+  4: 'Very Good Plus',
+  3: 'Good',
+  2: 'Fair',
+  1: 'Poor',
 };
+
+function RatingDisplay({ rating }: { rating: number | null }) {
+  if (rating === null) return null;
+  const filled = '★'.repeat(rating);
+  const empty = '☆'.repeat(5 - rating);
+  return (
+    <Badge variant="outline" className="text-xs">
+      {filled}{empty} {RATING_LABELS[rating]}
+    </Badge>
+  );
+}
 
 export const VinylDetailPanel: React.FC<VinylDetailPanelProps> = ({ record, open, onClose }) => {
   const { matched, missing, isLoading: isMatching } = useVinylMissingTracks(record);
   const { syncToSlskd, isSyncing } = useSlskdSync();
   const { deleteRecord, isDeleting } = usePhysicalMedia();
+  const { isConnected: discogsConnected } = useDiscogsAuth();
+  const { addToCollection, isPending: isSyncingToDiscogs } = useDiscogsAddToCollection();
   const slskdConfigured = SlskdStorageService.isConfigured();
+
+  const canSyncToDiscogs = !!record?.discogs_release_id && discogsConnected;
+  const alreadySynced = !!record?.discogs_instance_id;
 
   const handlePushToSlskd = () => {
     if (!record || missing.length === 0) return;
@@ -71,11 +92,7 @@ export const VinylDetailPanel: React.FC<VinylDetailPanelProps> = ({ record, open
               <div className="flex flex-wrap gap-1 mt-1">
                 {record.year && <Badge variant="secondary" className="text-xs">{record.year}</Badge>}
                 {record.format && <Badge variant="outline" className="text-xs">{record.format}</Badge>}
-                {record.condition && (
-                  <Badge variant="outline" className="text-xs">
-                    {record.condition} — {CONDITION_LABELS[record.condition] ?? record.condition}
-                  </Badge>
-                )}
+                <RatingDisplay rating={record.rating} />
               </div>
             </div>
           </SheetTitle>
@@ -152,19 +169,41 @@ export const VinylDetailPanel: React.FC<VinylDetailPanelProps> = ({ record, open
             {isDeleting ? 'Removing…' : 'Remove'}
           </Button>
 
-          {slskdConfigured && missing.length > 0 && (
-            <Button
-              size="sm"
-              onClick={handlePushToSlskd}
-              disabled={isSyncing || isMatching}
-            >
-              {isSyncing ? (
-                <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Pushing…</>
-              ) : (
-                <><Download className="h-4 w-4 mr-2" />Push {missing.length} missing to slskd</>
-              )}
-            </Button>
-          )}
+          <div className="flex items-center gap-2">
+            {alreadySynced && (
+              <Badge variant="secondary" className="gap-1">
+                <CloudCheck className="h-3.5 w-3.5" />
+                Synced to Discogs
+              </Badge>
+            )}
+            {canSyncToDiscogs && !alreadySynced && (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => addToCollection(record.id)}
+                disabled={isSyncingToDiscogs}
+              >
+                {isSyncingToDiscogs ? (
+                  <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Syncing…</>
+                ) : (
+                  <><Cloud className="h-4 w-4 mr-2" />Add to Discogs</>
+                )}
+              </Button>
+            )}
+            {slskdConfigured && missing.length > 0 && (
+              <Button
+                size="sm"
+                onClick={handlePushToSlskd}
+                disabled={isSyncing || isMatching}
+              >
+                {isSyncing ? (
+                  <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Pushing…</>
+                ) : (
+                  <><Download className="h-4 w-4 mr-2" />Push {missing.length} missing to slskd</>
+                )}
+              </Button>
+            )}
+          </div>
         </div>
       </SheetContent>
     </Sheet>

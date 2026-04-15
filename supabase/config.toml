@@ -37,3 +37,5 @@ verify_jwt = true
 
 [functions.ai-track-genre-suggest]
 verify_jwt = true
+[functions.discogs-add-to-collection]
+verify_jwt = true

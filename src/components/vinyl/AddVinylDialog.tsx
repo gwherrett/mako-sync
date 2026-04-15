@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Info } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -17,9 +17,32 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 import { DiscogsReleaseSelector } from './DiscogsReleaseSelector';
 import { usePhysicalMedia } from '@/hooks/usePhysicalMedia';
 import type { DiscogsRelease, NewPhysicalMedia } from '@/types/discogs';
+
+const RATING_OPTIONS = [
+  { value: 5, label: '5 — Mint' },
+  { value: 4, label: '4 — Very Good Plus' },
+  { value: 3, label: '3 — Good' },
+  { value: 2, label: '2 — Fair' },
+  { value: 1, label: '1 — Poor' },
+];
+
+const RATING_TOOLTIP = `Discogs Rating Scale
+5 – Mint (M) — Played once or never
+4 – Very Good Plus (VG+) — Shows some signs of play
+3 – Good (G) — Significant marks or surface noise
+2 – Fair (F) — Heavily played/damaged
+1 – Poor (P) — Barely playable
+
+Leave unrated to set later on Discogs.`;
 
 interface AddVinylDialogProps {
   open: boolean;
@@ -36,7 +59,6 @@ interface FormData {
   year: string;
   country: string;
   pressing: string;
-  condition: string;
   format: string;
   format_details: string;
   notes: string;
@@ -50,7 +72,6 @@ const EMPTY_FORM: FormData = {
   year: '',
   country: '',
   pressing: '',
-  condition: '',
   format: '',
   format_details: '',
   notes: '',
@@ -65,6 +86,7 @@ const STEP_LABELS: Record<Step, string> = {
 export const AddVinylDialog: React.FC<AddVinylDialogProps> = ({ open, onOpenChange }) => {
   const [step, setStep] = useState<Step>(1);
   const [form, setForm] = useState<FormData>(EMPTY_FORM);
+  const [rating, setRating] = useState<number | null>(null);
   const [discogsRelease, setDiscogsRelease] = useState<DiscogsRelease | null>(null);
   const { addRecord, isAdding } = usePhysicalMedia();
 
@@ -79,6 +101,7 @@ export const AddVinylDialog: React.FC<AddVinylDialogProps> = ({ open, onOpenChan
     setTimeout(() => {
       setStep(1);
       setForm(EMPTY_FORM);
+      setRating(null);
       setDiscogsRelease(null);
     }, 200);
   };
@@ -103,7 +126,9 @@ export const AddVinylDialog: React.FC<AddVinylDialogProps> = ({ open, onOpenChan
         year: form.year ? parseInt(form.year, 10) : null,
         country: form.country || null,
         pressing: (form.pressing as NewPhysicalMedia['pressing']) || null,
-        condition: (form.condition as NewPhysicalMedia['condition']) || null,
+        rating: rating,
+        discogs_instance_id: null,
+        discogs_synced_at: null,
         format: (form.format as NewPhysicalMedia['format']) || null,
         format_details: form.format_details || null,
         notes: form.notes || null,
@@ -178,12 +203,27 @@ export const AddVinylDialog: React.FC<AddVinylDialogProps> = ({ open, onOpenChan
                 </Select>
               </div>
               <div className="space-y-1">
-                <Label>Condition</Label>
-                <Select value={form.condition} onValueChange={setSelect('condition')}>
-                  <SelectTrigger><SelectValue placeholder="Select…" /></SelectTrigger>
+                <div className="flex items-center gap-1">
+                  <Label>Rating</Label>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Info className="h-3.5 w-3.5 text-muted-foreground cursor-help" />
+                      </TooltipTrigger>
+                      <TooltipContent className="max-w-xs whitespace-pre-line">
+                        {RATING_TOOLTIP}
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </div>
+                <Select
+                  value={rating !== null ? String(rating) : ''}
+                  onValueChange={v => setRating(v ? Number(v) : null)}
+                >
+                  <SelectTrigger><SelectValue placeholder="Unrated" /></SelectTrigger>
                   <SelectContent>
-                    {['M', 'NM', 'VG+', 'VG', 'G+', 'G', 'F', 'P'].map(c => (
-                      <SelectItem key={c} value={c}>{c}</SelectItem>
+                    {RATING_OPTIONS.map(opt => (
+                      <SelectItem key={opt.value} value={String(opt.value)}>{opt.label}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
