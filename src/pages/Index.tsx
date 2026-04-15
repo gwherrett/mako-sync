@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { Database, Search, Sparkles, Download } from 'lucide-react';
+import { Database, Search, Download, Disc3 } from 'lucide-react';
 import LibraryHeader from '@/components/LibraryHeader';
 import { StatsOverview } from '@/components/StatsOverview';
 import SetupChecklist from '@/components/SetupChecklist';
@@ -10,9 +10,8 @@ import FileUploadScanner from '@/components/FileUploadScanner';
 import SpotifySyncButton from '@/components/SpotifySyncButton';
 import MissingTracksAnalyzer from '@/components/MissingTracksAnalyzer';
 import { DownloadProcessingSection } from '@/components/DownloadProcessingSection';
-import { TrackLevelProcessor } from '@/components/NoGenreTracks/TrackLevelProcessor';
+import { VinylTab } from '@/components/vinyl/VinylTab';
 import { TrackMatchingService } from '@/services/trackMatching.service';
-import { GenreMappingService } from '@/services/genreMapping.service';
 import { supabase } from '@/integrations/supabase/client';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
@@ -63,8 +62,8 @@ const Index = () => {
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [isScanInProgress, setIsScanInProgress] = useState(false);
 
-  // Get initial tab from URL query param or default to 'spotify'
-  const initialTab = searchParams.get('tab') || 'spotify';
+  // Get initial tab from URL query param or default to 'local'
+  const initialTab = searchParams.get('tab') || 'local';
   const [activeTab, setActiveTab] = useState(initialTab);
 
   // State for MissingTracksAnalyzer
@@ -76,12 +75,11 @@ const Index = () => {
   const { initialDataReady, dataFetchEnabled } = useAuth();
   const [spotifyCount, setSpotifyCount] = useState<number | null>(null);
   const [localCount, setLocalCount] = useState<number | null>(null);
-  const [noGenreCount, setNoGenreCount] = useState<number | null>(null);
 
   // Update active tab when URL query param changes
   useEffect(() => {
     const tabParam = searchParams.get('tab');
-    if (tabParam && ['spotify', 'local', 'missing', 'nogenre', 'downloads'].includes(tabParam)) {
+    if (tabParam && ['local', 'vinyl', 'spotify', 'missing', 'downloads'].includes(tabParam)) {
       setActiveTab(tabParam);
     }
   }, [searchParams]);
@@ -135,16 +133,6 @@ const Index = () => {
         );
         if (localResult.data) {
           setLocalCount(localResult.data.count || 0);
-        }
-
-        // Fetch No Genre count
-        const noGenreResult = await withQueryTimeout(
-          async (signal) => GenreMappingService.getNoGenreCount(signal),
-          10000,
-          'Index:noGenreCount'
-        );
-        if (noGenreResult.data !== null) {
-          setNoGenreCount(noGenreResult.data);
         }
       } catch (error) {
         console.error('Failed to fetch tab counts:', error);
@@ -201,7 +189,22 @@ const Index = () => {
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid w-full grid-cols-5 mb-8">
-            {/* Tab 1: Spotify Sync - Priority 1 */}
+            {/* Tab 1: Local Files */}
+            <TabsTrigger value="local" className="gap-1 sm:gap-2 px-1 sm:px-3">
+              <Database className="w-4 h-4 flex-shrink-0" />
+              <span className="hidden sm:inline truncate">Local</span>
+              {localCount !== null && localCount > 0 && (
+                <Badge variant="secondary" className="hidden md:inline-flex ml-1 h-5 px-1.5 text-xs">
+                  {localCount.toLocaleString()}
+                </Badge>
+              )}
+            </TabsTrigger>
+            {/* Tab 2: Vinyl Collection */}
+            <TabsTrigger value="vinyl" className="gap-1 sm:gap-2 px-1 sm:px-3">
+              <Disc3 className="w-4 h-4 flex-shrink-0" />
+              <span className="hidden sm:inline truncate">Vinyl</span>
+            </TabsTrigger>
+            {/* Tab 3: Spotify */}
             <TabsTrigger value="spotify" className="gap-1 sm:gap-2 px-1 sm:px-3">
               <svg viewBox="0 0 24 24" className="w-4 h-4 flex-shrink-0" fill="currentColor">
                 <path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z"/>
@@ -213,116 +216,19 @@ const Index = () => {
                 </Badge>
               )}
             </TabsTrigger>
-            {/* Tab 2: Local Files - Priority 2 */}
-            <TabsTrigger value="local" className="gap-1 sm:gap-2 px-1 sm:px-3">
-              <Database className="w-4 h-4 flex-shrink-0" />
-              <span className="hidden sm:inline truncate">Local</span>
-              {localCount !== null && localCount > 0 && (
-                <Badge variant="secondary" className="hidden md:inline-flex ml-1 h-5 px-1.5 text-xs">
-                  {localCount.toLocaleString()}
-                </Badge>
-              )}
-            </TabsTrigger>
-            {/* Tab 3: Missing Tracks - Priority 3 */}
+            {/* Tab 4: Missing Tracks */}
             <TabsTrigger value="missing" className="gap-1 sm:gap-2 px-1 sm:px-3">
               <Search className="w-4 h-4 flex-shrink-0" />
               <span className="hidden sm:inline truncate">Missing</span>
             </TabsTrigger>
-            {/* Tab 4: No Genre Tracks - Priority 4 */}
-            <TabsTrigger value="nogenre" className="gap-1 sm:gap-2 px-1 sm:px-3">
-              <Sparkles className="w-4 h-4 flex-shrink-0" />
-              <span className="hidden sm:inline truncate">No Genre</span>
-              {noGenreCount !== null && noGenreCount > 0 && (
-                <Badge variant="secondary" className="hidden md:inline-flex ml-1 h-5 px-1.5 text-xs">
-                  {noGenreCount.toLocaleString()}
-                </Badge>
-              )}
-            </TabsTrigger>
-            {/* Tab 5: Process Downloads - Priority 5 */}
+            {/* Tab 5: Process Downloads */}
             <TabsTrigger value="downloads" className="gap-1 sm:gap-2 px-1 sm:px-3">
               <Download className="w-4 h-4 flex-shrink-0" />
               <span className="hidden sm:inline truncate">Downloads</span>
             </TabsTrigger>
           </TabsList>
-          
-          <TabsContent value="spotify" className="space-y-8">
-            <SpotifySyncButton />
-            <TracksTable
-              onTrackSelect={setSelectedTrack}
-              selectedTrack={selectedTrack}
-            />
-            {selectedTrack && (
-              <div className="bg-expos-dark-elevated/30 rounded-lg border border-expos-blue/20 p-6">
-                <h3 className="text-xl font-semibold text-white mb-4">Track Details</h3>
-                <div className="p-4 bg-expos-dark-elevated/50 rounded-lg border border-expos-blue/10">
-                  <div className="flex justify-between items-start mb-3">
-                    <div>
-                      <h4 className="font-semibold text-white text-lg">{selectedTrack.title}</h4>
-                      <p className="text-gray-300">{selectedTrack.artist} • {selectedTrack.album || 'Unknown Album'}</p>
-                      {selectedTrack.genre && (
-                        <p className="text-purple-400 text-sm">{selectedTrack.genre}</p>
-                      )}
-                    </div>
-                    <button 
-                      className="text-expos-blue hover:text-expos-blue/80 transition-colors"
-                      onClick={() => {
-                        window.open(
-                          `https://open.spotify.com/track/${selectedTrack.spotify_id}`, 
-                          'spotify-track'
-                        );
-                      }}
-                    >
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                      </svg>
-                    </button>
-                  </div>
-                  
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-3">
-                    <div>
-                      <span className="text-xs text-gray-400 block">BPM</span>
-                      <span className="text-sm text-expos-blue font-semibold">
-                        {selectedTrack.bpm ? Math.round(selectedTrack.bpm) : 'Unknown'}
-                      </span>
-                    </div>
-                    <div>
-                      <span className="text-xs text-gray-400 block">Key</span>
-                      <span className="text-sm text-expos-blue font-semibold">
-                        {selectedTrack.key ? (() => {
-                          const keys = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
-                          const keyNum = parseInt(selectedTrack.key);
-                          return keys[keyNum] || 'Unknown';
-                        })() : 'Unknown'}
-                      </span>
-                    </div>
-                    <div>
-                      <span className="text-xs text-gray-400 block">Year</span>
-                      <span className="text-sm text-white">{selectedTrack.year || 'Unknown'}</span>
-                    </div>
-                    <div>
-                      <span className="text-xs text-gray-400 block">Added</span>
-                      <span className="text-sm text-white">
-                        {selectedTrack.added_at ? new Date(selectedTrack.added_at).toLocaleDateString() : 'Unknown'}
-                      </span>
-                    </div>
-                  </div>
 
-                  <div className="flex space-x-2">
-                    {selectedTrack.danceability && (
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-expos-blue/10 text-expos-blue border border-expos-blue/30">
-                        Danceability: {(selectedTrack.danceability * 100).toFixed(0)}%
-                      </span>
-                    )}
-                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-expos-red/10 text-expos-red border border-expos-red/30">
-                      Spotify Track
-                    </span>
-                  </div>
-                </div>
-              </div>
-            )}
-          </TabsContent>
-
-          {/* Tab 2: Local Files */}
+          {/* Tab 1: Local Files */}
           <TabsContent value="local" className="space-y-8">
             <FileUploadScanner
               onScanComplete={() => setRefreshTrigger(prev => prev + 1)}
@@ -416,18 +322,96 @@ const Index = () => {
             )}
           </TabsContent>
 
-          {/* Tab 3: Missing Tracks */}
+          {/* Tab 2: Vinyl Collection */}
+          <TabsContent value="vinyl" className="space-y-4">
+            <VinylTab />
+          </TabsContent>
+
+          {/* Tab 3: Spotify */}
+          <TabsContent value="spotify" className="space-y-8">
+            <SpotifySyncButton />
+            <TracksTable
+              onTrackSelect={setSelectedTrack}
+              selectedTrack={selectedTrack}
+            />
+            {selectedTrack && (
+              <div className="bg-expos-dark-elevated/30 rounded-lg border border-expos-blue/20 p-6">
+                <h3 className="text-xl font-semibold text-white mb-4">Track Details</h3>
+                <div className="p-4 bg-expos-dark-elevated/50 rounded-lg border border-expos-blue/10">
+                  <div className="flex justify-between items-start mb-3">
+                    <div>
+                      <h4 className="font-semibold text-white text-lg">{selectedTrack.title}</h4>
+                      <p className="text-gray-300">{selectedTrack.artist} • {selectedTrack.album || 'Unknown Album'}</p>
+                      {selectedTrack.genre && (
+                        <p className="text-purple-400 text-sm">{selectedTrack.genre}</p>
+                      )}
+                    </div>
+                    <button 
+                      className="text-expos-blue hover:text-expos-blue/80 transition-colors"
+                      onClick={() => {
+                        window.open(
+                          `https://open.spotify.com/track/${selectedTrack.spotify_id}`, 
+                          'spotify-track'
+                        );
+                      }}
+                    >
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                      </svg>
+                    </button>
+                  </div>
+                  
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-3">
+                    <div>
+                      <span className="text-xs text-gray-400 block">BPM</span>
+                      <span className="text-sm text-expos-blue font-semibold">
+                        {selectedTrack.bpm ? Math.round(selectedTrack.bpm) : 'Unknown'}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-xs text-gray-400 block">Key</span>
+                      <span className="text-sm text-expos-blue font-semibold">
+                        {selectedTrack.key ? (() => {
+                          const keys = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+                          const keyNum = parseInt(selectedTrack.key);
+                          return keys[keyNum] || 'Unknown';
+                        })() : 'Unknown'}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-xs text-gray-400 block">Year</span>
+                      <span className="text-sm text-white">{selectedTrack.year || 'Unknown'}</span>
+                    </div>
+                    <div>
+                      <span className="text-xs text-gray-400 block">Added</span>
+                      <span className="text-sm text-white">
+                        {selectedTrack.added_at ? new Date(selectedTrack.added_at).toLocaleDateString() : 'Unknown'}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="flex space-x-2">
+                    {selectedTrack.danceability && (
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-expos-blue/10 text-expos-blue border border-expos-blue/30">
+                        Danceability: {(selectedTrack.danceability * 100).toFixed(0)}%
+                      </span>
+                    )}
+                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-expos-red/10 text-expos-red border border-expos-red/30">
+                      Spotify Track
+                    </span>
+                  </div>
+                </div>
+              </div>
+            )}
+          </TabsContent>
+
+          {/* Tab 4: Missing Tracks */}
           <TabsContent value="missing" className="space-y-6">
             <MissingTracksAnalyzer
               selectedGenre={selectedGenre}
               setSelectedGenre={setSelectedGenre}
               superGenres={superGenres}
             />
-          </TabsContent>
-
-          {/* Tab 4: No Genre Tracks */}
-          <TabsContent value="nogenre">
-            <TrackLevelProcessor />
           </TabsContent>
 
           {/* Tab 5: Process Downloads */}

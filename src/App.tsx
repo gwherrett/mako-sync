@@ -10,10 +10,12 @@ import Index from "./pages/Index";
 import NewAuth from "./pages/NewAuth";
 import ResetPassword from "./pages/ResetPassword";
 import { UnifiedSpotifyCallback } from "./components/spotify/UnifiedSpotifyCallback";
+import { DiscogsCallback } from "./components/discogs/DiscogsCallback";
 import NotFound from "./pages/NotFound";
-import { GenreMapping } from "./pages/GenreMapping";
+import { GenreTools } from "./pages/GenreTools";
 import Security from "./pages/Security";
 import { DuplicateTracksManager } from "./components/DuplicateTracksManager";
+import Vinyl from "./pages/Vinyl";
 
 const queryClient = new QueryClient();
 
@@ -25,18 +27,20 @@ function AppContent() {
         <Route path="/auth" element={<NewAuth />} />
         <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/spotify-callback" element={<UnifiedSpotifyCallback />} />
+        <Route path="/discogs-callback" element={<DiscogsCallback />} />
         <Route path="/" element={
           <NewProtectedRoute>
             <Index />
           </NewProtectedRoute>
         } />
-        <Route path="/genre-mapping" element={
+        <Route path="/genre-tools" element={
           <NewProtectedRoute>
-            <GenreMapping />
+            <GenreTools />
           </NewProtectedRoute>
         } />
-        {/* Redirect /no-genre-tracks to Dashboard - No Genre tab is now Tab 4 */}
-        <Route path="/no-genre-tracks" element={<Navigate to="/?tab=nogenre" replace />} />
+        {/* Redirect legacy routes */}
+        <Route path="/genre-mapping" element={<Navigate to="/genre-tools" replace />} />
+        <Route path="/no-genre-tracks" element={<Navigate to="/genre-tools?tab=assign" replace />} />
         <Route path="/security" element={
           <NewProtectedRoute>
             <Security />
@@ -45,6 +49,11 @@ function AppContent() {
         <Route path="/duplicates" element={
           <NewProtectedRoute>
             <DuplicateTracksManager />
+          </NewProtectedRoute>
+        } />
+        <Route path="/vinyl" element={
+          <NewProtectedRoute>
+            <Vinyl />
           </NewProtectedRoute>
         } />
         <Route path="*" element={<NotFound />} />

@@ -240,6 +240,68 @@ export class TrackMatchingService {
     return missingTracks;
   }
 
+  // Cross-reference a vinyl record's Discogs tracklist against the user's local files.
+  // Returns matched local tracks and missing Discogs tracks (by position + title).
+  static async matchTracklistAgainstLocal(
+    userId: string,
+    tracklist: { position: string; title: string }[],
+    artist: string
+  ): Promise<{
+    matched: LocalTrack[];
+    missing: { position: string; title: string }[];
+  }> {
+    const localTracks = await this.fetchLocalTracks(userId);
+    const localIndex = buildLocalIndex(localTracks);
+    const normalizedArtist = normalizeArtist(artist);
+
+    const matched: LocalTrack[] = [];
+    const missing: { position: string; title: string }[] = [];
+
+    for (const discogsTrack of tracklist) {
+      // Skip side headings (type_ === 'heading') — they have no audio
+      if (!discogsTrack.title) continue;
+
+      const normTitle = normalize(discogsTrack.title);
+      const coreTitle = extractCoreTitle(discogsTrack.title);
+
+      // Tier 1: exact
+      const exactKey = `${normTitle}_${normalizedArtist}`;
+      if (localIndex.exactSet.has(exactKey)) {
+        const found = localIndex.normalized.find(l => `${l.title}_${l.artist}` === exactKey);
+        if (found) matched.push(found.track);
+        continue;
+      }
+
+      // Tier 2: core title
+      const coreKey = `${coreTitle}_${normalizedArtist}`;
+      if (localIndex.coreSet.has(coreKey)) {
+        const found = localIndex.normalized.find(l => `${l.coreTitle}_${l.artist}` === coreKey);
+        if (found) matched.push(found.track);
+        continue;
+      }
+
+      // Tier 3: fuzzy
+      let fuzzyFound: LocalTrack | null = null;
+      for (const local of localIndex.normalized) {
+        if (local.artist !== normalizedArtist) continue;
+        const titleSim = calculateSimilarity(local.title, normTitle);
+        const coreSim = calculateSimilarity(local.coreTitle, coreTitle);
+        if (titleSim >= FUZZY_MATCH_THRESHOLD || coreSim >= FUZZY_MATCH_THRESHOLD) {
+          fuzzyFound = local.track;
+          break;
+        }
+      }
+
+      if (fuzzyFound) {
+        matched.push(fuzzyFound);
+      } else {
+        missing.push({ position: discogsTrack.position, title: discogsTrack.title });
+      }
+    }
+
+    return { matched, missing };
+  }
+
   // Fetch available super genres for filtering
   static async fetchSuperGenres(userId: string): Promise<string[]> {
     const { data, error } = await supabase

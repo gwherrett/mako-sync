@@ -598,4 +598,144 @@ describe('TrackMatchingService', () => {
       expect(result).toHaveLength(0);
     });
   });
+
+  // ---------------------------------------------------------------------------
+  // matchTracklistAgainstLocal
+  // ---------------------------------------------------------------------------
+
+  describe('matchTracklistAgainstLocal', () => {
+    // Helper: mock fetchLocalTracks (uses .range() pagination)
+    function mockLocalTracks(tracks: any[]) {
+      vi.mocked(supabase.from).mockReturnValue({
+        select: vi.fn().mockReturnValue({
+          eq: vi.fn().mockReturnValue({
+            range: vi.fn()
+              .mockResolvedValueOnce({ data: tracks, error: null })
+              .mockResolvedValueOnce({ data: [], error: null }),
+          }),
+        }),
+      } as any);
+    }
+
+    it('returns all matched when every tracklist title has a local file', async () => {
+      const localTracks = [
+        { id: '1', title: 'Bohemian Rhapsody', artist: 'Queen', primary_artist: 'Queen', album: 'A Night at the Opera', genre: 'Rock', file_path: '/music/bohem.mp3' },
+        { id: '2', title: 'Killer Queen', artist: 'Queen', primary_artist: 'Queen', album: 'Sheer Heart Attack', genre: 'Rock', file_path: '/music/killer.mp3' },
+      ];
+      mockLocalTracks(localTracks);
+
+      const tracklist = [
+        { position: 'A1', title: 'Bohemian Rhapsody' },
+        { position: 'A2', title: 'Killer Queen' },
+      ];
+
+      const { matched, missing } = await TrackMatchingService.matchTracklistAgainstLocal('user-1', tracklist, 'Queen');
+
+      expect(matched).toHaveLength(2);
+      expect(missing).toHaveLength(0);
+    });
+
+    it('places unmatched titles in the missing array with position + title', async () => {
+      mockLocalTracks([
+        { id: '1', title: 'Bohemian Rhapsody', artist: 'Queen', primary_artist: 'Queen', album: 'Album', genre: 'Rock', file_path: '/music/bohem.mp3' },
+      ]);
+
+      const tracklist = [
+        { position: 'A1', title: 'Bohemian Rhapsody' },
+        { position: 'B1', title: 'We Will Rock You' }, // not in local
+      ];
+
+      const { matched, missing } = await TrackMatchingService.matchTracklistAgainstLocal('user-1', tracklist, 'Queen');
+
+      expect(matched).toHaveLength(1);
+      expect(missing).toHaveLength(1);
+      expect(missing[0]).toEqual({ position: 'B1', title: 'We Will Rock You' });
+    });
+
+    it('returns empty matched and missing for an empty tracklist', async () => {
+      mockLocalTracks([
+        { id: '1', title: 'Some Track', artist: 'Artist', primary_artist: 'Artist', album: 'Album', genre: 'Rock', file_path: '/music/t.mp3' },
+      ]);
+
+      const { matched, missing } = await TrackMatchingService.matchTracklistAgainstLocal('user-1', [], 'Artist');
+
+      expect(matched).toHaveLength(0);
+      expect(missing).toHaveLength(0);
+    });
+
+    it('skips tracklist entries with empty title (side headings)', async () => {
+      mockLocalTracks([
+        { id: '1', title: 'Track A', artist: 'Artist', primary_artist: 'Artist', album: 'Album', genre: 'Rock', file_path: '/music/a.mp3' },
+      ]);
+
+      const tracklist = [
+        { position: 'Side A', title: '' },       // heading — should be skipped
+        { position: 'A1', title: 'Track A' },
+      ];
+
+      const { matched, missing } = await TrackMatchingService.matchTracklistAgainstLocal('user-1', tracklist, 'Artist');
+
+      expect(matched).toHaveLength(1);
+      expect(missing).toHaveLength(0);
+    });
+
+    it('matches via core title when Discogs track has a different mix suffix', async () => {
+      mockLocalTracks([
+        { id: '1', title: 'Acid Rain (Original Mix)', artist: 'Objekt', primary_artist: 'Objekt', album: 'Flatland', genre: 'Techno', file_path: '/music/acid.mp3' },
+      ]);
+
+      const tracklist = [
+        { position: 'A1', title: 'Acid Rain (Dub Mix)' }, // different mix, same core title
+      ];
+
+      const { matched, missing } = await TrackMatchingService.matchTracklistAgainstLocal('user-1', tracklist, 'Objekt');
+
+      // Tier 2 core-title match: "Acid Rain" === "Acid Rain"
+      expect(matched).toHaveLength(1);
+      expect(missing).toHaveLength(0);
+    });
+
+    it('matches via fuzzy tier for high-similarity titles', async () => {
+      mockLocalTracks([
+        { id: '1', title: 'Blue in Green', artist: 'Miles Davis', primary_artist: 'Miles Davis', album: 'Kind of Blue', genre: 'Jazz', file_path: '/music/big.mp3' },
+      ]);
+
+      // One-character difference — well above 85% fuzzy threshold
+      const tracklist = [{ position: 'B2', title: 'Blue In Green' }];
+
+      const { matched, missing } = await TrackMatchingService.matchTracklistAgainstLocal('user-1', tracklist, 'Miles Davis');
+
+      expect(matched).toHaveLength(1);
+      expect(missing).toHaveLength(0);
+    });
+
+    it('does not cross-match tracks from a different artist', async () => {
+      // Local library has "Heroes" by Bowie; Discogs record is by someone else
+      mockLocalTracks([
+        { id: '1', title: 'Heroes', artist: 'David Bowie', primary_artist: 'David Bowie', album: 'Heroes', genre: 'Rock', file_path: '/music/heroes.mp3' },
+      ]);
+
+      const tracklist = [{ position: 'A1', title: 'Heroes' }];
+
+      const { matched, missing } = await TrackMatchingService.matchTracklistAgainstLocal('user-1', tracklist, 'Peter Gabriel');
+
+      // Artist normalisation differs — should not match
+      expect(matched).toHaveLength(0);
+      expect(missing).toHaveLength(1);
+    });
+
+    it('returns empty results when local library is empty', async () => {
+      mockLocalTracks([]);
+
+      const tracklist = [
+        { position: 'A1', title: 'Some Track' },
+        { position: 'A2', title: 'Another Track' },
+      ];
+
+      const { matched, missing } = await TrackMatchingService.matchTracklistAgainstLocal('user-1', tracklist, 'Artist');
+
+      expect(matched).toHaveLength(0);
+      expect(missing).toHaveLength(2);
+    });
+  });
 });

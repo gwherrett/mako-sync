@@ -7,6 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/contexts/NewAuthContext';
 import { useUnifiedSpotifyAuth } from '@/hooks/useUnifiedSpotifyAuth';
+import { useDiscogsAuth } from '@/hooks/useDiscogsAuth';
 import { SlskdConfigSection } from '@/components/SlskdConfigSection';
 import { format } from 'date-fns';
 
@@ -36,6 +37,14 @@ const getStatusBadgeVariant = (status: TokenStatus) => {
 const Security = () => {
   const { session, signOut } = useAuth();
   const { isConnected, connection, disconnectSpotify, isDisconnecting } = useUnifiedSpotifyAuth();
+  const {
+    isConnected: discogsConnected,
+    connection: discogsConnection,
+    connectDiscogs,
+    disconnectDiscogs,
+    isConnecting: discogsConnecting,
+    isDisconnecting: discogsDisconnecting,
+  } = useDiscogsAuth();
 
   // Determine Supabase token status
   const getSupabaseTokenInfo = (): TokenInfo => {
@@ -99,6 +108,11 @@ const Security = () => {
     getSupabaseTokenInfo(),
     getSpotifyTokenInfo(),
   ];
+
+  const discogsStatus: TokenStatus = discogsConnected ? 'Valid' : 'Missing';
+  const discogsExpiration = discogsConnected && discogsConnection
+    ? `@${discogsConnection.discogs_username}`
+    : '—';
 
   return (
     <div className="min-h-screen bg-background">
@@ -174,6 +188,35 @@ const Security = () => {
                     </TableCell>
                   </TableRow>
                 ))}
+                {/* Discogs row */}
+                <TableRow>
+                  <TableCell className="font-medium">Discogs</TableCell>
+                  <TableCell>
+                    <Badge variant={getStatusBadgeVariant(discogsStatus)}>{discogsStatus}</Badge>
+                  </TableCell>
+                  <TableCell className="text-muted-foreground">{discogsExpiration}</TableCell>
+                  <TableCell className="text-right">
+                    {discogsConnected ? (
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        onClick={disconnectDiscogs}
+                        disabled={discogsDisconnecting}
+                      >
+                        {discogsDisconnecting ? 'Disconnecting...' : 'Disconnect'}
+                      </Button>
+                    ) : (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={connectDiscogs}
+                        disabled={discogsConnecting}
+                      >
+                        {discogsConnecting ? 'Connecting...' : 'Connect'}
+                      </Button>
+                    )}
+                  </TableCell>
+                </TableRow>
               </TableBody>
             </Table>
           </CardContent>
