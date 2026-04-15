@@ -4,7 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Loader2, Disc3, CheckCircle2, XCircle, Download, Trash2, Cloud, CloudCheck } from 'lucide-react';
+import { Loader2, Disc3, CheckCircle2, XCircle, Download, Trash2, CloudUpload } from 'lucide-react';
 import { useVinylMissingTracks } from '@/hooks/useVinylMissingTracks';
 import { useSlskdSync } from '@/hooks/useSlskdSync';
 import { useDiscogsAuth } from '@/hooks/useDiscogsAuth';
@@ -172,7 +172,7 @@ export const VinylDetailPanel: React.FC<VinylDetailPanelProps> = ({ record, open
           <div className="flex items-center gap-2">
             {alreadySynced && (
               <Badge variant="secondary" className="gap-1">
-                <CloudCheck className="h-3.5 w-3.5" />
+                <CheckCircle2 className="h-3.5 w-3.5 text-green-500" />
                 Synced to Discogs
               </Badge>
             )}
@@ -186,7 +186,7 @@ export const VinylDetailPanel: React.FC<VinylDetailPanelProps> = ({ record, open
                 {isSyncingToDiscogs ? (
                   <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Syncing…</>
                 ) : (
-                  <><Cloud className="h-4 w-4 mr-2" />Add to Discogs</>
+                  <><CloudUpload className="h-4 w-4 mr-2" />Add to Discogs</>
                 )}
               </Button>
             )}
