@@ -24,8 +24,9 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { DiscogsReleaseSelector } from './DiscogsReleaseSelector';
+import { CameraCapture } from './CameraCapture';
 import { usePhysicalMedia } from '@/hooks/usePhysicalMedia';
-import type { DiscogsRelease, NewPhysicalMedia } from '@/types/discogs';
+import type { DiscogsRelease, NewPhysicalMedia, VinylIdentifyResult } from '@/types/discogs';
 
 const RATING_OPTIONS = [
   { value: 5, label: '5 — Mint' },
@@ -49,7 +50,7 @@ interface AddVinylDialogProps {
   onOpenChange: (open: boolean) => void;
 }
 
-type Step = 1 | 2 | 3;
+type Step = 0 | 1 | 2 | 3;
 
 interface FormData {
   artist: string;
@@ -78,13 +79,14 @@ const EMPTY_FORM: FormData = {
 };
 
 const STEP_LABELS: Record<Step, string> = {
+  0: 'Scan label',
   1: 'Record details',
   2: 'Find on Discogs',
   3: 'Saving…',
 };
 
 export const AddVinylDialog: React.FC<AddVinylDialogProps> = ({ open, onOpenChange }) => {
-  const [step, setStep] = useState<Step>(1);
+  const [step, setStep] = useState<Step>(0);
   const [form, setForm] = useState<FormData>(EMPTY_FORM);
   const [rating, setRating] = useState<number | null>(null);
   const [discogsRelease, setDiscogsRelease] = useState<DiscogsRelease | null>(null);
@@ -99,11 +101,27 @@ export const AddVinylDialog: React.FC<AddVinylDialogProps> = ({ open, onOpenChan
     onOpenChange(false);
     // Reset after animation
     setTimeout(() => {
-      setStep(1);
+      setStep(0);
       setForm(EMPTY_FORM);
       setRating(null);
       setDiscogsRelease(null);
     }, 200);
+  };
+
+  const handleIdentified = (result: VinylIdentifyResult) => {
+    setForm({
+      artist: result.artist ?? '',
+      title: result.title ?? '',
+      label: result.label ?? '',
+      catalogue_number: result.catalogue_number ?? '',
+      year: result.year != null ? String(result.year) : '',
+      country: '',
+      pressing: '',
+      format: '',
+      format_details: result.format_hints ?? '',
+      notes: '',
+    });
+    setStep(1);
   };
 
   const handleDiscogsSelect = async (release: DiscogsRelease) => {
@@ -156,10 +174,19 @@ export const AddVinylDialog: React.FC<AddVinylDialogProps> = ({ open, onOpenChan
           <DialogTitle>
             Add vinyl record
             <span className="ml-2 text-sm font-normal text-muted-foreground">
-              Step {step} of 2 — {STEP_LABELS[step === 3 ? 3 : step]}
+              {step === 0 ? STEP_LABELS[0] : `Step ${step} of 2 — ${STEP_LABELS[step]}`}
             </span>
           </DialogTitle>
         </DialogHeader>
+
+        {/* Step 0 — Camera capture */}
+        {step === 0 && (
+          <CameraCapture
+            onIdentified={handleIdentified}
+            onError={() => setStep(1)}
+            onSkip={() => setStep(1)}
+          />
+        )}
 
         {/* Step 1 — Record details */}
         {step === 1 && (

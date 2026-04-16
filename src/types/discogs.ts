@@ -75,3 +75,13 @@ export interface PhysicalMediaRecord {
 }
 
 export type NewPhysicalMedia = Omit<PhysicalMediaRecord, 'id' | 'user_id' | 'created_at' | 'updated_at'>;
+
+export interface VinylIdentifyResult {
+  artist: string | null;
+  title: string | null;
+  label: string | null;
+  catalogue_number: string | null;
+  year: number | null;
+  format_hints: string | null;
+  confidence: number;
+}
