@@ -94,7 +94,7 @@ serve(async (req) => {
         'content-type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'claude-haiku-4-5-20251001',
+        model: 'claude-sonnet-4-6',
         max_tokens: 1024,
         system: SYSTEM_PROMPT,
         messages: [
@@ -122,8 +122,13 @@ serve(async (req) => {
     if (!anthropicResponse.ok) {
       const errText = await anthropicResponse.text()
       console.error('Anthropic API error:', anthropicResponse.status, errText)
+      let detail = `Anthropic API ${anthropicResponse.status}`
+      try {
+        const errJson = JSON.parse(errText)
+        if (errJson?.error?.message) detail = errJson.error.message
+      } catch { /* not JSON */ }
       return new Response(
-        JSON.stringify({ error: 'AI identification failed' }),
+        JSON.stringify({ error: 'AI identification failed', detail }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
       )
     }
