@@ -79,12 +79,14 @@ async function getTokensFromVault(
 ): Promise<{ accessToken: string; accessTokenSecret: string }> {
   const conn = await pool.connect()
   try {
-    const tokenResult = await conn.queryObject<{ decrypted_secret: string }>`
-      SELECT decrypted_secret FROM vault.decrypted_secrets WHERE id = ${accessTokenSecretId}
-    `
-    const secretResult = await conn.queryObject<{ decrypted_secret: string }>`
-      SELECT decrypted_secret FROM vault.decrypted_secrets WHERE id = ${accessSecretSecretId}
-    `
+    const [tokenResult, secretResult] = await Promise.all([
+      conn.queryObject<{ decrypted_secret: string }>`
+        SELECT decrypted_secret FROM vault.decrypted_secrets WHERE id = ${accessTokenSecretId}
+      `,
+      conn.queryObject<{ decrypted_secret: string }>`
+        SELECT decrypted_secret FROM vault.decrypted_secrets WHERE id = ${accessSecretSecretId}
+      `,
+    ])
     const accessToken = tokenResult.rows[0]?.decrypted_secret
     const accessTokenSecret = secretResult.rows[0]?.decrypted_secret
     if (!accessToken || !accessTokenSecret) {
@@ -202,15 +204,31 @@ serve(async (req) => {
     const authHeader = await buildOAuthHeader('POST', discogsUrl, consumerKey, consumerSecret, accessToken, accessTokenSecret)
 
     // POST to Discogs
-    const discogsResp = await fetch(discogsUrl, {
-      method: 'POST',
-      headers: {
-        Authorization: authHeader,
-        'Content-Type': 'application/json',
-        'User-Agent': 'MakoSync/1.0',
-      },
-      body: JSON.stringify({ rating: record.rating ?? 0 }),
-    })
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), 8000)
+    let discogsResp: Response
+    try {
+      discogsResp = await fetch(discogsUrl, {
+        method: 'POST',
+        headers: {
+          Authorization: authHeader,
+          'Content-Type': 'application/json',
+          'User-Agent': 'MakoSync/1.0',
+        },
+        body: JSON.stringify({ rating: record.rating ?? 0 }),
+        signal: controller.signal,
+      })
+    } catch (fetchErr: unknown) {
+      if (fetchErr instanceof Error && fetchErr.name === 'AbortError') {
+        return new Response(
+          JSON.stringify({ error: 'Discogs API timed out', code: 'DISCOGS_TIMEOUT' }),
+          { status: 504, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+        )
+      }
+      throw fetchErr
+    } finally {
+      clearTimeout(timeoutId)
+    }
 
     if (discogsResp.status === 404) {
       return new Response(

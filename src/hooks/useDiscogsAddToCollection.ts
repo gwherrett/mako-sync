@@ -28,6 +28,8 @@ export function useDiscogsAddToCollection() {
             : null;
           if (parsed?.code === 'ALREADY_SYNCED') {
             message = 'This record is already in your Discogs collection';
+          } else if (parsed?.code === 'DISCOGS_TIMEOUT') {
+            message = 'Discogs did not respond in time — please try again';
           } else if (parsed?.error) {
             message = parsed.error;
           }
