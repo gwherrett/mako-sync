@@ -103,6 +103,16 @@ describe('DiscogsAuthManager', () => {
   // ---------------------------------------------------------------------------
 
   describe('checkConnection', () => {
+    beforeEach(() => {
+      // Most checkConnection tests need an authenticated user to reach supabase.from.
+      // The cached-result test never calls getUser (cooldown short-circuits first),
+      // so this setup doesn't affect its assertions.
+      vi.mocked(supabase.auth.getUser).mockResolvedValue({
+        data: { user: { id: 'user-123' } },
+        error: null,
+      } as any);
+    });
+
     it('returns cached result when within cooldown window', async () => {
       manager['state'].lastCheck = Date.now();
       manager['state'].isConnected = true;
@@ -120,8 +130,10 @@ describe('DiscogsAuthManager', () => {
 
       vi.mocked(supabase.from).mockReturnValue({
         select: vi.fn().mockReturnValue({
-          maybeSingle: vi.fn().mockReturnValue({
-            then: (fn: any) => Promise.resolve({ data: null, error: null }).then(fn),
+          eq: vi.fn().mockReturnValue({
+            maybeSingle: vi.fn().mockReturnValue({
+              then: (fn: any) => Promise.resolve({ data: null, error: null }).then(fn),
+            }),
           }),
         }),
       } as any);
@@ -144,8 +156,10 @@ describe('DiscogsAuthManager', () => {
 
       vi.mocked(supabase.from).mockReturnValue({
         select: vi.fn().mockReturnValue({
-          maybeSingle: vi.fn().mockReturnValue({
-            then: (fn: any) => Promise.resolve({ data: mockConnection, error: null }).then(fn),
+          eq: vi.fn().mockReturnValue({
+            maybeSingle: vi.fn().mockReturnValue({
+              then: (fn: any) => Promise.resolve({ data: mockConnection, error: null }).then(fn),
+            }),
           }),
         }),
       } as any);
@@ -161,8 +175,10 @@ describe('DiscogsAuthManager', () => {
     it('sets isConnected=false when no row is returned', async () => {
       vi.mocked(supabase.from).mockReturnValue({
         select: vi.fn().mockReturnValue({
-          maybeSingle: vi.fn().mockReturnValue({
-            then: (fn: any) => Promise.resolve({ data: null, error: null }).then(fn),
+          eq: vi.fn().mockReturnValue({
+            maybeSingle: vi.fn().mockReturnValue({
+              then: (fn: any) => Promise.resolve({ data: null, error: null }).then(fn),
+            }),
           }),
         }),
       } as any);
@@ -177,9 +193,11 @@ describe('DiscogsAuthManager', () => {
     it('handles database error and surfaces error message in state', async () => {
       vi.mocked(supabase.from).mockReturnValue({
         select: vi.fn().mockReturnValue({
-          maybeSingle: vi.fn().mockReturnValue({
-            then: (fn: any) =>
-              Promise.resolve({ data: null, error: { message: 'DB unavailable' } }).then(fn),
+          eq: vi.fn().mockReturnValue({
+            maybeSingle: vi.fn().mockReturnValue({
+              then: (fn: any) =>
+                Promise.resolve({ data: null, error: { message: 'DB unavailable' } }).then(fn),
+            }),
           }),
         }),
       } as any);
@@ -199,7 +217,9 @@ describe('DiscogsAuthManager', () => {
 
       vi.mocked(supabase.from).mockReturnValue({
         select: vi.fn().mockReturnValue({
-          maybeSingle: maybeSingleMock,
+          eq: vi.fn().mockReturnValue({
+            maybeSingle: maybeSingleMock,
+          }),
         }),
       } as any);
 
