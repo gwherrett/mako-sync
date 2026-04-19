@@ -73,10 +73,17 @@ export class DiscogsAuthManager {
     this.checkPromise = (async () => {
       this.setState({ isLoading: true, error: null });
       try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
+          this.setState({ isConnected: false, isLoading: false, lastCheck: Date.now() });
+          return { success: false, error: 'Not authenticated' };
+        }
+
         const { data, error } = await withTimeout(
           supabase
             .from('discogs_connections')
             .select('*')
+            .eq('user_id', user.id)
             .maybeSingle()
             .then(r => r),
           15000,
