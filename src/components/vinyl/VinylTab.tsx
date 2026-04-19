@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Disc3, Plus, Info, X } from 'lucide-react';
+import { Disc3, Plus, Info, X, RefreshCw, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { usePhysicalMedia } from '@/hooks/usePhysicalMedia';
 import { useDiscogsAuth } from '@/hooks/useDiscogsAuth';
+import { useDiscogsPull } from '@/hooks/useDiscogsPull';
 import { VinylCard } from '@/components/vinyl/VinylCard';
 import { VinylDetailPanel } from '@/components/vinyl/VinylDetailPanel';
 import { AddVinylDialog } from '@/components/vinyl/AddVinylDialog';
@@ -18,6 +19,7 @@ import type { PhysicalMediaRecord } from '@/types/discogs';
 export const VinylTab: React.FC = () => {
   const { collection, isLoading } = usePhysicalMedia();
   const { isConnected: discogsConnected } = useDiscogsAuth();
+  const { pullFromDiscogs, isPulling } = useDiscogsPull();
   const [addOpen, setAddOpen] = useState(false);
   const [selectedRecord, setSelectedRecord] = useState<PhysicalMediaRecord | null>(null);
   const [bannerDismissed, setBannerDismissed] = useState(false);
@@ -37,10 +39,21 @@ export const VinylTab: React.FC = () => {
             </Badge>
           )}
         </div>
-        <Button size="sm" onClick={() => setAddOpen(true)}>
-          <Plus className="h-4 w-4 mr-2" />
-          Add Record
-        </Button>
+        <div className="flex items-center gap-2">
+          {discogsConnected && (
+            <Button size="sm" variant="outline" onClick={() => pullFromDiscogs()} disabled={isPulling}>
+              {isPulling ? (
+                <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Syncing…</>
+              ) : (
+                <><RefreshCw className="h-4 w-4 mr-2" />Sync from Discogs</>
+              )}
+            </Button>
+          )}
+          <Button size="sm" onClick={() => setAddOpen(true)}>
+            <Plus className="h-4 w-4 mr-2" />
+            Add Record
+          </Button>
+        </div>
       </div>
 
       {/* Discogs info banner */}

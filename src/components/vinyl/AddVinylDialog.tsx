@@ -26,6 +26,8 @@ import {
 import { DiscogsReleaseSelector } from './DiscogsReleaseSelector';
 import { CameraCapture } from './CameraCapture';
 import { usePhysicalMedia } from '@/hooks/usePhysicalMedia';
+import { useDiscogsAuth } from '@/hooks/useDiscogsAuth';
+import { useDiscogsAddToCollection } from '@/hooks/useDiscogsAddToCollection';
 import type { DiscogsRelease, NewPhysicalMedia, VinylIdentifyResult } from '@/types/discogs';
 
 const RATING_OPTIONS = [
@@ -91,6 +93,8 @@ export const AddVinylDialog: React.FC<AddVinylDialogProps> = ({ open, onOpenChan
   const [rating, setRating] = useState<number | null>(null);
   const [discogsRelease, setDiscogsRelease] = useState<DiscogsRelease | null>(null);
   const { addRecord, isAdding } = usePhysicalMedia();
+  const { isConnected: discogsConnected } = useDiscogsAuth();
+  const { addToCollection } = useDiscogsAddToCollection();
 
   const set = (field: keyof FormData) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
     setForm(prev => ({ ...prev, [field]: e.target.value }));
@@ -157,8 +161,11 @@ export const AddVinylDialog: React.FC<AddVinylDialogProps> = ({ open, onOpenChan
         genres: release?.genres ?? null,
         styles: release?.styles ?? null,
       };
-      await addRecord(record);
+      const saved = await addRecord(record);
       handleClose();
+      if (saved?.discogs_release_id && discogsConnected) {
+        void addToCollection(saved.id);
+      }
     } catch {
       // addRecord already shows a toast on error; step back to form
       setStep(1);
