@@ -79,16 +79,13 @@ async function getTokensFromVault(
 ): Promise<{ accessToken: string; accessTokenSecret: string }> {
   const conn = await pool.connect()
   try {
-    const [tokenResult, secretResult] = await Promise.all([
-      conn.queryObject<{ decrypted_secret: string }>`
-        SELECT decrypted_secret FROM vault.decrypted_secrets WHERE id = ${accessTokenSecretId}
-      `,
-      conn.queryObject<{ decrypted_secret: string }>`
-        SELECT decrypted_secret FROM vault.decrypted_secrets WHERE id = ${accessSecretSecretId}
-      `,
-    ])
-    const accessToken = tokenResult.rows[0]?.decrypted_secret
-    const accessTokenSecret = secretResult.rows[0]?.decrypted_secret
+    const result = await conn.queryObject<{ id: string; decrypted_secret: string }>`
+      SELECT id, decrypted_secret FROM vault.decrypted_secrets
+      WHERE id IN (${accessTokenSecretId}, ${accessSecretSecretId})
+    `
+    const byId = Object.fromEntries(result.rows.map(r => [r.id, r.decrypted_secret]))
+    const accessToken = byId[accessTokenSecretId]
+    const accessTokenSecret = byId[accessSecretSecretId]
     if (!accessToken || !accessTokenSecret) {
       throw new Error('Could not decrypt Discogs tokens from Vault')
     }
