@@ -239,13 +239,24 @@ serve(async (req) => {
         accessTokenSecret,
       )
 
-      const resp = await fetch(fetchUrl, {
-        headers: {
-          Authorization: authHeader,
-          'User-Agent': 'MakoSync/1.0',
-          'Accept': 'application/json',
-        },
-      })
+      let resp: Response
+      try {
+        resp = await fetch(fetchUrl, {
+          signal: AbortSignal.timeout(30000),
+          headers: {
+            Authorization: authHeader,
+            'User-Agent': 'MakoSync/1.0',
+            'Accept': 'application/json',
+          },
+        })
+      } catch (fetchErr) {
+        const isTimeout = fetchErr instanceof DOMException && fetchErr.name === 'TimeoutError'
+        log('error', 'Discogs API fetch failed', { page, timeout: isTimeout, error: String(fetchErr) })
+        return new Response(
+          JSON.stringify({ error: isTimeout ? 'Discogs API timed out. Please try again.' : 'Failed to reach Discogs API' }),
+          { status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+        )
+      }
 
       if (resp.status === 429) {
         log('warn', 'Discogs rate limit hit', { page })
