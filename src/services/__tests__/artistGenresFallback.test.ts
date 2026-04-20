@@ -1,4 +1,12 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+
+vi.mock('../../../supabase/functions/spotify-sync-liked/spotify-auth.ts', () => ({
+  fetchWithTokenRetry: vi.fn(),
+  getValidAccessToken: vi.fn(),
+  refreshSpotifyToken: vi.fn(),
+  validateVaultSecrets: vi.fn(),
+}));
+
 import { fetchArtistGenres } from '../../../supabase/functions/spotify-sync-liked/artist-genres';
 
 describe('fetchArtistGenres (single-artist endpoint)', () => {

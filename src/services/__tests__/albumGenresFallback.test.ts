@@ -1,4 +1,15 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+
+// spotify-auth.ts uses Deno https:// imports — stub it out so the Node loader
+// doesn't try to fetch remote modules. fetchWithTokenRetry is not called in
+// these tests (no tokenRefresher is passed), so a no-op stub is sufficient.
+vi.mock('../../../supabase/functions/spotify-sync-liked/spotify-auth.ts', () => ({
+  fetchWithTokenRetry: vi.fn(),
+  getValidAccessToken: vi.fn(),
+  refreshSpotifyToken: vi.fn(),
+  validateVaultSecrets: vi.fn(),
+}));
+
 import { fetchAlbumGenres, cacheAlbumGenres } from '../../../supabase/functions/spotify-sync-liked/album-genres';
 
 describe('fetchAlbumGenres (single-album endpoint)', () => {
