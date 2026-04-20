@@ -222,6 +222,8 @@ serve(async (req) => {
 
     // Paginate through Discogs collection
     const PER_PAGE = 100
+    const BUDGET_MS = 120_000
+    const syncStartTime = Date.now()
     const baseCollectionUrl = `https://api.discogs.com/users/${connection.discogs_username}/collection/folders/0/releases`
     let page = 1
     let totalPages = 1
@@ -229,6 +231,14 @@ serve(async (req) => {
     const newItems: DiscogsCollectionItem[] = []
 
     while (page <= totalPages) {
+      if (Date.now() - syncStartTime > BUDGET_MS) {
+        log('warn', 'Time budget exceeded — returning partial result', { page, totalPages })
+        return new Response(
+          JSON.stringify({ error: 'Sync timed out mid-collection. Please try again to continue.', code: 'TIMEOUT' }),
+          { status: 503, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+        )
+      }
+
       const fetchUrl = `${baseCollectionUrl}?per_page=${PER_PAGE}&page=${page}`
       const authHeader = await buildOAuthHeader(
         'GET',

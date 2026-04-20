@@ -27,6 +27,8 @@ export function useDiscogsPull() {
             : null;
           if (parsed?.code === 'RATE_LIMITED') {
             message = 'Discogs rate limit hit. Please wait 60 seconds and try again.';
+          } else if (parsed?.code === 'TIMEOUT') {
+            message = 'Discogs sync timed out mid-collection. Please try again to continue.';
           } else if (parsed?.code === 'NOT_CONNECTED') {
             message = 'Discogs is not connected. Connect it on the Security page.';
           } else if (parsed?.error) {

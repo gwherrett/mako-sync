@@ -280,6 +280,7 @@ export const NewAuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setLoading(false);
       setInitialDataReady(true); // Signal that data queries can now start
       setDataFetchEnabled(true); // Allow data queries (no token-refresh in progress)
+      setSpotifyDataFetchEnabled(true); // Allow Spotify queries (no token refresh in progress at startup)
       logger.auth('Ready');
     }
   }, [loadUserData, toast, clearUserData]);
