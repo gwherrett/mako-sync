@@ -9,7 +9,8 @@ import {
   EdgeFunctionIsolationRule,
   SuperGenresSortingRule,
   BufferGlobalSetupRule,
-  SpotifyManagerSingletonRule
+  SpotifyManagerSingletonRule,
+  EdgeFunctionDeployRegistrationRule
 } from '../rules/code';
 
 export class CodeAgent extends BaseAgent {
@@ -28,6 +29,7 @@ export class CodeAgent extends BaseAgent {
     this.registerRule(new SuperGenresSortingRule());
     this.registerRule(new BufferGlobalSetupRule());
     this.registerRule(new SpotifyManagerSingletonRule());
+    this.registerRule(new EdgeFunctionDeployRegistrationRule());
   }
 }
 
