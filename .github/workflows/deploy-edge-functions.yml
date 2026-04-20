@@ -32,4 +32,5 @@ jobs:
           supabase functions deploy discogs-auth
           supabase functions deploy discogs-search
           supabase functions deploy discogs-add-to-collection
+          supabase functions deploy discogs-sync-from-collection
           supabase functions deploy vinyl-image-identify
