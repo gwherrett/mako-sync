@@ -230,6 +230,8 @@ serve(async (req) => {
       throw error
     }
 
+    const tokenRefresher = () => getValidAccessToken(connection as SpotifyConnection, supabaseAdmin, user.id, true)
+
     // Check for existing in-progress sync
     const { data: existingSync } = await supabaseClient
       .from('sync_progress')
@@ -551,7 +553,7 @@ serve(async (req) => {
         const artistIds = extractUniqueArtistIds(allChunkTracks)
         console.log(`Found ${artistIds.length} unique artists for this chunk`)
 
-        const { genreMap: artistGenreMap, cacheHits: chunkCacheHits, apiFetches: chunkApiFetches } = await getArtistGenresWithCache(accessToken, artistIds, supabaseClient)
+        const { genreMap: artistGenreMap, cacheHits: chunkCacheHits, apiFetches: chunkApiFetches } = await getArtistGenresWithCache(accessToken, artistIds, supabaseClient, tokenRefresher)
         totalCacheHits += chunkCacheHits
         totalApiFetches += chunkApiFetches
 
@@ -690,7 +692,7 @@ serve(async (req) => {
       const artistIds = extractUniqueArtistIds(allChunkTracks)
       console.log(`Found ${artistIds.length} unique artists for final batch`)
 
-      const { genreMap: artistGenreMap, cacheHits: finalCacheHits, apiFetches: finalApiFetches } = await getArtistGenresWithCache(accessToken, artistIds, supabaseClient)
+      const { genreMap: artistGenreMap, cacheHits: finalCacheHits, apiFetches: finalApiFetches } = await getArtistGenresWithCache(accessToken, artistIds, supabaseClient, tokenRefresher)
       totalCacheHits += finalCacheHits
       totalApiFetches += finalApiFetches
 

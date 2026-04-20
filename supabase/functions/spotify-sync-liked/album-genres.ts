@@ -1,20 +1,21 @@
+import { fetchWithTokenRetry } from './spotify-auth.ts'
+
 const CONCURRENCY_CAP = 5
 
 // NOTE: album.genres is historically empty for most Spotify albums.
 // If all fetched albums return empty genre arrays, we log a warning and skip caching
 // rather than polluting the cache with empty data.
-export async function fetchAlbumGenres(accessToken: string, albumIds: string[]): Promise<Map<string, string[]>> {
+export async function fetchAlbumGenres(accessToken: string, albumIds: string[], tokenRefresher?: () => Promise<string>): Promise<Map<string, string[]>> {
   const genreMap = new Map<string, string[]>()
 
   console.log(`Fetching genres for ${albumIds.length} albums individually (concurrency: ${CONCURRENCY_CAP})`)
 
   async function fetchOne(albumId: string): Promise<void> {
-    const response = await fetch(`https://api.spotify.com/v1/albums/${albumId}`, {
-      headers: {
-        'Authorization': `Bearer ${accessToken}`,
-        'Content-Type': 'application/json',
-      },
-    })
+    const response = tokenRefresher
+      ? await fetchWithTokenRetry(`https://api.spotify.com/v1/albums/${albumId}`, accessToken, tokenRefresher)
+      : await fetch(`https://api.spotify.com/v1/albums/${albumId}`, {
+          headers: { 'Authorization': `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
+        })
 
     if (!response.ok) {
       const errorText = await response.text()
@@ -112,7 +113,7 @@ export async function cacheAlbumGenres(genreMap: Map<string, string[]>, supabase
   }
 }
 
-export async function getAlbumGenresWithCache(accessToken: string, albumIds: string[], supabaseClient: any): Promise<Map<string, string[]>> {
+export async function getAlbumGenresWithCache(accessToken: string, albumIds: string[], supabaseClient: any, tokenRefresher?: () => Promise<string>): Promise<Map<string, string[]>> {
   // Remove duplicates
   const uniqueAlbumIds = [...new Set(albumIds)]
 
@@ -132,7 +133,7 @@ export async function getAlbumGenresWithCache(accessToken: string, albumIds: str
   console.log(`Fetching fresh data for ${uncachedAlbumIds.length} uncached albums`)
 
   // Fetch missing album data from Spotify
-  const freshGenres = await fetchAlbumGenres(accessToken, uncachedAlbumIds)
+  const freshGenres = await fetchAlbumGenres(accessToken, uncachedAlbumIds, tokenRefresher)
 
   // Cache the fresh data (skipped automatically if all genres are empty)
   await cacheAlbumGenres(freshGenres, supabaseClient)

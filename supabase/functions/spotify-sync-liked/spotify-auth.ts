@@ -258,7 +258,31 @@ export async function validateVaultSecrets(connection: SpotifyConnection): Promi
   }
 }
 
-export async function getValidAccessToken(connection: SpotifyConnection, supabaseAdmin: any, userId: string): Promise<string> {
+export async function fetchWithTokenRetry(
+  url: string,
+  accessToken: string,
+  refreshToken: () => Promise<string>
+): Promise<Response> {
+  let res = await fetch(url, {
+    headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
+  })
+  if (res.status === 401) {
+    console.log('🎵 SPOTIFY TOKEN 401 — retrying with force-refreshed token')
+    const newToken = await refreshToken()
+    res = await fetch(url, {
+      headers: { Authorization: `Bearer ${newToken}`, 'Content-Type': 'application/json' },
+    })
+  }
+  return res
+}
+
+export async function getValidAccessToken(connection: SpotifyConnection, supabaseAdmin: any, userId: string, forceRefresh = false): Promise<string> {
+  if (forceRefresh) {
+    console.log('🎵 SPOTIFY TOKEN force-refreshing (bypass expiry check)')
+    const refreshResult = await refreshSpotifyToken(connection, supabaseAdmin, userId)
+    return refreshResult.accessToken
+  }
+
   const now = new Date()
   const expiresAt = new Date(connection.expires_at)
   const timeUntilExpiry = expiresAt.getTime() - now.getTime()

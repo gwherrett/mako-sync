@@ -25,7 +25,8 @@ export interface AuthContextType {
   role: 'admin' | 'user' | null;
   loading: boolean;
   initialDataReady: boolean; // Signals that auth initialization is complete and data queries can start
-  dataFetchEnabled: boolean; // False during token-refresh settle window — gates data queries
+  dataFetchEnabled: boolean; // False until signed in, reset to false on sign-out — general gate for non-Spotify queries
+  spotifyDataFetchEnabled: boolean; // False during Spotify token-refresh settle window — gates Spotify-specific queries
 
   // Auth states
   isAuthenticated: boolean;
@@ -85,8 +86,9 @@ export const NewAuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [role, setRole] = useState<'admin' | 'user' | null>(null);
   const [loading, setLoading] = useState(true);
   const [initialDataReady, setInitialDataReady] = useState(false); // Signals data queries can start
-  const [dataFetchEnabled, setDataFetchEnabled] = useState(false); // Blocks queries during token-refresh settle window
-  const dataFetchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [dataFetchEnabled, setDataFetchEnabled] = useState(false); // General gate — true when signed in
+  const [spotifyDataFetchEnabled, setSpotifyDataFetchEnabled] = useState(false); // Spotify gate — false during token-refresh settle window
+  const spotifyDataFetchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const initialDataReadyRef = useRef(false); // Ref so onAuthStateChange closure always sees current value
 
   // Update refs when state changes
@@ -370,10 +372,12 @@ export const NewAuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
                   .finally(() => {
                     setInitialDataReady(true); // Allow data queries to start
                     setDataFetchEnabled(true);
+                    setSpotifyDataFetchEnabled(true);
                   });
               } else {
                 setInitialDataReady(true); // Allow data queries immediately
                 setDataFetchEnabled(true);
+                setSpotifyDataFetchEnabled(true);
               }
 
               // Defer data loading to prevent deadlocks
@@ -389,11 +393,12 @@ export const NewAuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             if (featureFlags.isTokenPersistenceGatewayEnabled()) {
               tokenPersistenceGateway.reset(); // Reset gateway state for next sign-in
             }
-            if (dataFetchTimerRef.current) {
-              clearTimeout(dataFetchTimerRef.current);
-              dataFetchTimerRef.current = null;
+            if (spotifyDataFetchTimerRef.current) {
+              clearTimeout(spotifyDataFetchTimerRef.current);
+              spotifyDataFetchTimerRef.current = null;
             }
             setDataFetchEnabled(false); // Reset for next sign-in
+            setSpotifyDataFetchEnabled(false); // Reset for next sign-in
             setLoading(false);
             setInitialDataReady(true); // Allow UI to reset properly
             break;
@@ -419,11 +424,11 @@ export const NewAuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
               // will timeout. We gate queries for 1500ms to guarantee the lock has cleared.
               // When dataFetchEnabled transitions false → true, query useEffects re-run
               // automatically, giving the "render stale data then auto-refresh" behaviour.
-              setDataFetchEnabled(false);
-              if (dataFetchTimerRef.current) clearTimeout(dataFetchTimerRef.current);
-              dataFetchTimerRef.current = setTimeout(() => {
-                setDataFetchEnabled(true);
-                dataFetchTimerRef.current = null;
+              setSpotifyDataFetchEnabled(false);
+              if (spotifyDataFetchTimerRef.current) clearTimeout(spotifyDataFetchTimerRef.current);
+              spotifyDataFetchTimerRef.current = setTimeout(() => {
+                setSpotifyDataFetchEnabled(true);
+                spotifyDataFetchTimerRef.current = null;
               }, 1500);
 
               // Wait for token persistence before allowing queries.
@@ -834,6 +839,7 @@ export const NewAuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     loading,
     initialDataReady,
     dataFetchEnabled,
+    spotifyDataFetchEnabled,
 
     // Auth states
     isAuthenticated,

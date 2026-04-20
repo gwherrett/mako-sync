@@ -23,6 +23,7 @@ class TokenPersistenceGatewayService {
   private tokenReady = false;
   private sessionVerified = false; // true once setSession has succeeded — skip on subsequent events
   private pendingCallbacks: (() => void)[] = [];
+  persistenceTimedOut = false; // true when polling window expired before token appeared
 
   static getInstance(): TokenPersistenceGatewayService {
     if (!this.instance) {
@@ -119,6 +120,7 @@ class TokenPersistenceGatewayService {
 
         if (elapsed >= maxWaitMs) {
           clearInterval(checkInterval);
+          this.persistenceTimedOut = true;
           console.warn(`🔐 TOKEN GATEWAY: Token persistence timeout after ${elapsed}ms - proceeding anyway`);
           // Still mark as ready to avoid blocking - queries may succeed if token appears soon
           this.markTokenReady();
@@ -210,6 +212,7 @@ class TokenPersistenceGatewayService {
     this.tokenReady = false;
     this.sessionVerified = false;
     this.pendingCallbacks = [];
+    this.persistenceTimedOut = false;
   }
 }
 

@@ -58,7 +58,7 @@ export const useUnifiedSpotifyAuth = (config: UseUnifiedSpotifyAuthConfig = {}):
   } = config;
 
   // Get auth context to wait for initialization
-  const { loading: authLoading, initialDataReady, isAuthenticated, dataFetchEnabled } = useAuth();
+  const { loading: authLoading, initialDataReady, isAuthenticated, spotifyDataFetchEnabled } = useAuth();
 
   // Get SpotifyAuthManager instance
   const authManager = useRef<SpotifyAuthManager>(
@@ -74,8 +74,8 @@ export const useUnifiedSpotifyAuth = (config: UseUnifiedSpotifyAuthConfig = {}):
 
   // Track if initial check has been done to prevent multiple checks
   const initialCheckDone = useRef(false);
-  // Track previous dataFetchEnabled to detect false → true transition
-  const prevDataFetchEnabled = useRef(dataFetchEnabled);
+  // Track previous spotifyDataFetchEnabled to detect false → true transition
+  const prevDataFetchEnabled = useRef(spotifyDataFetchEnabled);
   const [isInitialCheckComplete, setIsInitialCheckComplete] = useState(false);
   const [isConnecting, setIsConnecting] = useState(false);
   const [isDisconnecting, setIsDisconnecting] = useState(false);
@@ -151,17 +151,17 @@ export const useUnifiedSpotifyAuth = (config: UseUnifiedSpotifyAuthConfig = {}):
     }
   }, [authLoading, initialDataReady, isAuthenticated]);
 
-  // Re-check connection when dataFetchEnabled transitions false → true (token refresh settle)
+  // Re-check connection when spotifyDataFetchEnabled transitions false → true (token refresh settle)
   useEffect(() => {
-    if (prevDataFetchEnabled.current === false && dataFetchEnabled === true && isAuthenticated) {
-      console.log('🎵 SPOTIFY: dataFetchEnabled restored, re-checking connection...');
+    if (prevDataFetchEnabled.current === false && spotifyDataFetchEnabled === true && isAuthenticated) {
+      console.log('🎵 SPOTIFY: spotifyDataFetchEnabled restored, re-checking connection...');
       authManager.current.checkConnection(true).then(() => {
         const state = authManager.current.getState();
         console.log('🎵 SPOTIFY: ✓ Re-check complete', state.isConnected ? '(connected)' : '(not connected)');
       });
     }
-    prevDataFetchEnabled.current = dataFetchEnabled;
-  }, [dataFetchEnabled, isAuthenticated]);
+    prevDataFetchEnabled.current = spotifyDataFetchEnabled;
+  }, [spotifyDataFetchEnabled, isAuthenticated]);
 
   // Clear error function
   const clearError = useCallback(() => {

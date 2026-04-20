@@ -1,3 +1,5 @@
+import { fetchWithTokenRetry } from './spotify-auth.ts'
+
 const CONCURRENCY_CAP = 5
 
 // Cache TTL: re-fetch artist genres after this many days.
@@ -7,18 +9,17 @@ const CACHE_TTL_DAYS = 30
 
 // NOTE: The `genres` field on the single-artist endpoint (GET /v1/artists/{id}) is
 // now deprecated by Spotify — monitor for removal in future API changes.
-export async function fetchArtistGenres(accessToken: string, artistIds: string[]): Promise<Map<string, string[]>> {
+export async function fetchArtistGenres(accessToken: string, artistIds: string[], tokenRefresher?: () => Promise<string>): Promise<Map<string, string[]>> {
   const genreMap = new Map<string, string[]>()
 
   console.log(`Fetching genres for ${artistIds.length} artists individually (concurrency: ${CONCURRENCY_CAP})`)
 
   async function fetchOne(artistId: string): Promise<void> {
-    const response = await fetch(`https://api.spotify.com/v1/artists/${artistId}`, {
-      headers: {
-        'Authorization': `Bearer ${accessToken}`,
-        'Content-Type': 'application/json',
-      },
-    })
+    const response = tokenRefresher
+      ? await fetchWithTokenRetry(`https://api.spotify.com/v1/artists/${artistId}`, accessToken, tokenRefresher)
+      : await fetch(`https://api.spotify.com/v1/artists/${artistId}`, {
+          headers: { 'Authorization': `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
+        })
 
     if (!response.ok) {
       const errorText = await response.text()
@@ -113,7 +114,7 @@ export interface ArtistGenreResult {
   apiFetches: number
 }
 
-export async function getArtistGenresWithCache(accessToken: string, artistIds: string[], supabaseClient: any): Promise<ArtistGenreResult> {
+export async function getArtistGenresWithCache(accessToken: string, artistIds: string[], supabaseClient: any, tokenRefresher?: () => Promise<string>): Promise<ArtistGenreResult> {
   // Remove duplicates
   const uniqueArtistIds = [...new Set(artistIds)]
 
@@ -134,7 +135,7 @@ export async function getArtistGenresWithCache(accessToken: string, artistIds: s
   console.log(`Cache: ${cacheHits} hits, ${uncachedArtistIds.length} misses — fetching ${uncachedArtistIds.length} from Spotify API`)
 
   // Fetch missing artist data from Spotify
-  const freshGenres = await fetchArtistGenres(accessToken, uncachedArtistIds)
+  const freshGenres = await fetchArtistGenres(accessToken, uncachedArtistIds, tokenRefresher)
 
   // Cache the fresh data
   await cacheArtistGenres(freshGenres, supabaseClient)

@@ -7,7 +7,8 @@ import {
   AuthContextConsolidationRule,
   AuthImportPatternRule,
   AuthDeferredLoadingRule,
-  AuthInitializationGuardRule
+  AuthInitializationGuardRule,
+  AuthFetchGateRule
 } from '../rules/auth';
 
 export class AuthAgent extends BaseAgent {
@@ -24,6 +25,7 @@ export class AuthAgent extends BaseAgent {
     this.registerRule(new AuthImportPatternRule());
     this.registerRule(new AuthDeferredLoadingRule());
     this.registerRule(new AuthInitializationGuardRule());
+    this.registerRule(new AuthFetchGateRule());
   }
 }
 

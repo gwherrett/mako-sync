@@ -16,7 +16,7 @@ const debouncedFetch = (fn: () => void, delay: number = 1000) => {
 };
 
 export const StatsOverview = () => {
-  const { user, isAuthenticated, loading: authLoading, initialDataReady, dataFetchEnabled } = useAuth();
+  const { user, isAuthenticated, loading: authLoading, initialDataReady, spotifyDataFetchEnabled } = useAuth();
   const { isInitialCheckComplete: spotifyCheckComplete } = useUnifiedSpotifyAuth();
   const [likedSongsCount, setLikedSongsCount] = useState<number>(0);
   const [localFilesCount, setLocalFilesCount] = useState<number>(0);
@@ -25,11 +25,11 @@ export const StatsOverview = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Wait for auth loading, dataFetchEnabled, AND Spotify connection check to complete.
-    // dataFetchEnabled is false during the token-refresh settle window, preventing queries
+    // Wait for auth loading, spotifyDataFetchEnabled, AND Spotify connection check to complete.
+    // spotifyDataFetchEnabled is false during the token-refresh settle window, preventing queries
     // from firing into a locked Supabase client. When it transitions back to true this
     // effect re-runs, automatically refreshing stats after a tab-restore token refresh.
-    if (authLoading || !dataFetchEnabled || !spotifyCheckComplete) return;
+    if (authLoading || !spotifyDataFetchEnabled || !spotifyCheckComplete) return;
 
     if (!isAuthenticated || !user) {
       setLikedSongsCount(0);
@@ -48,7 +48,7 @@ export const StatsOverview = () => {
         supabase.removeChannel(channel);
       }
     };
-  }, [authLoading, dataFetchEnabled, spotifyCheckComplete, isAuthenticated, user?.id]);
+  }, [authLoading, spotifyDataFetchEnabled, spotifyCheckComplete, isAuthenticated, user?.id]);
 
   const fetchInitialData = async () => {
     if (!user || !isAuthenticated) return;

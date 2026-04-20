@@ -219,6 +219,12 @@ describe('TokenPersistenceGatewayService', () => {
 
       expect(callback).not.toHaveBeenCalled();
     });
+
+    it('should reset persistenceTimedOut to false', () => {
+      service.persistenceTimedOut = true;
+      service.reset();
+      expect(service.persistenceTimedOut).toBe(false);
+    });
   });
 
   describe('waitForTokenPersistence', () => {
@@ -362,6 +368,21 @@ describe('TokenPersistenceGatewayService', () => {
       // Second call — should not retry setSession
       await service.waitForTokenPersistence(mockSession, 100);
       expect(supabase.auth.setSession).not.toHaveBeenCalled();
+    });
+
+    it('should set persistenceTimedOut when polling window expires without token', async () => {
+      expect(service.persistenceTimedOut).toBe(false);
+      const result = await service.waitForTokenPersistence(mockSession, 50);
+      expect(result).toBe(false);
+      expect(service.persistenceTimedOut).toBe(true);
+    });
+
+    it('should not set persistenceTimedOut when token appears within the window', async () => {
+      localStorageMock['sb-test-auth-token'] = JSON.stringify({
+        access_token: 'test-access-token-12345'
+      });
+      await service.waitForTokenPersistence(mockSession, 200, { skipSetSession: true });
+      expect(service.persistenceTimedOut).toBe(false);
     });
 
     it('should reset sessionVerified on reset() so next sign-in re-verifies', async () => {
