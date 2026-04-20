@@ -1,5 +1,5 @@
 ---
-name: debug
+name: mako-debug
 description: Diagnose a bug in Mako-Sync by matching symptoms against the codebase's known problem patterns. Use when the user describes unexpected behaviour, a UI glitch, a timeout, or a silent failure. The agent reads actual files before reporting — it never guesses.
 argument-hint: <describe the symptom or bug>
 allowed-tools: Read, Grep
