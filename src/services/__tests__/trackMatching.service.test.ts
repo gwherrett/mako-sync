@@ -642,7 +642,7 @@ describe('TrackMatchingService', () => {
 
       const tracklist = [
         { position: 'A1', title: 'Bohemian Rhapsody' },
-        { position: 'B1', title: 'We Will Rock You' }, // not in local
+        { position: 'B1', title: 'We Will Rock You' },
       ];
 
       const { matched, missing } = await TrackMatchingService.matchTracklistAgainstLocal('user-1', tracklist, 'Queen');
@@ -653,9 +653,7 @@ describe('TrackMatchingService', () => {
     });
 
     it('returns empty matched and missing for an empty tracklist', async () => {
-      mockLocalTracks([
-        { id: '1', title: 'Some Track', artist: 'Artist', primary_artist: 'Artist', album: 'Album', genre: 'Rock', file_path: '/music/t.mp3' },
-      ]);
+      mockLocalTracks([]);
 
       const { matched, missing } = await TrackMatchingService.matchTracklistAgainstLocal('user-1', [], 'Artist');
 
@@ -669,7 +667,7 @@ describe('TrackMatchingService', () => {
       ]);
 
       const tracklist = [
-        { position: 'Side A', title: '' },       // heading — should be skipped
+        { position: 'Side A', title: '' },
         { position: 'A1', title: 'Track A' },
       ];
 
@@ -685,12 +683,11 @@ describe('TrackMatchingService', () => {
       ]);
 
       const tracklist = [
-        { position: 'A1', title: 'Acid Rain (Dub Mix)' }, // different mix, same core title
+        { position: 'A1', title: 'Acid Rain (Dub Mix)' },
       ];
 
       const { matched, missing } = await TrackMatchingService.matchTracklistAgainstLocal('user-1', tracklist, 'Objekt');
 
-      // Tier 2 core-title match: "Acid Rain" === "Acid Rain"
       expect(matched).toHaveLength(1);
       expect(missing).toHaveLength(0);
     });
@@ -700,7 +697,6 @@ describe('TrackMatchingService', () => {
         { id: '1', title: 'Blue in Green', artist: 'Miles Davis', primary_artist: 'Miles Davis', album: 'Kind of Blue', genre: 'Jazz', file_path: '/music/big.mp3' },
       ]);
 
-      // One-character difference — well above 85% fuzzy threshold
       const tracklist = [{ position: 'B2', title: 'Blue In Green' }];
 
       const { matched, missing } = await TrackMatchingService.matchTracklistAgainstLocal('user-1', tracklist, 'Miles Davis');
@@ -710,7 +706,6 @@ describe('TrackMatchingService', () => {
     });
 
     it('does not cross-match tracks from a different artist', async () => {
-      // Local library has "Heroes" by Bowie; Discogs record is by someone else
       mockLocalTracks([
         { id: '1', title: 'Heroes', artist: 'David Bowie', primary_artist: 'David Bowie', album: 'Heroes', genre: 'Rock', file_path: '/music/heroes.mp3' },
       ]);
@@ -719,7 +714,6 @@ describe('TrackMatchingService', () => {
 
       const { matched, missing } = await TrackMatchingService.matchTracklistAgainstLocal('user-1', tracklist, 'Peter Gabriel');
 
-      // Artist normalisation differs — should not match
       expect(matched).toHaveLength(0);
       expect(missing).toHaveLength(1);
     });

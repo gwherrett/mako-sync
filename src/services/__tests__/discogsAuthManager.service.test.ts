@@ -1,8 +1,6 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { DiscogsAuthManager } from '../discogsAuthManager.service';
 import { supabase } from '@/integrations/supabase/client';
-
-// fetch is mocked per-test via vi.stubGlobal
 
 describe('DiscogsAuthManager', () => {
   let manager: DiscogsAuthManager;
@@ -13,14 +11,6 @@ describe('DiscogsAuthManager', () => {
     manager = DiscogsAuthManager.getInstance();
     vi.clearAllMocks();
   });
-
-  afterEach(() => {
-    (DiscogsAuthManager as any).instance = null;
-  });
-
-  // ---------------------------------------------------------------------------
-  // Singleton
-  // ---------------------------------------------------------------------------
 
   describe('Singleton pattern', () => {
     it('returns the same instance on repeated calls', () => {
@@ -36,10 +26,6 @@ describe('DiscogsAuthManager', () => {
       expect(first).not.toBe(second);
     });
   });
-
-  // ---------------------------------------------------------------------------
-  // Initial state
-  // ---------------------------------------------------------------------------
 
   describe('Initial state', () => {
     it('initialises with disconnected, idle state', () => {
@@ -60,16 +46,11 @@ describe('DiscogsAuthManager', () => {
     });
   });
 
-  // ---------------------------------------------------------------------------
-  // Subscribe / unsubscribe
-  // ---------------------------------------------------------------------------
-
   describe('subscribe / unsubscribe', () => {
     it('notifies listener when state changes', () => {
       const listener = vi.fn();
       manager.subscribe(listener);
 
-      // Trigger an internal state change via checkConnection error path
       manager['setState']({ error: 'test' });
 
       expect(listener).toHaveBeenCalledWith(expect.objectContaining({ error: 'test' }));
@@ -98,10 +79,6 @@ describe('DiscogsAuthManager', () => {
     });
   });
 
-  // ---------------------------------------------------------------------------
-  // checkConnection
-  // ---------------------------------------------------------------------------
-
   describe('checkConnection', () => {
     beforeEach(() => {
       // Most checkConnection tests need an authenticated user to reach supabase.from.
@@ -124,7 +101,7 @@ describe('DiscogsAuthManager', () => {
       expect(supabase.from).not.toHaveBeenCalled();
     });
 
-    it('bypasses cooldown when force=true', async () => {
+    it('hits the database when force=true, ignoring cooldown', async () => {
       manager['state'].lastCheck = Date.now();
       manager['state'].isConnected = true;
 
@@ -231,10 +208,6 @@ describe('DiscogsAuthManager', () => {
     });
   });
 
-  // ---------------------------------------------------------------------------
-  // connect
-  // ---------------------------------------------------------------------------
-
   describe('connect', () => {
     it('returns error when user is not authenticated', async () => {
       vi.mocked(supabase.auth.getSession).mockResolvedValue({
@@ -294,10 +267,6 @@ describe('DiscogsAuthManager', () => {
     });
   });
 
-  // ---------------------------------------------------------------------------
-  // disconnect
-  // ---------------------------------------------------------------------------
-
   describe('disconnect', () => {
     it('returns error when user is not authenticated', async () => {
       vi.mocked(supabase.auth.getSession).mockResolvedValue({
@@ -354,10 +323,6 @@ describe('DiscogsAuthManager', () => {
       expect(manager.getState().isLoading).toBe(false);
     });
   });
-
-  // ---------------------------------------------------------------------------
-  // exchangeAccessToken
-  // ---------------------------------------------------------------------------
 
   describe('exchangeAccessToken', () => {
     it('returns error when user is not authenticated', async () => {
