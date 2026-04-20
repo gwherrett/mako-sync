@@ -17,13 +17,10 @@ enable_signup = true
 [functions.spotify-auth]
 verify_jwt = true
 
-[functions.spotify-callback]
-verify_jwt = false
-
-[functions.spotify-resync-tracks]
+[functions.spotify-sync-liked]
 verify_jwt = true
 
-[functions.spotify-sync-liked]
+[functions.spotify-unlike-tracks]
 verify_jwt = true
 
 [functions.discogs-auth]
