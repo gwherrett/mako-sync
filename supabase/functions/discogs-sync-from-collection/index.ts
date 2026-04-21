@@ -67,6 +67,7 @@ async function buildOAuthHeader(
   params.oauth_signature = await hmacSha1(signingKey, baseString)
 
   const header = Object.entries(params)
+    .filter(([k]) => k.startsWith('oauth_'))
     .map(([k, v]) => `${k}="${pct(v)}"`)
     .join(', ')
   return `OAuth ${header}`
