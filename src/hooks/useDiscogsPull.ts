@@ -32,7 +32,9 @@ export function useDiscogsPull() {
           } else if (parsed?.code === 'NOT_CONNECTED') {
             message = 'Discogs is not connected. Connect it on the Security page.';
           } else if (parsed?.error) {
-            message = parsed.error;
+            message = parsed.details
+              ? `${parsed.error} — ${parsed.details}`
+              : parsed.error;
           }
         } catch {
           // leave message as-is
