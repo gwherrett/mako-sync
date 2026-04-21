@@ -45,8 +45,10 @@ async function buildOAuthHeader(
   consumerSecret: string,
   accessToken: string,
   accessTokenSecret: string,
+  queryParams: Record<string, string> = {},
 ): Promise<string> {
   const params: Record<string, string> = {
+    ...queryParams,
     oauth_consumer_key: consumerKey,
     oauth_nonce: crypto.randomUUID().replace(/-/g, ''),
     oauth_signature_method: 'HMAC-SHA1',
@@ -247,6 +249,7 @@ serve(async (req) => {
         consumerSecret,
         accessToken,
         accessTokenSecret,
+        { per_page: String(PER_PAGE), page: String(page) },
       )
 
       let resp: Response
