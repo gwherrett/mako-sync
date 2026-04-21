@@ -59,24 +59,24 @@ describe('getVideoConstraints — mobile vs desktop', () => {
   it('requests facingMode environment on a mobile user agent', () => {
     const ua = 'Mozilla/5.0 (Linux; Android 13; Pixel 7) Mobile Safari/537.36';
     const constraints = getVideoConstraints(ua);
-    expect(constraints.video).toEqual({ facingMode: 'environment' });
+    expect(constraints.video).toEqual({ facingMode: 'environment', width: { ideal: 1920 }, height: { ideal: 1080 } });
   });
 
   it('requests facingMode environment on an Android tablet UA containing "Android"', () => {
     const ua = 'Mozilla/5.0 (Linux; Android 13; SM-T870) AppleWebKit/537.36';
     const constraints = getVideoConstraints(ua);
-    expect(constraints.video).toEqual({ facingMode: 'environment' });
+    expect(constraints.video).toEqual({ facingMode: 'environment', width: { ideal: 1920 }, height: { ideal: 1080 } });
   });
 
-  it('requests video: true on a desktop user agent (no Mobi/Android)', () => {
+  it('requests ideal 1920x1080 resolution on a desktop user agent (no Mobi/Android)', () => {
     const ua = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36';
     const constraints = getVideoConstraints(ua);
-    expect(constraints.video).toBe(true);
+    expect(constraints.video).toEqual({ width: { ideal: 1920 }, height: { ideal: 1080 } });
   });
 
-  it('requests video: true on a Windows desktop UA', () => {
+  it('requests ideal 1920x1080 resolution on a Windows desktop UA', () => {
     const ua = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36';
     const constraints = getVideoConstraints(ua);
-    expect(constraints.video).toBe(true);
+    expect(constraints.video).toEqual({ width: { ideal: 1920 }, height: { ideal: 1080 } });
   });
 });
