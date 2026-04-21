@@ -29,7 +29,7 @@ export async function compressToJpeg(file: File): Promise<{ base64: string; mime
           reader.readAsDataURL(blob);
         },
         'image/jpeg',
-        0.8,
+        0.92,
       );
     };
     img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('Failed to load image')); };
