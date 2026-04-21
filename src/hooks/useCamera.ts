@@ -65,9 +65,8 @@ export function useCamera(): UseCameraReturn {
     try {
       const stream = await navigator.mediaDevices.getUserMedia(constraints);
       streamRef.current = stream;
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-      }
+      // videoRef.current is null here because the video element only renders in
+      // the 'active' branch — srcObject is wired in the effect below instead.
       setState('active');
     } catch (e) {
       const cameraError = domExceptionToError(e);
@@ -76,13 +75,24 @@ export function useCamera(): UseCameraReturn {
     }
   }, []);
 
+  // Wire the stream to the video element once it exists in the DOM.
+  useEffect(() => {
+    if (state === 'active' && videoRef.current && streamRef.current) {
+      videoRef.current.srcObject = streamRef.current;
+    }
+  }, [state]);
+
   const captureFrame = useCallback((): Blob | null => {
     if (state !== 'active' || !videoRef.current) return null;
 
     const video = videoRef.current;
+    const w = video.videoWidth;
+    const h = video.videoHeight;
+    if (!w || !h) return null;
+
     const canvas = document.createElement('canvas');
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
+    canvas.width = w;
+    canvas.height = h;
     const ctx = canvas.getContext('2d');
     if (!ctx) return null;
     ctx.drawImage(video, 0, 0);

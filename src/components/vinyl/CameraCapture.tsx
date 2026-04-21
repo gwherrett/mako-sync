@@ -86,6 +86,7 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onIdentified, onEr
     return (
       <div className="space-y-4">
         <p className="text-sm text-center text-muted-foreground">Could not identify record.</p>
+        <p className="text-xs text-center text-destructive">{identifyError}</p>
         <div className="flex justify-center gap-3">
           <Button
             onClick={() => { setIdentifyError(null); startCamera(); }}
