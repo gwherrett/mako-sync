@@ -1,8 +1,9 @@
-import React, { useRef, useState, useCallback } from 'react';
-import { Camera, Upload, Loader2 } from 'lucide-react';
+import React, { useRef, useState, useCallback, useEffect } from 'react';
+import { Camera, Upload, Loader2, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
+import { useCamera } from '@/hooks/useCamera';
+import { fileToBase64 } from './cameraCaptureUtils';
 import type { VinylIdentifyResult } from '@/types/discogs';
 
 interface CameraCaptureProps {
@@ -11,65 +12,26 @@ interface CameraCaptureProps {
   onSkip: () => void;
 }
 
-const MAX_SIZE_BYTES = 2 * 1024 * 1024; // 2MB threshold for compression
-
-async function compressToJpeg(file: File): Promise<{ base64: string; mimeType: string }> {
-  return new Promise((resolve, reject) => {
-    const img = new Image();
-    const url = URL.createObjectURL(file);
-    img.onload = () => {
-      URL.revokeObjectURL(url);
-      const canvas = document.createElement('canvas');
-      canvas.width = img.naturalWidth;
-      canvas.height = img.naturalHeight;
-      const ctx = canvas.getContext('2d');
-      if (!ctx) { reject(new Error('Canvas unavailable')); return; }
-      ctx.drawImage(img, 0, 0);
-      canvas.toBlob(
-        (blob) => {
-          if (!blob) { reject(new Error('Compression failed')); return; }
-          const reader = new FileReader();
-          reader.onload = () => {
-            const dataUrl = reader.result as string;
-            // Strip the data URL prefix to get raw base64
-            const base64 = dataUrl.split(',')[1];
-            resolve({ base64, mimeType: 'image/jpeg' });
-          };
-          reader.onerror = () => reject(new Error('Failed to read compressed image'));
-          reader.readAsDataURL(blob);
-        },
-        'image/jpeg',
-        0.8,
-      );
-    };
-    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('Failed to load image')); };
-    img.src = url;
-  });
-}
-
-async function fileToBase64(file: File): Promise<{ base64: string; mimeType: string }> {
-  if (file.size > MAX_SIZE_BYTES) {
-    return compressToJpeg(file);
-  }
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => {
-      const dataUrl = reader.result as string;
-      const base64 = dataUrl.split(',')[1];
-      resolve({ base64, mimeType: file.type || 'image/jpeg' });
-    };
-    reader.onerror = () => reject(new Error('Failed to read image'));
-    reader.readAsDataURL(file);
-  });
-}
+const CAMERA_ERROR_MESSAGES: Record<string, string> = {
+  PERMISSION_DENIED: 'Camera access was denied. Please allow camera access in your browser settings.',
+  NOT_FOUND: 'No camera detected on this device.',
+  NOT_READABLE: 'Camera is in use by another app.',
+};
 
 export const CameraCapture: React.FC<CameraCaptureProps> = ({ onIdentified, onError, onSkip }) => {
-  const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [identifying, setIdentifying] = useState(false);
+  const [identifyError, setIdentifyError] = useState<string | null>(null);
   const [dragOver, setDragOver] = useState(false);
+  const { videoRef, state: cameraState, error: cameraError, startCamera, stopCamera, captureFrame } = useCamera();
+
+  useEffect(() => {
+    startCamera();
+  }, [startCamera]);
 
   const identify = useCallback(async (file: File) => {
+    stopCamera();
+    setIdentifyError(null);
     setIdentifying(true);
     try {
       const { base64, mimeType } = await fileToBase64(file);
@@ -80,12 +42,17 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onIdentified, onEr
       onIdentified(data as VinylIdentifyResult);
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Identification failed';
-      toast({ title: 'Could not identify record', description: msg, variant: 'destructive' });
-      onError(msg);
+      setIdentifyError(msg);
     } finally {
       setIdentifying(false);
     }
-  }, [onIdentified, onError, toast]);
+  }, [onIdentified, stopCamera]);
+
+  const handleTakePhoto = () => {
+    const blob = captureFrame();
+    if (!blob) return;
+    identify(new File([blob], 'capture.jpg', { type: 'image/jpeg' }));
+  };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -115,30 +82,112 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onIdentified, onEr
     );
   }
 
-  return (
-    <div className="space-y-4">
-      {/* Mobile: camera capture button */}
-      <div className="block sm:hidden">
+  if (identifyError) {
+    return (
+      <div className="space-y-4">
+        <p className="text-sm text-center text-muted-foreground">Could not identify record.</p>
+        <div className="flex justify-center gap-3">
+          <Button
+            onClick={() => { setIdentifyError(null); startCamera(); }}
+            className="gap-2"
+          >
+            <RefreshCw className="h-4 w-4" />
+            Retake photo
+          </Button>
+          <Button variant="secondary" onClick={onSkip}>
+            Enter manually
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  if (cameraState === 'starting') {
+    return (
+      <div className="flex flex-col items-center justify-center gap-3 py-16 text-muted-foreground">
+        <Loader2 className="h-8 w-8 animate-spin" />
+        <p className="text-sm">Starting camera…</p>
+      </div>
+    );
+  }
+
+  if (cameraState === 'active') {
+    return (
+      <div className="space-y-4">
+        <div className="relative rounded-lg overflow-hidden bg-black">
+          <video
+            ref={videoRef}
+            autoPlay
+            playsInline
+            muted
+            className="w-full max-h-72 object-cover"
+          />
+          <div className="absolute bottom-3 left-0 right-0 flex justify-center gap-3 px-4">
+            <Button onClick={handleTakePhoto} className="gap-2">
+              <Camera className="h-4 w-4" />
+              Take Photo
+            </Button>
+            <Button variant="secondary" onClick={() => { stopCamera(); onSkip(); }}>
+              Cancel
+            </Button>
+          </div>
+        </div>
+        <div className="flex justify-center">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="text-muted-foreground gap-1"
+            onClick={() => fileInputRef.current?.click()}
+          >
+            <Upload className="h-3 w-3" />
+            Upload instead
+          </Button>
+        </div>
         <input
           ref={fileInputRef}
           type="file"
-          accept="image/*"
-          capture="environment"
+          accept="image/jpeg,image/png,image/webp"
           className="hidden"
           onChange={handleFileChange}
         />
-        <Button
-          className="w-full h-20 text-base gap-2"
-          onClick={() => fileInputRef.current?.click()}
-        >
-          <Camera className="h-5 w-5" />
-          Take photo of A-side label
-        </Button>
       </div>
+    );
+  }
 
-      {/* Desktop: drag-and-drop zone + file picker */}
+  if (cameraState === 'error' && cameraError?.code !== 'NOT_SUPPORTED') {
+    const message = cameraError
+      ? (CAMERA_ERROR_MESSAGES[cameraError.code] ?? 'Camera unavailable.')
+      : 'Camera unavailable.';
+    return (
+      <div className="space-y-4">
+        <p className="text-sm text-center text-muted-foreground">{message}</p>
+        <div className="flex justify-center">
+          <Button onClick={() => fileInputRef.current?.click()} className="gap-2">
+            <Upload className="h-4 w-4" />
+            Upload photo instead
+          </Button>
+        </div>
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/jpeg,image/png,image/webp"
+          className="hidden"
+          onChange={handleFileChange}
+        />
+        <div className="flex justify-center">
+          <Button variant="ghost" size="sm" className="text-muted-foreground" onClick={onSkip}>
+            Add manually instead
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  // NOT_SUPPORTED or idle: drag-and-drop / file picker UI
+  return (
+    <div className="space-y-4">
       <div
-        className={`hidden sm:flex flex-col items-center justify-center gap-3 rounded-lg border-2 border-dashed p-10 transition-colors cursor-pointer ${
+        className={`flex flex-col items-center justify-center gap-3 rounded-lg border-2 border-dashed p-10 transition-colors cursor-pointer ${
           dragOver ? 'border-primary bg-primary/5' : 'border-muted-foreground/30 hover:border-primary/50'
         }`}
         onDrop={handleDrop}
