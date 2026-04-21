@@ -1,4 +1,5 @@
 import { supabase } from '@/integrations/supabase/client';
+import { withTimeout } from '@/utils/promiseUtils';
 import {
   normalize,
   normalizeArtist,
@@ -36,11 +37,16 @@ export class TrackMatchingService {
     let hasMore = true;
 
     while (hasMore) {
-      const { data, error } = await supabase
-        .from('local_mp3s')
-        .select('id, title, artist, primary_artist, album, genre, file_path')
-        .eq('user_id', userId)
-        .range(offset, offset + PAGE_SIZE - 1);
+      const { data, error } = await withTimeout(
+        supabase
+          .from('local_mp3s')
+          .select('id, title, artist, primary_artist, album, genre, file_path')
+          .eq('user_id', userId)
+          .range(offset, offset + PAGE_SIZE - 1)
+          .then(r => r),
+        30000,
+        'fetchLocalTracks page timed out'
+      );
 
       if (error) {
         throw new Error(`Failed to fetch local tracks: ${error.message}`);
