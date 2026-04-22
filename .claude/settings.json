@@ -3,7 +3,8 @@
     "allow": [
       "Bash(npx tsc:*)",
       "Bash(npm run lint:*)",
-      "Bash(gh workflow *)"
+      "Bash(gh workflow *)",
+      "mcp__linear-server__get_team"
     ]
   }
 }

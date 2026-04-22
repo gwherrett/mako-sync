@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { usePhysicalMedia } from '@/hooks/usePhysicalMedia';
 import { useDiscogsAuth } from '@/hooks/useDiscogsAuth';
-import { useDiscogsPull } from '@/hooks/useDiscogsPull';
+import { useDiscogsSync } from '@/hooks/useDiscogsSync';
 import { VinylCard } from '@/components/vinyl/VinylCard';
 import { VinylDetailPanel } from '@/components/vinyl/VinylDetailPanel';
 import { AddVinylDialog } from '@/components/vinyl/AddVinylDialog';
@@ -19,7 +19,7 @@ import type { PhysicalMediaRecord } from '@/types/discogs';
 export const VinylTab: React.FC = () => {
   const { collection, isLoading } = usePhysicalMedia();
   const { isConnected: discogsConnected } = useDiscogsAuth();
-  const { pullFromDiscogs, isPulling } = useDiscogsPull();
+  const { sync: syncWithDiscogs, isPending: isSyncing } = useDiscogsSync();
   const [addOpen, setAddOpen] = useState(false);
   const [selectedRecord, setSelectedRecord] = useState<PhysicalMediaRecord | null>(null);
   const [bannerDismissed, setBannerDismissed] = useState(false);
@@ -41,11 +41,11 @@ export const VinylTab: React.FC = () => {
         </div>
         <div className="flex items-center gap-2">
           {discogsConnected && (
-            <Button size="sm" variant="outline" onClick={() => pullFromDiscogs()} disabled={isPulling}>
-              {isPulling ? (
+            <Button size="sm" variant="outline" onClick={() => syncWithDiscogs()} disabled={isSyncing}>
+              {isSyncing ? (
                 <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Syncing…</>
               ) : (
-                <><RefreshCw className="h-4 w-4 mr-2" />Sync from Discogs</>
+                <><RefreshCw className="h-4 w-4 mr-2" />Sync with Discogs</>
               )}
             </Button>
           )}

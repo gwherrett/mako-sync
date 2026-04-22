@@ -43,3 +43,6 @@ verify_jwt = true
 
 [functions.vinyl-image-identify]
 verify_jwt = true
+
+[functions.discogs-two-way-sync]
+verify_jwt = true

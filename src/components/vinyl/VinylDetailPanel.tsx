@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useMemo } from 'react';
+import { formatDistanceToNow } from 'date-fns';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -49,6 +50,14 @@ export const VinylDetailPanel: React.FC<VinylDetailPanelProps> = ({ record, open
 
   const canSyncToDiscogs = !!record?.discogs_release_id && discogsConnected;
   const alreadySynced = !!record?.discogs_instance_id;
+  const syncedAgo = useMemo(() => {
+    if (!record?.discogs_synced_at) return null;
+    try {
+      return formatDistanceToNow(new Date(record.discogs_synced_at), { addSuffix: true });
+    } catch {
+      return null;
+    }
+  }, [record?.discogs_synced_at]);
 
   const handlePushToSlskd = () => {
     if (!record || missing.length === 0) return;
@@ -171,9 +180,9 @@ export const VinylDetailPanel: React.FC<VinylDetailPanelProps> = ({ record, open
 
           <div className="flex items-center gap-2">
             {alreadySynced && (
-              <Badge variant="secondary" className="gap-1">
+              <Badge variant="secondary" className="gap-1" title={record?.discogs_synced_at ?? undefined}>
                 <CheckCircle2 className="h-3.5 w-3.5 text-green-500" />
-                Synced to Discogs
+                {syncedAgo ? `Synced ${syncedAgo}` : 'Synced to Discogs'}
               </Badge>
             )}
             {canSyncToDiscogs && !alreadySynced && (
