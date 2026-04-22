@@ -134,6 +134,11 @@ interface DiscogsCollectionItem {
   basic_information: DiscogsBasicInfo
 }
 
+interface DiscogsEnrichedItem extends DiscogsCollectionItem {
+  _tracklist: Array<{ position: string; title: string }> | null
+  _country: string | null
+}
+
 interface DiscogsCollectionResponse {
   pagination: { page: number; pages: number; per_page: number; items: number }
   releases: DiscogsCollectionItem[]
@@ -330,9 +335,47 @@ async function pullFromDiscogs(
     return { pulled: newItems.length, errors: [] }
   }
 
+  // Enrich each item with full release data (tracklist + country)
+  // Stagger at 1.1 s intervals to stay within Discogs 60 req/min cap
+  log('info', 'Pull: enriching items with full release data', { count: newItems.length })
+  const enrichResults = await Promise.allSettled(
+    newItems.map(async (item, i): Promise<DiscogsEnrichedItem> => {
+      await new Promise(r => setTimeout(r, i * 1100))
+      const releaseUrl = `https://api.discogs.com/releases/${item.basic_information.id}`
+      const authHeader = await buildOAuthHeader(
+        'GET', releaseUrl, consumerKey, consumerSecret, accessToken, accessTokenSecret,
+      )
+      const resp = await fetch(releaseUrl, {
+        signal: AbortSignal.timeout(10000),
+        headers: { Authorization: authHeader, 'User-Agent': 'MakoSync/1.0', Accept: 'application/json' },
+      })
+      if (!resp.ok) {
+        log('warn', 'Pull: release fetch failed, inserting without tracklist', {
+          releaseId: item.basic_information.id, status: resp.status,
+        })
+        return { ...item, _tracklist: null, _country: null }
+      }
+      const full = await resp.json()
+      return {
+        ...item,
+        _tracklist: full.tracklist?.map((t: { position: string; title: string }) => ({
+          position: t.position,
+          title: t.title,
+        })) ?? null,
+        _country: full.country ?? null,
+      }
+    })
+  )
+
+  const enriched: DiscogsEnrichedItem[] = enrichResults.map((result, i) =>
+    result.status === 'fulfilled'
+      ? result.value
+      : { ...newItems[i], _tracklist: null, _country: null }
+  )
+
   // Insert in batches of 100
   const syncedAt = new Date().toISOString()
-  const rows = newItems.map(item => ({
+  const rows = enriched.map(item => ({
     user_id: userId,
     discogs_instance_id: item.id,
     discogs_release_id: item.basic_information.id ?? null,
@@ -349,8 +392,8 @@ async function pullFromDiscogs(
     format: mapDiscogsFormat(item.basic_information.formats?.[0]?.name),
     format_details: item.basic_information.formats?.[0]?.descriptions?.join(', ') ?? null,
     rating: item.rating > 0 ? item.rating : null,
-    tracklist: null,
-    country: null,
+    tracklist: item._tracklist,
+    country: item._country,
     pressing: null,
     notes: null,
   }))
