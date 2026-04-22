@@ -19,7 +19,8 @@ export interface UseCameraReturn {
 
 export function getVideoConstraints(userAgent: string): MediaStreamConstraints {
   const isMobile = /Mobi|Android/i.test(userAgent);
-  return { video: isMobile ? { facingMode: 'environment' } : true };
+  const resolution = { width: { ideal: 1920 }, height: { ideal: 1080 } };
+  return { video: isMobile ? { facingMode: 'environment', ...resolution } : resolution };
 }
 
 export function domExceptionToError(e: unknown): CameraError {

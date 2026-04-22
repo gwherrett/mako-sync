@@ -101,7 +101,7 @@ describe('compressToJpeg — canvas.toBlob arguments', () => {
     vi.unstubAllGlobals();
   });
 
-  it('calls canvas.toBlob with image/jpeg and 0.8 quality', async () => {
+  it('calls canvas.toBlob with image/jpeg and 0.92 quality', async () => {
     Object.assign(URL, { createObjectURL: vi.fn(() => 'blob:mock'), revokeObjectURL: vi.fn() });
 
     let capturedType = '';
@@ -134,7 +134,7 @@ describe('compressToJpeg — canvas.toBlob arguments', () => {
     await new Promise(r => setTimeout(r, 20));
 
     expect(capturedType).toBe('image/jpeg');
-    expect(capturedQuality).toBe(0.8);
+    expect(capturedQuality).toBe(0.92);
   });
 });
 

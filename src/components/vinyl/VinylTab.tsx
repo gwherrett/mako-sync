@@ -17,7 +17,7 @@ import type { PhysicalMediaRecord } from '@/types/discogs';
  * Contains all collection UI without page header or Back button chrome.
  */
 export const VinylTab: React.FC = () => {
-  const { collection, isLoading } = usePhysicalMedia();
+  const { collection, isLoading, deleteRecord } = usePhysicalMedia();
   const { isConnected: discogsConnected } = useDiscogsAuth();
   const { sync: syncWithDiscogs, isPending: isSyncing } = useDiscogsSync();
   const [addOpen, setAddOpen] = useState(false);
@@ -114,6 +114,7 @@ export const VinylTab: React.FC = () => {
               key={record.id}
               record={record}
               onClick={() => setSelectedRecord(record)}
+              onRemove={deleteRecord}
             />
           ))}
         </div>
