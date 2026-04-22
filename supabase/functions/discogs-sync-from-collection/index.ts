@@ -210,16 +210,34 @@ serve(async (req) => {
       connection.access_secret_secret_id,
     )
 
-    // Fetch existing instance IDs to deduplicate
-    const { data: existingRows } = await supabaseClient
-      .from('physical_media')
-      .select('discogs_instance_id')
-      .eq('user_id', user.id)
-      .not('discogs_instance_id', 'is', null)
+    // Fetch ALL existing instance IDs to deduplicate — must paginate because
+    // Supabase silently truncates .select() results at 1000 rows.
+    const EXISTING_PAGE_SIZE = 1000
+    const existingInstanceIds = new Set<number>()
+    let existingOffset = 0
+    while (true) {
+      const { data: existingRows, error: existingErr } = await supabaseClient
+        .from('physical_media')
+        .select('discogs_instance_id')
+        .eq('user_id', user.id)
+        .not('discogs_instance_id', 'is', null)
+        .range(existingOffset, existingOffset + EXISTING_PAGE_SIZE - 1)
 
-    const existingInstanceIds = new Set<number>(
-      (existingRows ?? []).map((r: { discogs_instance_id: number }) => r.discogs_instance_id)
-    )
+      if (existingErr) {
+        log('error', 'Failed to fetch existing instance IDs', { error: existingErr.message })
+        return new Response(
+          JSON.stringify({ error: 'Failed to load existing collection', details: existingErr.message }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+        )
+      }
+
+      for (const r of (existingRows ?? []) as { discogs_instance_id: number }[]) {
+        existingInstanceIds.add(r.discogs_instance_id)
+      }
+
+      if ((existingRows ?? []).length < EXISTING_PAGE_SIZE) break
+      existingOffset += EXISTING_PAGE_SIZE
+    }
 
     log('info', 'Existing instance IDs loaded', { count: existingInstanceIds.size })
 
@@ -336,10 +354,10 @@ serve(async (req) => {
         const batch = rows.slice(i, i + DB_BATCH_SIZE)
         const { error: insertError } = await supabaseClient
           .from('physical_media')
-          .insert(batch)
+          .upsert(batch, { onConflict: 'user_id,discogs_instance_id', ignoreDuplicates: true })
 
         if (insertError) {
-          log('error', 'Failed to insert batch', { error: insertError.message, batchStart: i })
+          log('error', 'Failed to upsert batch', { error: insertError.message, batchStart: i })
           return new Response(
             JSON.stringify({ error: 'Failed to save imported records', details: insertError.message }),
             { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
