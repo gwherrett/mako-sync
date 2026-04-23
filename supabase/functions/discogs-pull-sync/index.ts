@@ -100,7 +100,7 @@ async function getTokensFromVault(
 
 // ─── Format mapping ────────────────────────────────────────────────────────
 
-function mapDiscogsFormat(name?: string): string | null {
+function mapDiscogsFormat(name?: string, descriptions?: string[]): string | null {
   if (!name) return null
   const n = name.toLowerCase()
   if (n.includes('7"') || n === '7-inch') return '7"'
@@ -108,7 +108,13 @@ function mapDiscogsFormat(name?: string): string | null {
   if (n.includes('12"') || n === '12-inch') return '12"'
   if (n === 'ep') return 'EP'
   if (n === 'single') return 'Single'
-  if (n === 'vinyl') return 'LP'
+  if (n === 'vinyl') {
+    const desc = (descriptions ?? []).map(d => d.toLowerCase())
+    if (desc.some(d => d.includes('12"') || d === '12-inch')) return '12"'
+    if (desc.some(d => d.includes('10"') || d === '10-inch')) return '10"'
+    if (desc.some(d => d.includes('7"') || d === '7-inch')) return '7"'
+    return 'LP'
+  }
   return 'Other'
 }
 
@@ -287,7 +293,7 @@ async function pullFromDiscogs(
     cover_image_url: item.basic_information.cover_image ?? item.basic_information.thumb ?? null,
     genres: item.basic_information.genres?.length ? item.basic_information.genres : null,
     styles: item.basic_information.styles?.length ? item.basic_information.styles : null,
-    format: mapDiscogsFormat(item.basic_information.formats?.[0]?.name),
+    format: mapDiscogsFormat(item.basic_information.formats?.[0]?.name, item.basic_information.formats?.[0]?.descriptions),
     format_details: item.basic_information.formats?.[0]?.descriptions?.join(', ') ?? null,
     rating: item.rating > 0 ? item.rating : null,
     tracklist: item._tracklist,
