@@ -13,6 +13,7 @@ interface DiscogsReleaseSelectorProps {
   initialTitle: string;
   onSelect: (release: DiscogsRelease) => void;
   onSkip: () => void;
+  confirmDisabled?: boolean;
 }
 
 async function callDiscogsSearch(action: 'search', params: { artist: string; title: string }): Promise<{ results: DiscogsSearchResult[] }>;
@@ -38,6 +39,7 @@ export const DiscogsReleaseSelector: React.FC<DiscogsReleaseSelectorProps> = ({
   initialTitle,
   onSelect,
   onSkip,
+  confirmDisabled = false,
 }) => {
   const [artist, setArtist] = useState(initialArtist);
   const [title, setTitle] = useState(initialTitle);
@@ -185,7 +187,7 @@ export const DiscogsReleaseSelector: React.FC<DiscogsReleaseSelectorProps> = ({
         </Button>
         <Button
           onClick={handleConfirm}
-          disabled={!selectedId || isFetching}
+          disabled={!selectedId || isFetching || confirmDisabled}
         >
           {isFetching ? (
             <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Fetching details...</>

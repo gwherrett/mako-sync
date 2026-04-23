@@ -2,12 +2,8 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
-type SyncDirection = 'push' | 'pull' | 'both';
-
 interface SyncResult {
-  pushed: number;
   pulled: number;
-  skipped: number;
   errors: { id: string | number; reason: string }[];
 }
 
@@ -16,11 +12,8 @@ export function useDiscogsSync() {
   const { toast } = useToast();
 
   const mutation = useMutation({
-    mutationFn: async (direction: SyncDirection = 'both'): Promise<SyncResult> => {
-      const { data, error } = await supabase.functions.invoke(
-        'discogs-two-way-sync',
-        { body: { direction } },
-      );
+    mutationFn: async (): Promise<SyncResult> => {
+      const { data, error } = await supabase.functions.invoke('discogs-pull-sync');
 
       if (error) {
         let message = error.message ?? 'Discogs sync failed';
@@ -46,17 +39,12 @@ export function useDiscogsSync() {
     onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: ['physical_media'] });
 
-      const parts: string[] = [];
-      if (result.pushed > 0) parts.push(`↑ ${result.pushed} pushed to Discogs`);
-      if (result.pulled > 0) parts.push(`↓ ${result.pulled} pulled from Discogs`);
-      if (result.skipped > 0) parts.push(`${result.skipped} skipped (no release linked)`);
-
-      if (parts.length === 0) {
-        toast({ title: 'Already in sync', description: 'Nothing to push or pull.' });
+      if (result.pulled === 0) {
+        toast({ title: 'Already in sync', description: 'Collection is already up to date.' });
       } else {
         toast({
           title: 'Discogs sync complete',
-          description: parts.join(' · '),
+          description: `↓ ${result.pulled} pulled from Discogs`,
         });
       }
 
@@ -78,7 +66,7 @@ export function useDiscogsSync() {
   });
 
   return {
-    sync: (direction: SyncDirection = 'both') => mutation.mutate(direction),
+    sync: () => mutation.mutate(),
     isPending: mutation.isPending,
     result: mutation.data,
   };

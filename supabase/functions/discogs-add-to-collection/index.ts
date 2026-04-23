@@ -137,43 +137,15 @@ serve(async (req) => {
 
     // Parse and validate input
     const body = await req.json()
-    const { physicalMediaId } = body
-    if (!physicalMediaId || typeof physicalMediaId !== 'string') {
+    const { releaseId, rating } = body
+    if (!releaseId || typeof releaseId !== 'number') {
       return new Response(
-        JSON.stringify({ error: 'physicalMediaId is required' }),
+        JSON.stringify({ error: 'releaseId (number) is required' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
       )
     }
 
-    log('info', 'discogs-add-to-collection called', { physicalMediaId, userId: user.id })
-
-    // Fetch the physical media record (RLS ensures user owns it)
-    const { data: record, error: recordError } = await supabaseClient
-      .from('physical_media')
-      .select('discogs_release_id, discogs_instance_id, rating')
-      .eq('id', physicalMediaId)
-      .maybeSingle()
-
-    if (recordError || !record) {
-      return new Response(
-        JSON.stringify({ error: 'Record not found' }),
-        { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
-      )
-    }
-
-    if (record.discogs_instance_id !== null) {
-      return new Response(
-        JSON.stringify({ error: 'Already synced', code: 'ALREADY_SYNCED' }),
-        { status: 409, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
-      )
-    }
-
-    if (!record.discogs_release_id) {
-      return new Response(
-        JSON.stringify({ error: 'No Discogs release linked to this record' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
-      )
-    }
+    log('info', 'discogs-add-to-collection called', { releaseId, userId: user.id })
 
     // Fetch Discogs connection
     const { data: connection, error: connError } = await supabaseClient
@@ -197,7 +169,7 @@ serve(async (req) => {
     )
 
     // Build Discogs API URL
-    const discogsUrl = `https://api.discogs.com/users/${connection.discogs_username}/collection/folders/1/releases/${record.discogs_release_id}`
+    const discogsUrl = `https://api.discogs.com/users/${connection.discogs_username}/collection/folders/1/releases/${releaseId}`
     const authHeader = await buildOAuthHeader('POST', discogsUrl, consumerKey, consumerSecret, accessToken, accessTokenSecret)
 
     // POST to Discogs
@@ -212,7 +184,7 @@ serve(async (req) => {
           'Content-Type': 'application/json',
           'User-Agent': 'MakoSync/1.0',
         },
-        body: JSON.stringify({ rating: record.rating ?? 0 }),
+        body: JSON.stringify({ rating: rating ?? 0 }),
         signal: controller.signal,
       })
     } catch (fetchErr: unknown) {
@@ -259,25 +231,10 @@ serve(async (req) => {
     }
 
     const { instance_id, resource_url } = await discogsResp.json()
-    const syncedAt = new Date().toISOString()
 
-    // Update physical_media with instance_id and sync timestamp
-    const { error: updateError } = await supabaseClient
-      .from('physical_media')
-      .update({ discogs_instance_id: instance_id, discogs_synced_at: syncedAt })
-      .eq('id', physicalMediaId)
-
-    if (updateError) {
-      log('error', 'Failed to update physical_media after Discogs sync', { error: updateError.message })
-      return new Response(
-        JSON.stringify({ error: 'Synced to Discogs but failed to save state', code: 'UPDATE_FAILED' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
-      )
-    }
-
-    log('info', 'Successfully added to Discogs collection', { physicalMediaId, instance_id })
+    log('info', 'Successfully added to Discogs collection', { releaseId, instance_id })
     return new Response(
-      JSON.stringify({ instance_id, resource_url, synced_at: syncedAt }),
+      JSON.stringify({ instance_id, resource_url }),
       { status: 201, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
     )
 

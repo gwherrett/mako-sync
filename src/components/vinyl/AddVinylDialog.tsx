@@ -9,7 +9,6 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import {
   Select,
   SelectContent,
@@ -25,10 +24,9 @@ import {
 } from '@/components/ui/tooltip';
 import { DiscogsReleaseSelector } from './DiscogsReleaseSelector';
 import { CameraCapture } from './CameraCapture';
-import { usePhysicalMedia } from '@/hooks/usePhysicalMedia';
 import { useDiscogsAuth } from '@/hooks/useDiscogsAuth';
 import { useDiscogsAddToCollection } from '@/hooks/useDiscogsAddToCollection';
-import type { DiscogsRelease, NewPhysicalMedia, VinylIdentifyResult } from '@/types/discogs';
+import type { DiscogsRelease, VinylIdentifyResult } from '@/types/discogs';
 
 const RATING_OPTIONS = [
   { value: 5, label: '5 — Mint' },
@@ -52,7 +50,7 @@ interface AddVinylDialogProps {
   onOpenChange: (open: boolean) => void;
 }
 
-type Step = 0 | 1 | 2 | 3;
+type Step = 0 | 1 | 2;
 
 interface FormData {
   artist: string;
@@ -61,10 +59,7 @@ interface FormData {
   catalogue_number: string;
   year: string;
   country: string;
-  pressing: string;
   format: string;
-  format_details: string;
-  notes: string;
 }
 
 const EMPTY_FORM: FormData = {
@@ -74,29 +69,23 @@ const EMPTY_FORM: FormData = {
   catalogue_number: '',
   year: '',
   country: '',
-  pressing: '',
   format: '',
-  format_details: '',
-  notes: '',
 };
 
 const STEP_LABELS: Record<Step, string> = {
   0: 'Scan label',
   1: 'Record details',
   2: 'Find on Discogs',
-  3: 'Saving…',
 };
 
 export const AddVinylDialog: React.FC<AddVinylDialogProps> = ({ open, onOpenChange }) => {
   const [step, setStep] = useState<Step>(0);
   const [form, setForm] = useState<FormData>(EMPTY_FORM);
   const [rating, setRating] = useState<number | null>(null);
-  const [discogsRelease, setDiscogsRelease] = useState<DiscogsRelease | null>(null);
-  const { addRecord, isAdding } = usePhysicalMedia();
   const { isConnected: discogsConnected } = useDiscogsAuth();
-  const { addToCollection } = useDiscogsAddToCollection();
+  const { addToCollection, isPending } = useDiscogsAddToCollection();
 
-  const set = (field: keyof FormData) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
+  const set = (field: keyof FormData) => (e: React.ChangeEvent<HTMLInputElement>) =>
     setForm(prev => ({ ...prev, [field]: e.target.value }));
   const setSelect = (field: keyof FormData) => (value: string) =>
     setForm(prev => ({ ...prev, [field]: value }));
@@ -108,7 +97,6 @@ export const AddVinylDialog: React.FC<AddVinylDialogProps> = ({ open, onOpenChan
       setStep(0);
       setForm(EMPTY_FORM);
       setRating(null);
-      setDiscogsRelease(null);
     }, 200);
   };
 
@@ -120,55 +108,18 @@ export const AddVinylDialog: React.FC<AddVinylDialogProps> = ({ open, onOpenChan
       catalogue_number: result.catalogue_number ?? '',
       year: result.year != null ? String(result.year) : '',
       country: '',
-      pressing: '',
       format: '',
-      format_details: result.format_hints ?? '',
-      notes: '',
     });
     setStep(1);
   };
 
   const handleDiscogsSelect = async (release: DiscogsRelease) => {
-    setDiscogsRelease(release);
-    await saveRecord(release);
-  };
-
-  const handleDiscogsSkip = async () => {
-    await saveRecord(null);
-  };
-
-  const saveRecord = async (release: DiscogsRelease | null) => {
-    setStep(3);
     try {
-      const record: NewPhysicalMedia = {
-        artist: form.artist,
-        title: form.title,
-        label: form.label || null,
-        catalogue_number: form.catalogue_number || null,
-        year: form.year ? parseInt(form.year, 10) : null,
-        country: form.country || null,
-        pressing: (form.pressing as NewPhysicalMedia['pressing']) || null,
-        rating: rating,
-        discogs_instance_id: null,
-        discogs_synced_at: null,
-        format: (form.format as NewPhysicalMedia['format']) || null,
-        format_details: form.format_details || null,
-        notes: form.notes || null,
-        discogs_release_id: release?.id ?? null,
-        discogs_master_id: release?.master_id ?? null,
-        cover_image_url: release?.images?.[0]?.uri ?? null,
-        tracklist: release?.tracklist ?? null,
-        genres: release?.genres ?? null,
-        styles: release?.styles ?? null,
-      };
-      const saved = await addRecord(record);
+      await addToCollection({ releaseId: release.id, rating });
       handleClose();
-      if (saved?.discogs_release_id && discogsConnected) {
-        void addToCollection(saved.id);
-      }
     } catch {
-      // addRecord already shows a toast on error; step back to form
-      setStep(1);
+      // hook's onError shows a toast; step back so user can retry
+      setStep(2);
     }
   };
 
@@ -179,7 +130,7 @@ export const AddVinylDialog: React.FC<AddVinylDialogProps> = ({ open, onOpenChan
       <DialogContent className="max-w-lg">
         <DialogHeader>
           <DialogTitle>
-            Add vinyl record
+            Add to Discogs
             <span className="ml-2 text-sm font-normal text-muted-foreground">
               {step === 0 ? STEP_LABELS[0] : `Step ${step} of 2 — ${STEP_LABELS[step]}`}
             </span>
@@ -226,17 +177,6 @@ export const AddVinylDialog: React.FC<AddVinylDialogProps> = ({ open, onOpenChan
                 <Input value={form.country} onChange={set('country')} placeholder="e.g. UK" />
               </div>
               <div className="space-y-1">
-                <Label>Pressing</Label>
-                <Select value={form.pressing} onValueChange={setSelect('pressing')}>
-                  <SelectTrigger><SelectValue placeholder="Select…" /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="original">Original</SelectItem>
-                    <SelectItem value="reissue">Reissue</SelectItem>
-                    <SelectItem value="remaster">Remaster</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-1">
                 <div className="flex items-center gap-1">
                   <Label>Rating</Label>
                   <TooltipProvider>
@@ -273,14 +213,6 @@ export const AddVinylDialog: React.FC<AddVinylDialogProps> = ({ open, onOpenChan
                   </SelectContent>
                 </Select>
               </div>
-              <div className="col-span-2 space-y-1">
-                <Label>Format details</Label>
-                <Input value={form.format_details} onChange={set('format_details')} placeholder="e.g. Red vinyl, gatefold" />
-              </div>
-              <div className="col-span-2 space-y-1">
-                <Label>Notes</Label>
-                <Textarea value={form.notes} onChange={set('notes')} placeholder="Any other notes…" rows={2} />
-              </div>
             </div>
             <div className="flex justify-end gap-2 pt-2">
               <Button variant="outline" onClick={handleClose}>Cancel</Button>
@@ -294,23 +226,32 @@ export const AddVinylDialog: React.FC<AddVinylDialogProps> = ({ open, onOpenChan
         {/* Step 2 — Discogs search */}
         {step === 2 && (
           <div className="space-y-4">
-            <DiscogsReleaseSelector
-              initialArtist={form.artist}
-              initialTitle={form.title}
-              onSelect={handleDiscogsSelect}
-              onSkip={handleDiscogsSkip}
-            />
-            <Button variant="ghost" size="sm" onClick={() => setStep(1)} className="text-muted-foreground">
-              ← Back
-            </Button>
-          </div>
-        )}
-
-        {/* Step 3 — Saving */}
-        {step === 3 && (
-          <div className="flex items-center justify-center py-12 gap-3 text-muted-foreground">
-            <Loader2 className="h-6 w-6 animate-spin" />
-            <span>Saving to your collection…</span>
+            {!discogsConnected && (
+              <p className="text-sm text-muted-foreground rounded-md border border-border bg-muted/40 px-3 py-2">
+                Connect your Discogs account on the{' '}
+                <a href="/security" className="underline underline-offset-2">Settings page</a>{' '}
+                to add records to your collection.
+              </p>
+            )}
+            {isPending ? (
+              <div className="flex items-center justify-center py-12 gap-3 text-muted-foreground">
+                <Loader2 className="h-6 w-6 animate-spin" />
+                <span>Adding to Discogs…</span>
+              </div>
+            ) : (
+              <DiscogsReleaseSelector
+                initialArtist={form.artist}
+                initialTitle={form.title}
+                onSelect={handleDiscogsSelect}
+                onSkip={handleClose}
+                confirmDisabled={!discogsConnected}
+              />
+            )}
+            {!isPending && (
+              <Button variant="ghost" size="sm" onClick={() => setStep(1)} className="text-muted-foreground">
+                ← Back
+              </Button>
+            )}
           </div>
         )}
       </DialogContent>

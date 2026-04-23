@@ -12,7 +12,7 @@ const log = (level: 'info' | 'warn' | 'error', message: string, context?: Record
   console.log(JSON.stringify({
     timestamp: new Date().toISOString(),
     level: level.toUpperCase(),
-    service: 'discogs-two-way-sync',
+    service: 'discogs-pull-sync',
     message,
     ...context,
   }))
@@ -150,112 +150,11 @@ interface SyncError {
 }
 
 interface SyncResult {
-  pushed: number
   pulled: number
-  skipped: number
   errors: SyncError[]
 }
 
-// ─── Push leg: Mako → Discogs ──────────────────────────────────────────────
-
-async function pushToDiscogs(
-  supabaseClient: ReturnType<typeof createClient>,
-  userId: string,
-  username: string,
-  consumerKey: string,
-  consumerSecret: string,
-  accessToken: string,
-  accessTokenSecret: string,
-  dryRun: boolean,
-): Promise<{ pushed: number; skipped: number; errors: SyncError[] }> {
-  // Fetch unsynced records that have a release ID
-  const { data: unsynced, error } = await supabaseClient
-    .from('physical_media')
-    .select('id, discogs_release_id, rating')
-    .eq('user_id', userId)
-    .is('discogs_instance_id', null)
-    .not('discogs_release_id', 'is', null)
-
-  if (error) throw new Error(`Failed to fetch unsynced records: ${error.message}`)
-
-  // Count records missing a release ID (can't push without one)
-  const { count: noReleaseCount } = await supabaseClient
-    .from('physical_media')
-    .select('id', { count: 'exact', head: true })
-    .eq('user_id', userId)
-    .is('discogs_instance_id', null)
-    .is('discogs_release_id', null)
-
-  const skipped = noReleaseCount ?? 0
-  const records = unsynced ?? []
-
-  log('info', 'Push leg: records to push', { count: records.length, skipped, dryRun })
-
-  if (dryRun || records.length === 0) {
-    return { pushed: records.length, skipped, errors: [] }
-  }
-
-  let pushed = 0
-  const errors: SyncError[] = []
-  const syncedAt = new Date().toISOString()
-
-  for (const record of records) {
-    // Rate limit: 1 req/sec (Discogs cap: 60/min)
-    if (pushed > 0 || errors.length > 0) {
-      await new Promise(r => setTimeout(r, 1100))
-    }
-
-    const url = `https://api.discogs.com/users/${username}/collection/folders/1/releases/${record.discogs_release_id}`
-    const authHeader = await buildOAuthHeader('POST', url, consumerKey, consumerSecret, accessToken, accessTokenSecret)
-
-    let resp: Response
-    try {
-      resp = await fetch(url, {
-        method: 'POST',
-        signal: AbortSignal.timeout(10000),
-        headers: {
-          Authorization: authHeader,
-          'Content-Type': 'application/json',
-          'User-Agent': 'MakoSync/1.0',
-        },
-        body: JSON.stringify({ rating: record.rating ?? 0 }),
-      })
-    } catch (fetchErr) {
-      errors.push({ id: record.id, reason: 'Discogs request timed out or failed' })
-      log('warn', 'Push: fetch failed', { recordId: record.id, error: String(fetchErr) })
-      continue
-    }
-
-    if (resp.status === 429) {
-      errors.push({ id: record.id, reason: 'Rate limited by Discogs' })
-      log('warn', 'Push: rate limited', { recordId: record.id })
-      break
-    }
-
-    if (resp.status !== 201) {
-      const body = await resp.text()
-      errors.push({ id: record.id, reason: `Discogs returned ${resp.status}: ${body}` })
-      log('warn', 'Push: non-201 response', { recordId: record.id, status: resp.status })
-      continue
-    }
-
-    const { instance_id } = await resp.json()
-    const { error: updateError } = await supabaseClient
-      .from('physical_media')
-      .update({ discogs_instance_id: instance_id, discogs_synced_at: syncedAt })
-      .eq('id', record.id)
-
-    if (updateError) {
-      errors.push({ id: record.id, reason: `Pushed but failed to save instance_id: ${updateError.message}` })
-    } else {
-      pushed++
-    }
-  }
-
-  return { pushed, skipped, errors }
-}
-
-// ─── Pull leg: Discogs → Mako ──────────────────────────────────────────────
+// ─── Pull: Discogs → Mako ──────────────────────────────────────────────────
 
 async function pullFromDiscogs(
   supabaseClient: ReturnType<typeof createClient>,
@@ -265,8 +164,7 @@ async function pullFromDiscogs(
   consumerSecret: string,
   accessToken: string,
   accessTokenSecret: string,
-  dryRun: boolean,
-): Promise<{ pulled: number; errors: SyncError[] }> {
+): Promise<SyncResult> {
   // Load existing instance IDs for deduplication
   const { data: existingRows } = await supabaseClient
     .from('physical_media')
@@ -278,7 +176,7 @@ async function pullFromDiscogs(
     (existingRows ?? []).map((r: { discogs_instance_id: number }) => r.discogs_instance_id)
   )
 
-  log('info', 'Pull leg: existing instance IDs', { count: existingInstanceIds.size, dryRun })
+  log('info', 'Pull: existing instance IDs', { count: existingInstanceIds.size })
 
   const PER_PAGE = 100
   const BUDGET_MS = 100_000
@@ -331,8 +229,8 @@ async function pullFromDiscogs(
     page++
   }
 
-  if (dryRun || newItems.length === 0) {
-    return { pulled: newItems.length, errors: [] }
+  if (newItems.length === 0) {
+    return { pulled: 0, errors: [] }
   }
 
   // Enrich each item with full release data (tracklist + country)
@@ -456,18 +354,7 @@ serve(async (req) => {
       )
     }
 
-    const body = await req.json().catch(() => ({}))
-    const direction: 'push' | 'pull' | 'both' = body.direction ?? 'both'
-    const dryRun: boolean = body.dryRun ?? false
-
-    if (!['push', 'pull', 'both'].includes(direction)) {
-      return new Response(
-        JSON.stringify({ error: 'direction must be "push", "pull", or "both"' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
-      )
-    }
-
-    log('info', 'discogs-two-way-sync called', { userId: user.id, direction, dryRun })
+    log('info', 'discogs-pull-sync called', { userId: user.id })
 
     // Fetch Discogs connection
     const { data: connection, error: connError } = await supabaseClient
@@ -483,35 +370,18 @@ serve(async (req) => {
       )
     }
 
-    // Decrypt tokens once for both legs
     const { accessToken, accessTokenSecret } = await getTokensFromVault(
       pool,
       connection.access_token_secret_id,
       connection.access_secret_secret_id,
     )
 
-    const result: SyncResult = { pushed: 0, pulled: 0, skipped: 0, errors: [] }
+    const result = await pullFromDiscogs(
+      supabaseClient, user.id, connection.discogs_username,
+      consumerKey, consumerSecret, accessToken, accessTokenSecret,
+    )
 
-    if (direction === 'push' || direction === 'both') {
-      const pushResult = await pushToDiscogs(
-        supabaseClient, user.id, connection.discogs_username,
-        consumerKey, consumerSecret, accessToken, accessTokenSecret, dryRun,
-      )
-      result.pushed = pushResult.pushed
-      result.skipped = pushResult.skipped
-      result.errors.push(...pushResult.errors)
-    }
-
-    if (direction === 'pull' || direction === 'both') {
-      const pullResult = await pullFromDiscogs(
-        supabaseClient, user.id, connection.discogs_username,
-        consumerKey, consumerSecret, accessToken, accessTokenSecret, dryRun,
-      )
-      result.pulled = pullResult.pulled
-      result.errors.push(...pullResult.errors)
-    }
-
-    log('info', 'Sync complete', { ...result, direction, dryRun })
+    log('info', 'Pull sync complete', result)
     return new Response(JSON.stringify(result), {
       status: 200,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -527,7 +397,7 @@ serve(async (req) => {
       )
     }
 
-    log('error', 'Unexpected error in discogs-two-way-sync', { error: msg })
+    log('error', 'Unexpected error in discogs-pull-sync', { error: msg })
     return new Response(
       JSON.stringify({ error: 'Server error', details: msg }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },

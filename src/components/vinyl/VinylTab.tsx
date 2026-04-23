@@ -51,7 +51,7 @@ export const VinylTab: React.FC = () => {
           )}
           <Button size="sm" onClick={() => setAddOpen(true)}>
             <Plus className="h-4 w-4 mr-2" />
-            Add Record
+            Add to Discogs
           </Button>
         </div>
       </div>

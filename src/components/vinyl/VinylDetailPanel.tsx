@@ -1,15 +1,12 @@
-import React, { useMemo } from 'react';
-import { formatDistanceToNow } from 'date-fns';
+import React from 'react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Loader2, Disc3, CheckCircle2, XCircle, Download, Trash2, CloudUpload } from 'lucide-react';
+import { Loader2, Disc3, CheckCircle2, XCircle, Download, Trash2 } from 'lucide-react';
 import { useVinylMissingTracks } from '@/hooks/useVinylMissingTracks';
 import { useSlskdSync } from '@/hooks/useSlskdSync';
-import { useDiscogsAuth } from '@/hooks/useDiscogsAuth';
-import { useDiscogsAddToCollection } from '@/hooks/useDiscogsAddToCollection';
 import { SlskdStorageService } from '@/services/slskdStorage.service';
 import { usePhysicalMedia } from '@/hooks/usePhysicalMedia';
 import type { PhysicalMediaRecord } from '@/types/discogs';
@@ -44,20 +41,7 @@ export const VinylDetailPanel: React.FC<VinylDetailPanelProps> = ({ record, open
   const { matched, missing, isLoading: isMatching } = useVinylMissingTracks(record);
   const { syncToSlskd, isSyncing } = useSlskdSync();
   const { deleteRecord, isDeleting } = usePhysicalMedia();
-  const { isConnected: discogsConnected } = useDiscogsAuth();
-  const { addToCollection, isPending: isSyncingToDiscogs } = useDiscogsAddToCollection();
   const slskdConfigured = SlskdStorageService.isConfigured();
-
-  const canSyncToDiscogs = !!record?.discogs_release_id && discogsConnected;
-  const alreadySynced = !!record?.discogs_instance_id;
-  const syncedAgo = useMemo(() => {
-    if (!record?.discogs_synced_at) return null;
-    try {
-      return formatDistanceToNow(new Date(record.discogs_synced_at), { addSuffix: true });
-    } catch {
-      return null;
-    }
-  }, [record?.discogs_synced_at]);
 
   const handlePushToSlskd = () => {
     if (!record || missing.length === 0) return;
@@ -160,7 +144,7 @@ export const VinylDetailPanel: React.FC<VinylDetailPanelProps> = ({ record, open
 
           {!record.tracklist && (
             <p className="text-sm text-muted-foreground mt-4 italic">
-              No tracklist — link a Discogs release to see cross-reference data.
+              No tracklist available. Sync from Discogs to populate release data.
             </p>
           )}
         </ScrollArea>
@@ -179,26 +163,6 @@ export const VinylDetailPanel: React.FC<VinylDetailPanelProps> = ({ record, open
           </Button>
 
           <div className="flex items-center gap-2">
-            {alreadySynced && (
-              <Badge variant="secondary" className="gap-1" title={record?.discogs_synced_at ?? undefined}>
-                <CheckCircle2 className="h-3.5 w-3.5 text-green-500" />
-                {syncedAgo ? `Synced ${syncedAgo}` : 'Synced to Discogs'}
-              </Badge>
-            )}
-            {canSyncToDiscogs && !alreadySynced && (
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => addToCollection(record.id)}
-                disabled={isSyncingToDiscogs}
-              >
-                {isSyncingToDiscogs ? (
-                  <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Syncing…</>
-                ) : (
-                  <><CloudUpload className="h-4 w-4 mr-2" />Add to Discogs</>
-                )}
-              </Button>
-            )}
             {slskdConfigured && missing.length > 0 && (
               <Button
                 size="sm"
