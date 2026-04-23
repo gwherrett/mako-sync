@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { ArrowLeft, Disc3, Plus, Info, X, RefreshCw, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -17,8 +17,12 @@ const Vinyl: React.FC = () => {
   const { isConnected: discogsConnected } = useDiscogsAuth();
   const { sync: syncWithDiscogs, isPending: isSyncing } = useDiscogsSync();
   const [addOpen, setAddOpen] = useState(false);
-  const [selectedRecord, setSelectedRecord] = useState<PhysicalMediaRecord | null>(null);
   const [bannerDismissed, setBannerDismissed] = useState(false);
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  const selectedId = (location.state as { selectedId?: string } | null)?.selectedId ?? null;
+  const selectedRecord = collection.find(r => r.id === selectedId) ?? null;
 
   return (
     <div className="min-h-screen bg-background">
@@ -125,7 +129,7 @@ const Vinyl: React.FC = () => {
               <VinylCard
                 key={record.id}
                 record={record}
-                onClick={() => setSelectedRecord(record)}
+                onClick={() => navigate('/vinyl', { state: { selectedId: record.id } })}
                 onRemove={deleteRecord}
               />
             ))}
@@ -133,11 +137,11 @@ const Vinyl: React.FC = () => {
         )}
       </main>
 
-      {/* Detail panel */}
+      {/* Detail panel — onClose navigates back so Android swipe-right closes panel, not app */}
       <VinylDetailPanel
         record={selectedRecord}
         open={!!selectedRecord}
-        onClose={() => setSelectedRecord(null)}
+        onClose={() => navigate(-1)}
       />
 
       {/* Add dialog */}
