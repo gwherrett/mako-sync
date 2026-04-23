@@ -228,15 +228,14 @@ describe('DiscogsAuthManager', () => {
         error: null,
       } as any);
 
-      const mockFetch = vi.fn().mockResolvedValue({
-        ok: true,
-        json: async () => ({
+      vi.mocked(supabase.functions.invoke).mockResolvedValue({
+        data: {
           oauth_token: 'req-token',
           oauth_token_secret: 'req-secret',
           authorize_url: 'https://discogs.com/oauth/authorize?oauth_token=req-token',
-        }),
-      });
-      vi.stubGlobal('fetch', mockFetch);
+        },
+        error: null,
+      } as any);
 
       const result = await manager.connect('http://localhost/discogs-callback');
 
@@ -253,11 +252,10 @@ describe('DiscogsAuthManager', () => {
         error: null,
       } as any);
 
-      const mockFetch = vi.fn().mockResolvedValue({
-        ok: false,
-        json: async () => ({ error: 'Discogs unavailable' }),
-      });
-      vi.stubGlobal('fetch', mockFetch);
+      vi.mocked(supabase.functions.invoke).mockResolvedValue({
+        data: null,
+        error: { message: 'Discogs unavailable' },
+      } as any);
 
       const result = await manager.connect('http://localhost/discogs-callback');
 
