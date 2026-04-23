@@ -1,4 +1,5 @@
 {
+  "enabledMcpjsonServers": ["linear-server"],
   "permissions": {
     "allow": [
       "Bash(npx tsc:*)",
