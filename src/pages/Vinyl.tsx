@@ -137,11 +137,11 @@ const Vinyl: React.FC = () => {
         )}
       </main>
 
-      {/* Detail panel — onClose navigates back so Android swipe-right closes panel, not app */}
+      {/* Detail panel — replace the history entry to clear selectedId; idempotent if back gesture already fired */}
       <VinylDetailPanel
         record={selectedRecord}
         open={!!selectedRecord}
-        onClose={() => navigate(-1)}
+        onClose={() => navigate('/vinyl', { replace: true })}
       />
 
       {/* Add dialog */}
