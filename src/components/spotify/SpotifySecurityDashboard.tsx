@@ -36,19 +36,11 @@ export const SpotifySecurityDashboard = ({
 
   const getTokenStatus = () => {
     if (!connection) return { status: 'disconnected', color: 'destructive', icon: XCircle };
-    
-    const now = new Date();
-    const expiresAt = new Date(connection.expires_at);
-    const timeUntilExpiry = expiresAt.getTime() - now.getTime();
-    const hoursUntilExpiry = timeUntilExpiry / (1000 * 60 * 60);
-    
-    if (timeUntilExpiry <= 0) {
-      return { status: 'expired', color: 'destructive', icon: XCircle };
-    } else if (hoursUntilExpiry <= 1) {
-      return { status: 'expiring', color: 'secondary', icon: RefreshCw };
-    } else {
-      return { status: 'healthy', color: 'default', icon: CheckCircle };
-    }
+    // expires_at reflects the last-recorded access token expiry. Access tokens are
+    // short-lived (1 hour) and refreshed automatically by edge functions — an
+    // in-the-past expires_at does not mean the connection is broken.
+    if (isConnected) return { status: 'connected', color: 'default', icon: CheckCircle };
+    return { status: 'disconnected', color: 'destructive', icon: XCircle };
   };
 
   const tokenStatus = getTokenStatus();
@@ -163,7 +155,7 @@ export const SpotifySecurityDashboard = ({
               <div className="space-y-2">
                 <div className="flex items-center gap-2 text-muted-foreground">
                   <RefreshCw className="h-4 w-4" />
-                  <span>Token Expires</span>
+                  <span>Token Last Refreshed</span>
                 </div>
                 <div className="pl-6">
                   <span>{formatDate(connection.expires_at)}</span>
