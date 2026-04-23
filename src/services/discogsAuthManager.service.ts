@@ -116,32 +116,22 @@ export class DiscogsAuthManager {
     this.setState({ isLoading: true, error: null });
     try {
       const { data: sessionData } = await supabase.auth.getSession();
-      const accessToken = sessionData.session?.access_token;
-      if (!accessToken) throw new Error('Not authenticated');
+      if (!sessionData.session?.access_token) throw new Error('Not authenticated');
 
-      const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
-      const SUPABASE_ANON_KEY = (import.meta.env.VITE_SUPABASE_ANON_KEY ||
-        import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY) as string;
-
-      const response = await fetch(`${SUPABASE_URL}/functions/v1/discogs-auth`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${accessToken}`,
-          apikey: SUPABASE_ANON_KEY,
-        },
-        body: JSON.stringify({ action: 'request_token', callback_url: callbackUrl }),
+      const { data, error } = await supabase.functions.invoke('discogs-auth', {
+        body: { action: 'request_token', callback_url: callbackUrl },
       });
 
-      const json = await response.json();
-      if (!response.ok) throw new Error(json.error || 'Failed to get request token');
+      if (error) throw new Error(error.message || 'Failed to get request token');
+      if (!data?.oauth_token || !data?.oauth_token_secret || !data?.authorize_url) {
+        throw new Error('Invalid response from discogs-auth');
+      }
 
-      // Store the request token secret in sessionStorage for the callback
-      sessionStorage.setItem('discogs_oauth_token_secret', json.oauth_token_secret);
-      sessionStorage.setItem('discogs_oauth_token', json.oauth_token);
+      sessionStorage.setItem('discogs_oauth_token_secret', data.oauth_token_secret);
+      sessionStorage.setItem('discogs_oauth_token', data.oauth_token);
 
       this.setState({ isLoading: false });
-      return { success: true, data: { authorizeUrl: json.authorize_url } };
+      return { success: true, data: { authorizeUrl: data.authorize_url } };
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
       this.setState({ isLoading: false, error: msg });

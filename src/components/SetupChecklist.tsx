@@ -15,10 +15,11 @@ interface ChecklistItem {
   completed: boolean;
   action?: () => void;
   actionLabel?: string;
+  loading?: boolean;
 }
 
 const SetupChecklist: React.FC = () => {
-  const { isConnected: isDiscogsConnected, connectDiscogs } = useDiscogsAuth();
+  const { isConnected: isDiscogsConnected, connectDiscogs, isConnecting: isDiscogsConnecting } = useDiscogsAuth();
   const { isConnected, connectSpotify } = useUnifiedSpotifyAuth();
 
   const checklist: ChecklistItem[] = [
@@ -30,6 +31,7 @@ const SetupChecklist: React.FC = () => {
       completed: isDiscogsConnected,
       action: connectDiscogs,
       actionLabel: 'Connect Discogs',
+      loading: isDiscogsConnecting,
     },
     {
       id: 'spotify-connected',
@@ -109,9 +111,10 @@ const SetupChecklist: React.FC = () => {
               <Button
                 size="sm"
                 onClick={item.action}
+                disabled={item.loading}
                 className="ml-4"
               >
-                {item.actionLabel}
+                {item.loading ? 'Connecting...' : item.actionLabel}
                 <ArrowRight className="w-3 h-3 ml-1" />
               </Button>
             )}
