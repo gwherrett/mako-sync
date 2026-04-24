@@ -165,7 +165,6 @@ export async function refreshSpotifyToken(connection: SpotifyConnection, supabas
       connection_pg.release()
     }
   } catch (vaultError: any) {
-    await pool.end()
     console.error('Failed to update tokens in vault:', vaultError.message)
     throw new Error('Failed to update tokens in vault - please reconnect Spotify')
   } finally {
