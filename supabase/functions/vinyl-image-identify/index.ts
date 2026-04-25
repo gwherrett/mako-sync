@@ -94,7 +94,7 @@ serve(async (req) => {
         'content-type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-6',
+        model: 'claude-opus-4-7',
         max_tokens: 1024,
         system: SYSTEM_PROMPT,
         messages: [
