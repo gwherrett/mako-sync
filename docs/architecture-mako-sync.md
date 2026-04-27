@@ -29,7 +29,7 @@ The application uses Supabase as the exclusive backend platform:
 * `spotify-sync-liked` - Sync user's liked songs from Spotify API
 * `spotify-resync-tracks` - Re-fetch metadata for specific tracks
 * `genre-mapping` - Retrieve/update genre mappings
-* `ai-track-genre-suggest` - AI-powered genre suggestions via Lovable AI
+* `ai-track-genre-suggest` - AI-powered genre suggestions via Anthropic Claude (claude-haiku-4-5-20251001)
 
 ### **2.2 Database Design Principles**
 

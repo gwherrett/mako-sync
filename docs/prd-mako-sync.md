@@ -322,7 +322,7 @@ As a user, I want AI to help classify tracks that don't have genre tags so I can
 * **FR-5.10:** AI suggestions SHALL emphasize genre consistency when user has other tracks by same artist
 
 **Priority:** P1 (High)
-**Dependencies:** Lovable AI integration, tracks synced  
+**Dependencies:** Anthropic Claude integration, tracks synced  
 **Estimated Effort:** 13 story points
 
 ---
@@ -888,7 +888,7 @@ This ensures the "unmapped/unprocessed" count accurately reflects tracks that tr
 **Required Secrets:**
 * `SPOTIFY_CLIENT_ID` - Spotify app client ID
 * `SPOTIFY_CLIENT_SECRET` - Spotify app secret
-* `LOVABLE_API_KEY` - For AI genre suggestions
+* `ANTHROPIC_API_KEY` - For AI genre suggestions (claude-haiku-4-5-20251001)
 * `SUPABASE_SERVICE_ROLE_KEY` - For admin operations
 
 ### **9.3 Database Setup**
