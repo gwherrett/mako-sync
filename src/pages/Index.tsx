@@ -75,6 +75,7 @@ const Index = () => {
   const { initialDataReady, dataFetchEnabled } = useAuth();
   const [spotifyCount, setSpotifyCount] = useState<number | null>(null);
   const [localCount, setLocalCount] = useState<number | null>(null);
+  const [vinylCount, setVinylCount] = useState<number | null>(null);
 
   // Update active tab when URL query param changes
   useEffect(() => {
@@ -134,6 +135,20 @@ const Index = () => {
         if (localResult.data) {
           setLocalCount(localResult.data.count || 0);
         }
+
+        // Fetch Vinyl count
+        const vinylResult = await withQueryTimeout(
+          async (signal) => supabase
+            .from('physical_media')
+            .select('*', { count: 'exact' })
+            .range(0, 0)
+            .abortSignal(signal),
+          10000,
+          'Index:vinylCount'
+        );
+        if (vinylResult.data) {
+          setVinylCount(vinylResult.data.count || 0);
+        }
       } catch (error) {
         console.error('Failed to fetch tab counts:', error);
       }
@@ -152,6 +167,11 @@ const Index = () => {
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'local_mp3s' },
+        () => fetchCounts()
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'physical_media' },
         () => fetchCounts()
       )
       .subscribe();
@@ -193,6 +213,11 @@ const Index = () => {
             <TabsTrigger value="vinyl" className="gap-1 sm:gap-2 px-1 sm:px-3">
               <Disc3 className="w-4 h-4 flex-shrink-0" />
               <span className="hidden sm:inline truncate">Vinyl</span>
+              {vinylCount !== null && vinylCount > 0 && (
+                <Badge variant="secondary" className="hidden md:inline-flex ml-1 h-5 px-1.5 text-xs">
+                  {vinylCount.toLocaleString()}
+                </Badge>
+              )}
             </TabsTrigger>
             {/* Tab 2: Spotify */}
             <TabsTrigger value="spotify" className="gap-1 sm:gap-2 px-1 sm:px-3">

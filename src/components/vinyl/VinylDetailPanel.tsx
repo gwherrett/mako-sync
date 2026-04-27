@@ -9,6 +9,7 @@ import { useVinylMissingTracks } from '@/hooks/useVinylMissingTracks';
 import { useSlskdSync } from '@/hooks/useSlskdSync';
 import { SlskdStorageService } from '@/services/slskdStorage.service';
 import { usePhysicalMedia } from '@/hooks/usePhysicalMedia';
+import { useIsMobile } from '@/hooks/use-mobile';
 import type { PhysicalMediaRecord } from '@/types/discogs';
 import type { SlskdTrackToSync } from '@/types/slskd';
 
@@ -42,6 +43,7 @@ export const VinylDetailPanel: React.FC<VinylDetailPanelProps> = ({ record, open
   const { syncToSlskd, isSyncing } = useSlskdSync();
   const { deleteRecord, isDeleting } = usePhysicalMedia();
   const slskdConfigured = SlskdStorageService.isConfigured();
+  const isMobile = useIsMobile();
 
   const handlePushToSlskd = () => {
     if (!record || missing.length === 0) return;
@@ -65,7 +67,18 @@ export const VinylDetailPanel: React.FC<VinylDetailPanelProps> = ({ record, open
 
   return (
     <Sheet open={open} onOpenChange={open => { if (!open) onClose(); }}>
-      <SheetContent className="w-full sm:max-w-lg flex flex-col">
+      <SheetContent
+        side={isMobile ? 'bottom' : 'right'}
+        className={isMobile
+          ? 'max-h-[70vh] rounded-t-2xl flex flex-col overflow-hidden'
+          : 'w-full sm:max-w-lg flex flex-col'
+        }
+      >
+        {isMobile && (
+          <div className="flex justify-center pt-3 pb-1 flex-shrink-0">
+            <div className="w-12 h-1.5 rounded-full bg-muted-foreground/30" />
+          </div>
+        )}
         <SheetHeader>
           <SheetTitle className="flex items-start gap-3">
             {record.cover_image_url ? (

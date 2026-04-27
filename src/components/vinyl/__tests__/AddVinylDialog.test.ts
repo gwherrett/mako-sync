@@ -140,9 +140,10 @@ describe('camera scan pre-fill (handleIdentified)', () => {
 
 /**
  * Mirrors the canAdvance expression used to gate the "Find on Discogs" button.
+ * Requires at least one of artist or title to be non-empty.
  */
 function canAdvance(form: FormData): boolean {
-  return !!(form.artist.trim() && form.title.trim());
+  return !!(form.artist.trim() || form.title.trim());
 }
 
 describe('canAdvance (step 1 → step 2 gate)', () => {
@@ -150,23 +151,31 @@ describe('canAdvance (step 1 → step 2 gate)', () => {
     expect(canAdvance({ ...EMPTY_FORM, artist: 'Orbital', title: 'In Sides' })).toBe(true);
   });
 
-  it('false when artist is missing', () => {
-    expect(canAdvance({ ...EMPTY_FORM, title: 'In Sides' })).toBe(false);
+  it('true when only artist is set', () => {
+    expect(canAdvance({ ...EMPTY_FORM, artist: 'Orbital' })).toBe(true);
   });
 
-  it('false when title is missing', () => {
-    expect(canAdvance({ ...EMPTY_FORM, artist: 'Orbital' })).toBe(false);
+  it('true when only title is set', () => {
+    expect(canAdvance({ ...EMPTY_FORM, title: 'In Sides' })).toBe(true);
   });
 
   it('false when both are empty', () => {
     expect(canAdvance(EMPTY_FORM)).toBe(false);
   });
 
-  it('false when artist is whitespace only', () => {
-    expect(canAdvance({ ...EMPTY_FORM, artist: '   ', title: 'In Sides' })).toBe(false);
+  it('false when artist is whitespace only and title is empty', () => {
+    expect(canAdvance({ ...EMPTY_FORM, artist: '   ' })).toBe(false);
   });
 
-  it('false when title is whitespace only', () => {
-    expect(canAdvance({ ...EMPTY_FORM, artist: 'Orbital', title: '  ' })).toBe(false);
+  it('false when title is whitespace only and artist is empty', () => {
+    expect(canAdvance({ ...EMPTY_FORM, title: '  ' })).toBe(false);
+  });
+
+  it('true when artist is whitespace only but title is set', () => {
+    expect(canAdvance({ ...EMPTY_FORM, artist: '   ', title: 'In Sides' })).toBe(true);
+  });
+
+  it('true when title is whitespace only but artist is set', () => {
+    expect(canAdvance({ ...EMPTY_FORM, artist: 'Orbital', title: '  ' })).toBe(true);
   });
 });

@@ -91,15 +91,19 @@ export function useCamera(): UseCameraReturn {
     const h = video.videoHeight;
     if (!w || !h) return null;
 
+    const size = Math.min(w, h);
+    const sx = (w - size) / 2;
+    const sy = (h - size) / 2;
+
     const canvas = document.createElement('canvas');
-    canvas.width = w;
-    canvas.height = h;
+    canvas.width = size;
+    canvas.height = size;
     const ctx = canvas.getContext('2d');
     if (!ctx) return null;
-    ctx.drawImage(video, 0, 0);
+    ctx.drawImage(video, sx, sy, size, size, 0, 0, size, size);
 
     // toDataURL is synchronous; convert to Blob to match the expected return type
-    const dataUrl = canvas.toDataURL('image/jpeg', 0.9);
+    const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
     const [header, base64] = dataUrl.split(',');
     const mime = header.match(/:(.*?);/)?.[1] ?? 'image/jpeg';
     const binary = atob(base64);

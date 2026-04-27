@@ -27,7 +27,7 @@ export const VinylTab: React.FC = () => {
   return (
     <div className="space-y-4">
       {/* Sub-header: count + Add Record */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
         <div className="flex items-center gap-2">
           <Disc3 className="h-5 w-5 text-primary" />
           <span className="font-semibold text-foreground">
@@ -41,7 +41,7 @@ export const VinylTab: React.FC = () => {
         </div>
         <div className="flex items-center gap-2">
           {discogsConnected && (
-            <Button size="sm" variant="outline" onClick={() => syncWithDiscogs()} disabled={isSyncing}>
+            <Button size="sm" variant="outline" className="flex-1 sm:flex-none" onClick={() => syncWithDiscogs()} disabled={isSyncing}>
               {isSyncing ? (
                 <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Syncing…</>
               ) : (
@@ -49,7 +49,7 @@ export const VinylTab: React.FC = () => {
               )}
             </Button>
           )}
-          <Button size="sm" onClick={() => setAddOpen(true)}>
+          <Button size="sm" className="flex-1 sm:flex-none" onClick={() => setAddOpen(true)}>
             <Plus className="h-4 w-4 mr-2" />
             Add to Discogs
           </Button>

@@ -114,36 +114,46 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onIdentified, onEr
 
   if (cameraState === 'active') {
     return (
-      <div className="space-y-4">
-        <div className="relative rounded-lg overflow-hidden bg-black">
+      <div className="flex flex-col items-center gap-4">
+        {/* Square viewfinder capped at min(100vw, 480px) */}
+        <div
+          className="relative rounded-lg overflow-hidden bg-black w-full"
+          style={{ maxWidth: 'min(100vw, 480px)', aspectRatio: '1 / 1' }}
+        >
           <video
             ref={videoRef}
             autoPlay
             playsInline
             muted
-            className="w-full max-h-72 object-cover"
+            className="w-full h-full object-cover"
           />
-          <div className="absolute bottom-3 left-0 right-0 flex justify-center gap-3 px-4">
-            <Button onClick={handleTakePhoto} className="gap-2">
-              <Camera className="h-4 w-4" />
-              Take Photo
-            </Button>
-            <Button variant="secondary" onClick={() => { stopCamera(); onSkip(); }}>
-              Cancel
-            </Button>
-          </div>
+          {/* Circular guide to help centre the label */}
+          <div
+            className="absolute inset-4 rounded-full border-2 border-white/50 pointer-events-none"
+            style={{ boxShadow: '0 0 0 9999px rgba(0,0,0,0.35)' }}
+          />
         </div>
-        <div className="flex justify-center">
-          <Button
-            variant="ghost"
-            size="sm"
-            className="text-muted-foreground gap-1"
-            onClick={() => fileInputRef.current?.click()}
-          >
-            <Upload className="h-3 w-3" />
-            Upload instead
+
+        <div className="flex items-center gap-3 w-full" style={{ maxWidth: 'min(100vw, 480px)' }}>
+          <Button onClick={handleTakePhoto} className="gap-2 flex-1">
+            <Camera className="h-4 w-4" />
+            Take Photo
+          </Button>
+          <Button variant="secondary" onClick={() => { stopCamera(); onSkip(); }}>
+            Cancel
           </Button>
         </div>
+
+        <Button
+          variant="ghost"
+          size="sm"
+          className="text-muted-foreground gap-1"
+          onClick={() => fileInputRef.current?.click()}
+        >
+          <Upload className="h-3 w-3" />
+          Upload instead
+        </Button>
+
         <input
           ref={fileInputRef}
           type="file"

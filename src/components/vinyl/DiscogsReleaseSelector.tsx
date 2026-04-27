@@ -139,63 +139,74 @@ export const DiscogsReleaseSelector: React.FC<DiscogsReleaseSelectorProps> = ({
         </div>
       )}
 
-      {results.length > 0 && (
-        <ScrollArea className="h-72 rounded-md border">
-          <div className="p-2 space-y-2">
-            {results.map(r => (
-              <Card
-                key={r.id}
-                className={`cursor-pointer transition-colors hover:bg-accent ${selectedId === r.id ? 'border-primary bg-accent' : ''}`}
-                onClick={() => setSelectedId(r.id)}
-              >
-                <CardContent className="flex items-center gap-3 p-3">
-                  {r.thumb ? (
-                    <img src={r.thumb} alt="" className="w-12 h-12 object-cover rounded flex-shrink-0" />
-                  ) : (
-                    <div className="w-12 h-12 bg-muted rounded flex-shrink-0" />
-                  )}
-                  <div className="flex-1 min-w-0">
-                    <p className="font-medium text-sm truncate">{r.releaseTitle || r.title}</p>
-                    <p className="text-xs text-muted-foreground truncate">{r.artist}</p>
-                    <div className="flex flex-wrap gap-1 mt-1">
-                      {r.year && <Badge variant="secondary" className="text-xs">{r.year}</Badge>}
-                      {r.country && <Badge variant="outline" className="text-xs">{r.country}</Badge>}
-                      {r.format?.[0] && <Badge variant="outline" className="text-xs">{r.format[0]}</Badge>}
-                      {r.catno && r.catno !== 'none' && (
-                        <Badge variant="outline" className="text-xs font-mono">{r.catno}</Badge>
+      {isFetching ? (
+        <div className="flex flex-col items-center justify-center py-12 gap-3 text-muted-foreground">
+          <Loader2 className="h-6 w-6 animate-spin" />
+          <p className="text-sm text-center">
+            Fetching release details
+            {results.find(r => r.id === selectedId)?.releaseTitle
+              ? ` for "${results.find(r => r.id === selectedId)!.releaseTitle}"`
+              : ''}
+            …
+          </p>
+        </div>
+      ) : (
+        <>
+          {results.length > 0 && (
+            <ScrollArea className="h-72 rounded-md border">
+              <div className="p-2 space-y-2">
+                {results.map(r => (
+                  <Card
+                    key={r.id}
+                    className={`cursor-pointer transition-colors hover:bg-accent ${selectedId === r.id ? 'border-primary bg-accent' : ''}`}
+                    onClick={() => setSelectedId(r.id)}
+                  >
+                    <CardContent className="flex items-center gap-3 p-3">
+                      {r.thumb ? (
+                        <img src={r.thumb} alt="" className="w-12 h-12 object-cover rounded flex-shrink-0" />
+                      ) : (
+                        <div className="w-12 h-12 bg-muted rounded flex-shrink-0" />
                       )}
-                    </div>
-                    {r.label?.[0] && (
-                      <p className="text-xs text-muted-foreground mt-0.5">{r.label[0]}</p>
-                    )}
-                  </div>
-                  {selectedId === r.id && (
-                    <CheckCircle2 className="h-5 w-5 text-primary flex-shrink-0" />
-                  )}
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </ScrollArea>
-      )}
-
-      {/* Actions */}
-      <div className="flex items-center justify-between pt-2">
-        <Button variant="ghost" size="sm" onClick={onSkip} className="text-muted-foreground">
-          <SkipForward className="h-4 w-4 mr-2" />
-          Skip Discogs
-        </Button>
-        <Button
-          onClick={handleConfirm}
-          disabled={!selectedId || isFetching || confirmDisabled}
-        >
-          {isFetching ? (
-            <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Fetching details...</>
-          ) : (
-            'Confirm release'
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-sm truncate">{r.releaseTitle || r.title}</p>
+                        <p className="text-xs text-muted-foreground truncate">{r.artist}</p>
+                        <div className="flex flex-wrap gap-1 mt-1">
+                          {r.year && <Badge variant="secondary" className="text-xs">{r.year}</Badge>}
+                          {r.country && <Badge variant="outline" className="text-xs">{r.country}</Badge>}
+                          {r.format?.[0] && <Badge variant="outline" className="text-xs">{r.format[0]}</Badge>}
+                          {r.catno && r.catno !== 'none' && (
+                            <Badge variant="outline" className="text-xs font-mono">{r.catno}</Badge>
+                          )}
+                        </div>
+                        {r.label?.[0] && (
+                          <p className="text-xs text-muted-foreground mt-0.5">{r.label[0]}</p>
+                        )}
+                      </div>
+                      {selectedId === r.id && (
+                        <CheckCircle2 className="h-5 w-5 text-primary flex-shrink-0" />
+                      )}
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </ScrollArea>
           )}
-        </Button>
-      </div>
+
+          {/* Actions */}
+          <div className="flex items-center justify-between pt-2">
+            <Button variant="ghost" size="sm" onClick={onSkip} className="text-muted-foreground">
+              <SkipForward className="h-4 w-4 mr-2" />
+              Skip Discogs
+            </Button>
+            <Button
+              onClick={handleConfirm}
+              disabled={!selectedId || confirmDisabled}
+            >
+              Confirm release
+            </Button>
+          </div>
+        </>
+      )}
     </div>
   );
 };

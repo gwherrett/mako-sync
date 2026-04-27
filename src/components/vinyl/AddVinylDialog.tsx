@@ -123,12 +123,12 @@ export const AddVinylDialog: React.FC<AddVinylDialogProps> = ({ open, onOpenChan
     }
   };
 
-  const canAdvance = form.artist.trim() && form.title.trim();
+  const canAdvance = form.artist.trim() || form.title.trim();
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="max-w-lg">
-        <DialogHeader>
+      <DialogContent className="sm:max-w-lg h-[100dvh] sm:h-auto flex flex-col">
+        <DialogHeader className="flex-shrink-0">
           <DialogTitle>
             Add to Discogs
             <span className="ml-2 text-sm font-normal text-muted-foreground">
@@ -139,26 +139,32 @@ export const AddVinylDialog: React.FC<AddVinylDialogProps> = ({ open, onOpenChan
 
         {/* Step 0 — Camera capture */}
         {step === 0 && (
-          <CameraCapture
-            onIdentified={handleIdentified}
-            onError={() => setStep(1)}
-            onSkip={() => setStep(1)}
-          />
+          <div className="flex-1 overflow-y-auto">
+            <CameraCapture
+              onIdentified={handleIdentified}
+              onError={() => setStep(1)}
+              onSkip={() => setStep(1)}
+            />
+          </div>
         )}
 
         {/* Step 1 — Record details */}
         {step === 1 && (
-          <div className="space-y-4">
+          <div className="flex flex-col flex-1 min-h-0">
+            <div className="flex-1 overflow-y-auto">
             <div className="grid grid-cols-2 gap-3">
-              <div className="col-span-2 grid grid-cols-2 gap-3">
-                <div className="space-y-1">
-                  <Label>Artist *</Label>
-                  <Input value={form.artist} onChange={set('artist')} placeholder="e.g. Orbital" />
+              <div className="col-span-2 space-y-1">
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <Label>Artist</Label>
+                    <Input value={form.artist} onChange={set('artist')} placeholder="e.g. Orbital" />
+                  </div>
+                  <div className="space-y-1">
+                    <Label>Title</Label>
+                    <Input value={form.title} onChange={set('title')} placeholder="e.g. In Sides" />
+                  </div>
                 </div>
-                <div className="space-y-1">
-                  <Label>Title *</Label>
-                  <Input value={form.title} onChange={set('title')} placeholder="e.g. In Sides" />
-                </div>
+                <p className="text-xs text-muted-foreground">At least one of Artist or Title is required</p>
               </div>
               <div className="space-y-1">
                 <Label>Label</Label>
@@ -214,7 +220,8 @@ export const AddVinylDialog: React.FC<AddVinylDialogProps> = ({ open, onOpenChan
                 </Select>
               </div>
             </div>
-            <div className="flex justify-end gap-2 pt-2">
+            </div>
+            <div className="flex justify-end gap-2 pt-2 flex-shrink-0 border-t mt-2">
               <Button variant="outline" onClick={handleClose}>Cancel</Button>
               <Button onClick={() => setStep(2)} disabled={!canAdvance}>
                 Find on Discogs
@@ -225,32 +232,36 @@ export const AddVinylDialog: React.FC<AddVinylDialogProps> = ({ open, onOpenChan
 
         {/* Step 2 — Discogs search */}
         {step === 2 && (
-          <div className="space-y-4">
-            {!discogsConnected && (
-              <p className="text-sm text-muted-foreground rounded-md border border-border bg-muted/40 px-3 py-2">
-                Connect your Discogs account on the{' '}
-                <a href="/security" className="underline underline-offset-2">Settings page</a>{' '}
-                to add records to your collection.
-              </p>
-            )}
-            {isPending ? (
-              <div className="flex items-center justify-center py-12 gap-3 text-muted-foreground">
-                <Loader2 className="h-6 w-6 animate-spin" />
-                <span>Adding to Discogs…</span>
-              </div>
-            ) : (
-              <DiscogsReleaseSelector
-                initialArtist={form.artist}
-                initialTitle={form.title}
-                onSelect={handleDiscogsSelect}
-                onSkip={handleClose}
-                confirmDisabled={!discogsConnected}
-              />
-            )}
+          <div className="flex flex-col flex-1 min-h-0 gap-4">
+            <div className="flex-1 overflow-y-auto space-y-4">
+              {!discogsConnected && (
+                <p className="text-sm text-muted-foreground rounded-md border border-border bg-muted/40 px-3 py-2">
+                  Connect your Discogs account on the{' '}
+                  <a href="/security" className="underline underline-offset-2">Settings page</a>{' '}
+                  to add records to your collection.
+                </p>
+              )}
+              {isPending ? (
+                <div className="flex items-center justify-center py-12 gap-3 text-muted-foreground">
+                  <Loader2 className="h-6 w-6 animate-spin" />
+                  <span>Adding to Discogs…</span>
+                </div>
+              ) : (
+                <DiscogsReleaseSelector
+                  initialArtist={form.artist}
+                  initialTitle={form.title}
+                  onSelect={handleDiscogsSelect}
+                  onSkip={handleClose}
+                  confirmDisabled={!discogsConnected}
+                />
+              )}
+            </div>
             {!isPending && (
-              <Button variant="ghost" size="sm" onClick={() => setStep(1)} className="text-muted-foreground">
-                ← Back
-              </Button>
+              <div className="flex-shrink-0 border-t pt-2">
+                <Button variant="ghost" size="sm" onClick={() => setStep(1)} className="text-muted-foreground">
+                  ← Back
+                </Button>
+              </div>
             )}
           </div>
         )}
