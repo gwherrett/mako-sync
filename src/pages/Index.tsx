@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { Database, Search, Download, Disc3 } from 'lucide-react';
 import LibraryHeader from '@/components/LibraryHeader';
-import { StatsOverview } from '@/components/StatsOverview';
 import SetupChecklist from '@/components/SetupChecklist';
 import TracksTable from '@/components/TracksTable';
 import LocalTracksTable from '@/components/LocalTracksTable';
@@ -192,18 +191,8 @@ const Index = () => {
       <main className="max-w-7xl mx-auto px-4 py-8">
         {/* Collapsible Dashboard Section */}
         {!isDashboardCollapsed && (
-          <div className="mb-8">
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 animate-in fade-in slide-in-from-top-2 duration-300">
-              {/* Stats Cards - Left Column */}
-              <div className="lg:col-span-4">
-                <StatsOverview />
-              </div>
-              
-              {/* Setup Checklist - Right Column */}
-              <div className="lg:col-span-8">
-                <SetupChecklist />
-              </div>
-            </div>
+          <div className="mb-8 animate-in fade-in slide-in-from-top-2 duration-300">
+            <SetupChecklist />
           </div>
         )}
 

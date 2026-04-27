@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -44,6 +44,21 @@ export const VinylDetailPanel: React.FC<VinylDetailPanelProps> = ({ record, open
   const { deleteRecord, isDeleting } = usePhysicalMedia();
   const slskdConfigured = SlskdStorageService.isConfigured();
   const isMobile = useIsMobile();
+
+  // Push a history entry when the sheet opens so Android back-swipe closes
+  // the sheet instead of exiting the app.
+  useEffect(() => {
+    if (!open) return;
+    window.history.pushState({ vinylDetail: true }, '');
+    const handlePopState = () => onClose();
+    window.addEventListener('popstate', handlePopState);
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+      if (window.history.state?.vinylDetail) {
+        window.history.back();
+      }
+    };
+  }, [open, onClose]);
 
   const handlePushToSlskd = () => {
     if (!record || missing.length === 0) return;
