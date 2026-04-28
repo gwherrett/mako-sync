@@ -9,6 +9,7 @@ export interface VinylFilterState {
   selectedLabel: string;
   selectedFormat: string;
   selectedDecade: string;
+  selectedSuperGenre: string;
   minRating: number | null;
 }
 
@@ -18,6 +19,7 @@ export const VINYL_FILTER_DEFAULTS: VinylFilterState = {
   selectedLabel: '',
   selectedFormat: '',
   selectedDecade: '',
+  selectedSuperGenre: '',
   minRating: null,
 };
 
@@ -26,6 +28,7 @@ export interface VinylFilterOptions {
   labels: string[];
   formats: string[];
   decades: string[];
+  superGenres: string[];
 }
 
 function getDecade(year: number | null): string | null {
@@ -51,6 +54,7 @@ export function applyVinylFilters(
     if (state.selectedLabel && r.label !== state.selectedLabel) return false;
     if (state.selectedFormat && r.format !== state.selectedFormat) return false;
     if (state.selectedDecade && getDecade(r.year) !== state.selectedDecade) return false;
+    if (state.selectedSuperGenre && r.super_genre !== state.selectedSuperGenre) return false;
     if (state.minRating !== null) {
       if (r.rating === null || r.rating < state.minRating) return false;
     }
@@ -75,6 +79,7 @@ export const VinylFilters: React.FC<VinylFiltersProps> = ({ filterState, filterO
     filterState.selectedLabel !== VINYL_FILTER_DEFAULTS.selectedLabel ||
     filterState.selectedFormat !== VINYL_FILTER_DEFAULTS.selectedFormat ||
     filterState.selectedDecade !== VINYL_FILTER_DEFAULTS.selectedDecade ||
+    filterState.selectedSuperGenre !== VINYL_FILTER_DEFAULTS.selectedSuperGenre ||
     filterState.minRating !== VINYL_FILTER_DEFAULTS.minRating;
 
   return (
@@ -144,6 +149,18 @@ export const VinylFilters: React.FC<VinylFiltersProps> = ({ filterState, filterO
             {filterOptions.decades.map((d) => <SelectItem key={d} value={d}>{d}</SelectItem>)}
           </SelectContent>
         </Select>
+
+        {filterOptions.superGenres.length > 0 && (
+          <Select value={filterState.selectedSuperGenre || '_all'} onValueChange={(v) => set({ selectedSuperGenre: v === '_all' ? '' : v })}>
+            <SelectTrigger className="w-44">
+              <SelectValue placeholder="All Supergenres" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="_all">All Supergenres</SelectItem>
+              {filterOptions.superGenres.map((g) => <SelectItem key={g} value={g}>{g}</SelectItem>)}
+            </SelectContent>
+          </Select>
+        )}
       </div>
 
       {/* Row 3: clear button */}

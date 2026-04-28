@@ -55,6 +55,7 @@ export const VinylTab: React.FC = () => {
       labels: [...new Set(collection.map((r) => r.label).filter((l) => l != null))].sort() as string[],
       formats: [...new Set(collection.map((r) => r.format).filter((f) => f != null))].sort() as string[],
       decades: [...decadeSet].sort(),
+      superGenres: [...new Set(collection.map((r) => r.super_genre).filter((g) => g != null))].sort() as string[],
     };
   }, [collection]);
 
@@ -69,6 +70,7 @@ export const VinylTab: React.FC = () => {
     filterState.selectedLabel !== VINYL_FILTER_DEFAULTS.selectedLabel ||
     filterState.selectedFormat !== VINYL_FILTER_DEFAULTS.selectedFormat ||
     filterState.selectedDecade !== VINYL_FILTER_DEFAULTS.selectedDecade ||
+    filterState.selectedSuperGenre !== VINYL_FILTER_DEFAULTS.selectedSuperGenre ||
     filterState.minRating !== VINYL_FILTER_DEFAULTS.minRating;
 
   const badgeLabel = hasFilters && filteredRecords.length !== collection.length
