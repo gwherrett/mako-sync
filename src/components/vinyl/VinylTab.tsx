@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { Disc3, Plus, Info, X, RefreshCw, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -10,12 +10,22 @@ import { useDiscogsSync } from '@/hooks/useDiscogsSync';
 import { VinylCard } from '@/components/vinyl/VinylCard';
 import { VinylDetailPanel } from '@/components/vinyl/VinylDetailPanel';
 import { AddVinylDialog } from '@/components/vinyl/AddVinylDialog';
+import { VinylFilters, VINYL_FILTER_DEFAULTS, applyVinylFilters } from '@/components/vinyl/VinylFilters';
+import type { VinylFilterState, VinylFilterOptions } from '@/components/vinyl/VinylFilters';
+import { ViewModeSwitcher } from '@/components/vinyl/ViewModeSwitcher';
+import type { ViewMode } from '@/components/vinyl/ViewModeSwitcher';
+import { CoverFlowView } from '@/components/vinyl/CoverFlowView';
+import { VinylListView } from '@/components/vinyl/VinylListView';
 import type { PhysicalMediaRecord } from '@/types/discogs';
 
-/**
- * VinylTab — tab-safe vinyl collection UI.
- * Contains all collection UI without page header or Back button chrome.
- */
+function getDecade(year: number | null): string | null {
+  if (!year) return null;
+  if (year < 1950) return 'pre-1950';
+  return `${Math.floor(year / 10) * 10}s`;
+}
+
+const STORAGE_KEY = 'mako_vinyl_view_mode';
+
 export const VinylTab: React.FC = () => {
   const { collection, isLoading, deleteRecord } = usePhysicalMedia();
   const { isConnected: discogsConnected } = useDiscogsAuth();
@@ -24,22 +34,62 @@ export const VinylTab: React.FC = () => {
   const [selectedRecord, setSelectedRecord] = useState<PhysicalMediaRecord | null>(null);
   const [bannerDismissed, setBannerDismissed] = useState(false);
 
+  const [viewMode, setViewMode] = useState<ViewMode>(() =>
+    (localStorage.getItem(STORAGE_KEY) as ViewMode | null) ?? 'grid'
+  );
+  const [filterState, setFilterState] = useState<VinylFilterState>(VINYL_FILTER_DEFAULTS);
+
+  const handleViewMode = (mode: ViewMode) => {
+    setViewMode(mode);
+    localStorage.setItem(STORAGE_KEY, mode);
+  };
+
+  const filterOptions = useMemo<VinylFilterOptions>(() => {
+    const decadeSet = new Set<string>();
+    collection.forEach((r) => {
+      const d = getDecade(r.year);
+      if (d) decadeSet.add(d);
+    });
+    return {
+      artists: [...new Set(collection.map((r) => r.artist).filter(Boolean))].sort() as string[],
+      labels: [...new Set(collection.map((r) => r.label).filter((l) => l != null))].sort() as string[],
+      formats: [...new Set(collection.map((r) => r.format).filter((f) => f != null))].sort() as string[],
+      decades: [...decadeSet].sort(),
+    };
+  }, [collection]);
+
+  const filteredRecords = useMemo(
+    () => applyVinylFilters(collection, filterState),
+    [collection, filterState]
+  );
+
+  const hasFilters =
+    filterState.searchQuery !== VINYL_FILTER_DEFAULTS.searchQuery ||
+    filterState.selectedArtist !== VINYL_FILTER_DEFAULTS.selectedArtist ||
+    filterState.selectedLabel !== VINYL_FILTER_DEFAULTS.selectedLabel ||
+    filterState.selectedFormat !== VINYL_FILTER_DEFAULTS.selectedFormat ||
+    filterState.selectedDecade !== VINYL_FILTER_DEFAULTS.selectedDecade ||
+    filterState.minRating !== VINYL_FILTER_DEFAULTS.minRating;
+
+  const badgeLabel = hasFilters && filteredRecords.length !== collection.length
+    ? `${filteredRecords.length} of ${collection.length} records`
+    : `${collection.length} ${collection.length === 1 ? 'record' : 'records'}`;
+
   return (
     <div className="space-y-4">
-      {/* Sub-header: count + Add Record */}
+      {/* Header row */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
         <div className="flex items-center gap-2">
           <Disc3 className="h-5 w-5 text-primary" />
-          <span className="font-semibold text-foreground">
-            Vinyl Collection
-          </span>
+          <span className="font-semibold text-foreground">Vinyl Collection</span>
           {!isLoading && collection.length > 0 && (
-            <Badge variant="secondary" className="text-xs">
-              {collection.length} {collection.length === 1 ? 'record' : 'records'}
-            </Badge>
+            <Badge variant="secondary" className="text-xs">{badgeLabel}</Badge>
           )}
         </div>
         <div className="flex items-center gap-2">
+          {!isLoading && collection.length > 0 && (
+            <ViewModeSwitcher value={viewMode} onChange={handleViewMode} />
+          )}
           {discogsConnected && (
             <Button size="sm" variant="outline" className="flex-1 sm:flex-none" onClick={() => syncWithDiscogs()} disabled={isSyncing}>
               {isSyncing ? (
@@ -56,6 +106,15 @@ export const VinylTab: React.FC = () => {
         </div>
       </div>
 
+      {/* Filter bar — shown when collection is non-empty */}
+      {!isLoading && collection.length > 0 && (
+        <VinylFilters
+          filterState={filterState}
+          filterOptions={filterOptions}
+          onChange={setFilterState}
+        />
+      )}
+
       {/* Discogs info banner */}
       {!discogsConnected && !bannerDismissed && (
         <div className="flex items-center gap-3 p-3 rounded-lg border bg-muted/40 text-sm">
@@ -65,12 +124,7 @@ export const VinylTab: React.FC = () => {
             <Link to="/security" className="underline hover:text-foreground">Settings page</Link>
             {' '}to search for exact pressings and get tracklist cross-reference data.
           </p>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-6 w-6 text-muted-foreground"
-            onClick={() => setBannerDismissed(true)}
-          >
+          <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground" onClick={() => setBannerDismissed(true)}>
             <X className="h-4 w-4" />
           </Button>
         </div>
@@ -106,10 +160,10 @@ export const VinylTab: React.FC = () => {
         </div>
       )}
 
-      {/* Collection grid */}
-      {!isLoading && collection.length > 0 && (
+      {/* View modes */}
+      {!isLoading && collection.length > 0 && viewMode === 'grid' && (
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-          {collection.map(record => (
+          {filteredRecords.map((record) => (
             <VinylCard
               key={record.id}
               record={record}
@@ -117,7 +171,21 @@ export const VinylTab: React.FC = () => {
               onRemove={deleteRecord}
             />
           ))}
+          {filteredRecords.length === 0 && (
+            <div className="col-span-full flex flex-col items-center py-12 text-muted-foreground gap-2">
+              <Disc3 className="h-8 w-8 opacity-30" />
+              <p className="text-sm">No records match the current filters.</p>
+            </div>
+          )}
         </div>
+      )}
+
+      {!isLoading && collection.length > 0 && viewMode === 'coverflow' && (
+        <CoverFlowView records={filteredRecords} onSelect={setSelectedRecord} />
+      )}
+
+      {!isLoading && collection.length > 0 && viewMode === 'list' && (
+        <VinylListView records={filteredRecords} onSelect={setSelectedRecord} />
       )}
 
       {/* Detail panel */}
