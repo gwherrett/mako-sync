@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { ChevronLeft, ChevronRight, Disc3 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -11,30 +11,41 @@ interface CoverFlowViewProps {
 
 const CAP = 200;
 const WINDOW = 5;
-
 const X_OFFSETS = [0, 240, 360, 420, 460, 500];
+const SWIPE_THRESHOLD_PX = 20;    // minimum drag to register as a swipe
+const VELOCITY_SCALE = 8;          // px/ms → records: 0.5 px/ms → 4 records
+const MAX_JUMP = 10;
 
-function getTransform(offset: number): React.CSSProperties {
+function getTransform(offset: number, dragX = 0, dragging = false): React.CSSProperties {
   const abs = Math.abs(offset);
   const sign = Math.sign(offset);
   return {
     transform: [
-      `translateX(${sign * X_OFFSETS[Math.min(abs, 5)]}px)`,
+      `translateX(${sign * X_OFFSETS[Math.min(abs, 5)] + dragX}px)`,
       `translateZ(${-abs * 60}px)`,
       `rotateY(${sign * Math.min(abs * 45, 75)}deg)`,
       `scale(${Math.max(1 - abs * 0.12, 0.4)})`,
     ].join(' '),
     zIndex: 10 - abs,
-    transition: 'transform 400ms cubic-bezier(0.25, 0.46, 0.45, 0.94)',
+    transition: dragging ? 'none' : 'transform 400ms cubic-bezier(0.25, 0.46, 0.45, 0.94)',
   };
 }
 
 export const CoverFlowView: React.FC<CoverFlowViewProps> = ({ records, onSelect }) => {
   const capped = records.slice(0, CAP);
   const [activeIndex, setActiveIndex] = useState(0);
+  const [dragX, setDragX] = useState(0);
+  const [isDragging, setIsDragging] = useState(false);
 
-  const prev = useCallback(() => setActiveIndex((i) => Math.max(0, i - 1)), []);
-  const next = useCallback(() => setActiveIndex((i) => Math.min(capped.length - 1, i + 1)), [capped.length]);
+  // useRef so touchmove doesn't trigger re-renders on every pixel
+  const touch = useRef<{ x: number; t: number } | null>(null);
+
+  const navigate = useCallback((delta: number) => {
+    setActiveIndex(i => Math.max(0, Math.min(capped.length - 1, i + delta)));
+  }, [capped.length]);
+
+  const prev = useCallback(() => navigate(-1), [navigate]);
+  const next = useCallback(() => navigate(1), [navigate]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -45,10 +56,34 @@ export const CoverFlowView: React.FC<CoverFlowViewProps> = ({ records, onSelect 
     return () => window.removeEventListener('keydown', onKey);
   }, [prev, next]);
 
-  // Reset active index if records shrink below it
   useEffect(() => {
     if (activeIndex >= capped.length) setActiveIndex(Math.max(0, capped.length - 1));
   }, [capped.length, activeIndex]);
+
+  const onTouchStart = useCallback((e: React.TouchEvent) => {
+    touch.current = { x: e.touches[0].clientX, t: Date.now() };
+    setIsDragging(true);
+  }, []);
+
+  const onTouchMove = useCallback((e: React.TouchEvent) => {
+    if (!touch.current) return;
+    setDragX(e.touches[0].clientX - touch.current.x);
+  }, []);
+
+  const onTouchEnd = useCallback((e: React.TouchEvent) => {
+    if (!touch.current) return;
+    const dx = e.changedTouches[0].clientX - touch.current.x;
+    const dt = Math.max(1, Date.now() - touch.current.t);
+    const velocity = Math.abs(dx) / dt;                          // px/ms
+    const jump = Math.max(1, Math.min(MAX_JUMP, Math.round(velocity * VELOCITY_SCALE)));
+
+    if (dx < -SWIPE_THRESHOLD_PX) navigate(jump);
+    else if (dx > SWIPE_THRESHOLD_PX) navigate(-jump);
+
+    setDragX(0);
+    setIsDragging(false);
+    touch.current = null;
+  }, [navigate]);
 
   if (capped.length === 0) {
     return (
@@ -73,9 +108,12 @@ export const CoverFlowView: React.FC<CoverFlowViewProps> = ({ records, onSelect 
 
       <div
         className="relative bg-zinc-950 rounded-lg overflow-hidden select-none"
-        style={{ height: 340 }}
+        style={{ height: 340, touchAction: 'pan-y' }}
         tabIndex={0}
         onKeyDown={(e) => { if (e.key === 'ArrowLeft') prev(); else if (e.key === 'ArrowRight') next(); }}
+        onTouchStart={onTouchStart}
+        onTouchMove={onTouchMove}
+        onTouchEnd={onTouchEnd}
       >
         {/* 3D stage */}
         <div
@@ -92,7 +130,7 @@ export const CoverFlowView: React.FC<CoverFlowViewProps> = ({ records, onSelect 
               return (
                 <div
                   key={record.id}
-                  onClick={() => isActive ? onSelect(record) : setActiveIndex(i)}
+                  onClick={() => !isDragging && (isActive ? onSelect(record) : setActiveIndex(i))}
                   style={{
                     position: 'absolute',
                     top: 0,
@@ -100,10 +138,9 @@ export const CoverFlowView: React.FC<CoverFlowViewProps> = ({ records, onSelect 
                     width: 220,
                     height: 220,
                     cursor: 'pointer',
-                    ...getTransform(offset),
+                    ...getTransform(offset, dragX, isDragging),
                   }}
                 >
-                  {/* Cover */}
                   {imgUrl ? (
                     <img
                       src={imgUrl}
@@ -146,25 +183,29 @@ export const CoverFlowView: React.FC<CoverFlowViewProps> = ({ records, onSelect 
           </div>
         </div>
 
-        {/* Navigation arrows */}
-        <Button
-          variant="ghost"
-          size="icon"
-          className="absolute left-2 top-1/2 -translate-y-1/2 text-white/70 hover:text-white hover:bg-white/10 z-20"
-          onClick={prev}
-          disabled={activeIndex === 0}
-        >
-          <ChevronLeft className="h-6 w-6" />
-        </Button>
-        <Button
-          variant="ghost"
-          size="icon"
-          className="absolute right-2 top-1/2 -translate-y-1/2 text-white/70 hover:text-white hover:bg-white/10 z-20"
-          onClick={next}
-          disabled={activeIndex === capped.length - 1}
-        >
-          <ChevronRight className="h-6 w-6" />
-        </Button>
+        {/* Navigation arrows — hidden while swiping */}
+        {!isDragging && (
+          <>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="absolute left-2 top-1/2 -translate-y-1/2 text-white/70 hover:text-white hover:bg-white/10 z-20"
+              onClick={prev}
+              disabled={activeIndex === 0}
+            >
+              <ChevronLeft className="h-6 w-6" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="absolute right-2 top-1/2 -translate-y-1/2 text-white/70 hover:text-white hover:bg-white/10 z-20"
+              onClick={next}
+              disabled={activeIndex === capped.length - 1}
+            >
+              <ChevronRight className="h-6 w-6" />
+            </Button>
+          </>
+        )}
 
         {/* Caption bar */}
         <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/80 to-transparent px-4 py-3 text-center z-20">
@@ -177,7 +218,6 @@ export const CoverFlowView: React.FC<CoverFlowViewProps> = ({ records, onSelect 
         </div>
       </div>
 
-      {/* Dot indicator */}
       <p className="text-center text-xs text-muted-foreground">
         {activeIndex + 1} / {capped.length}
       </p>
