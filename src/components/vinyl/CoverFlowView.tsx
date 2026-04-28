@@ -13,8 +13,9 @@ const CAP = 200;
 const WINDOW = 5;
 const X_OFFSETS = [0, 240, 360, 420, 460, 500];
 const SWIPE_THRESHOLD_PX = 20;    // minimum drag to register as a swipe
-const VELOCITY_SCALE = 8;          // px/ms → records: 0.5 px/ms → 4 records
-const MAX_JUMP = 10;
+const FLICK_VELOCITY = 1.2;        // px/ms — must exceed this to jump > 1 record
+const VELOCITY_SCALE = 5;          // multiplier applied only above FLICK_VELOCITY
+const MAX_JUMP = 8;
 
 function getTransform(offset: number, dragX = 0, dragging = false): React.CSSProperties {
   const abs = Math.abs(offset);
@@ -75,7 +76,9 @@ export const CoverFlowView: React.FC<CoverFlowViewProps> = ({ records, onSelect 
     const dx = e.changedTouches[0].clientX - touch.current.x;
     const dt = Math.max(1, Date.now() - touch.current.t);
     const velocity = Math.abs(dx) / dt;                          // px/ms
-    const jump = Math.max(1, Math.min(MAX_JUMP, Math.round(velocity * VELOCITY_SCALE)));
+    const jump = velocity > FLICK_VELOCITY
+      ? Math.min(MAX_JUMP, Math.round(velocity * VELOCITY_SCALE))
+      : 1;
 
     if (dx < -SWIPE_THRESHOLD_PX) navigate(jump);
     else if (dx > SWIPE_THRESHOLD_PX) navigate(-jump);
