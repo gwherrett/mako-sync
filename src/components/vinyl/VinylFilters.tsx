@@ -68,8 +68,6 @@ interface VinylFiltersProps {
   onChange: (state: VinylFilterState) => void;
 }
 
-const STAR_RATINGS = [1, 2, 3, 4, 5] as const;
-
 export const VinylFilters: React.FC<VinylFiltersProps> = ({ filterState, filterOptions, onChange }) => {
   const set = (patch: Partial<VinylFilterState>) => onChange({ ...filterState, ...patch });
 
@@ -77,14 +75,12 @@ export const VinylFilters: React.FC<VinylFiltersProps> = ({ filterState, filterO
     filterState.searchQuery !== VINYL_FILTER_DEFAULTS.searchQuery ||
     filterState.selectedArtist !== VINYL_FILTER_DEFAULTS.selectedArtist ||
     filterState.selectedLabel !== VINYL_FILTER_DEFAULTS.selectedLabel ||
-    filterState.selectedFormat !== VINYL_FILTER_DEFAULTS.selectedFormat ||
     filterState.selectedDecade !== VINYL_FILTER_DEFAULTS.selectedDecade ||
-    filterState.selectedSuperGenre !== VINYL_FILTER_DEFAULTS.selectedSuperGenre ||
-    filterState.minRating !== VINYL_FILTER_DEFAULTS.minRating;
+    filterState.selectedSuperGenre !== VINYL_FILTER_DEFAULTS.selectedSuperGenre;
 
   return (
     <div className="space-y-2">
-      {/* Row 1: search + rating stars */}
+      {/* Row 1: search */}
       <div className="flex gap-2 items-center">
         <Input
           placeholder="Search artist, title, label…"
@@ -92,20 +88,6 @@ export const VinylFilters: React.FC<VinylFiltersProps> = ({ filterState, filterO
           onChange={(e) => set({ searchQuery: e.target.value })}
           className="flex-1"
         />
-        <div className="flex items-center gap-0.5 shrink-0">
-          {STAR_RATINGS.map((n) => (
-            <Button
-              key={n}
-              variant="ghost"
-              size="sm"
-              className={`h-8 w-8 p-0 text-base ${filterState.minRating === n ? 'text-yellow-500' : 'text-muted-foreground'}`}
-              onClick={() => set({ minRating: filterState.minRating === n ? null : n })}
-              title={`${n}★ and above`}
-            >
-              ★
-            </Button>
-          ))}
-        </div>
       </div>
 
       {/* Row 2: dropdowns */}
@@ -130,17 +112,7 @@ export const VinylFilters: React.FC<VinylFiltersProps> = ({ filterState, filterO
           </SelectContent>
         </Select>
 
-        <Select value={filterState.selectedFormat || '_all'} onValueChange={(v) => set({ selectedFormat: v === '_all' ? '' : v })}>
-          <SelectTrigger className="w-36">
-            <SelectValue placeholder="All Formats" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="_all">All Formats</SelectItem>
-            {filterOptions.formats.map((f) => <SelectItem key={f} value={f}>{f}</SelectItem>)}
-          </SelectContent>
-        </Select>
-
-        <Select value={filterState.selectedDecade || '_all'} onValueChange={(v) => set({ selectedDecade: v === '_all' ? '' : v })}>
+<Select value={filterState.selectedDecade || '_all'} onValueChange={(v) => set({ selectedDecade: v === '_all' ? '' : v })}>
           <SelectTrigger className="w-36">
             <SelectValue placeholder="All Decades" />
           </SelectTrigger>
