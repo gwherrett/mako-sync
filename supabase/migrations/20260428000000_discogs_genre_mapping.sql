@@ -161,6 +161,32 @@ GRANT EXECUTE ON FUNCTION public.compute_discogs_super_genre(TEXT[], TEXT[], UUI
 
 
 -- ============================================================
+-- recompute_all_discogs_super_genres()
+-- Recomputes super_genre for all physical_media rows for a user.
+-- Called by the "Recompute all" button in the Genre Tools Discogs tab.
+-- ============================================================
+CREATE OR REPLACE FUNCTION public.recompute_all_discogs_super_genres(p_user_id UUID)
+RETURNS VOID
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+BEGIN
+  UPDATE public.physical_media
+  SET super_genre = public.compute_discogs_super_genre(
+    COALESCE(genres, '{}'),
+    COALESCE(styles, '{}'),
+    p_user_id
+  )
+  WHERE user_id = p_user_id;
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION public.recompute_all_discogs_super_genres(UUID)
+  TO authenticated, service_role;
+
+
+-- ============================================================
 -- Trigger: auto-populate physical_media.super_genre on insert/update
 -- ============================================================
 CREATE OR REPLACE FUNCTION public.set_physical_media_super_genre()

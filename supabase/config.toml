@@ -35,14 +35,11 @@ verify_jwt = true
 [functions.ai-track-genre-suggest]
 verify_jwt = true
 
-[functions.discogs-sync-from-collection]
-verify_jwt = true
-
 [functions.discogs-add-to-collection]
 verify_jwt = true
 
 [functions.vinyl-image-identify]
 verify_jwt = true
 
-[functions.discogs-two-way-sync]
+[functions.discogs-genre-mapping]
 verify_jwt = true

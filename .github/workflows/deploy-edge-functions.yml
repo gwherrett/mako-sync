@@ -35,3 +35,4 @@ jobs:
           supabase functions deploy discogs-add-to-collection
           supabase functions deploy discogs-pull-sync
           supabase functions deploy vinyl-image-identify
+          supabase functions deploy discogs-genre-mapping
