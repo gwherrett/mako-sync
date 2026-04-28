@@ -143,6 +143,7 @@ interface DiscogsCollectionItem {
 interface DiscogsEnrichedItem extends DiscogsCollectionItem {
   _tracklist: Array<{ position: string; title: string }> | null
   _country: string | null
+  _median_value_cad: number | null
 }
 
 interface DiscogsCollectionResponse {
@@ -239,42 +240,63 @@ async function pullFromDiscogs(
     return { pulled: 0, errors: [] }
   }
 
-  // Enrich each item with full release data (tracklist + country)
-  // Stagger at 1.1 s intervals to stay within Discogs 60 req/min cap
-  log('info', 'Pull: enriching items with full release data', { count: newItems.length })
+  // Enrich each item with full release data (tracklist + country) and marketplace stats (CAD value).
+  // Two API calls per item — stagger at 2.2 s to stay within the Discogs 60 req/min cap.
+  log('info', 'Pull: enriching items with release data + marketplace stats', { count: newItems.length })
   const enrichResults = await Promise.allSettled(
     newItems.map(async (item, i): Promise<DiscogsEnrichedItem> => {
-      await new Promise(r => setTimeout(r, i * 1100))
-      const releaseUrl = `https://api.discogs.com/releases/${item.basic_information.id}`
-      const authHeader = await buildOAuthHeader(
-        'GET', releaseUrl, consumerKey, consumerSecret, accessToken, accessTokenSecret,
-      )
-      const resp = await fetch(releaseUrl, {
-        signal: AbortSignal.timeout(10000),
-        headers: { Authorization: authHeader, 'User-Agent': 'MakoSync/1.0', Accept: 'application/json' },
-      })
-      if (!resp.ok) {
-        log('warn', 'Pull: release fetch failed, inserting without tracklist', {
-          releaseId: item.basic_information.id, status: resp.status,
-        })
-        return { ...item, _tracklist: null, _country: null }
-      }
-      const full = await resp.json()
-      return {
-        ...item,
-        _tracklist: full.tracklist?.map((t: { position: string; title: string }) => ({
+      await new Promise(r => setTimeout(r, i * 2200))
+      const releaseId = item.basic_information.id
+      const releaseUrl = `https://api.discogs.com/releases/${releaseId}`
+      const statsBaseUrl = `https://api.discogs.com/marketplace/stats/${releaseId}`
+
+      const [releaseAuth, statsAuth] = await Promise.all([
+        buildOAuthHeader('GET', releaseUrl, consumerKey, consumerSecret, accessToken, accessTokenSecret),
+        buildOAuthHeader('GET', statsBaseUrl, consumerKey, consumerSecret, accessToken, accessTokenSecret, { currency: 'CAD' }),
+      ])
+
+      const [releaseResp, statsResp] = await Promise.all([
+        fetch(releaseUrl, {
+          signal: AbortSignal.timeout(10000),
+          headers: { Authorization: releaseAuth, 'User-Agent': 'MakoSync/1.0', Accept: 'application/json' },
+        }),
+        fetch(`${statsBaseUrl}?currency=CAD`, {
+          signal: AbortSignal.timeout(10000),
+          headers: { Authorization: statsAuth, 'User-Agent': 'MakoSync/1.0', Accept: 'application/json' },
+        }),
+      ])
+
+      let tracklist: Array<{ position: string; title: string }> | null = null
+      let country: string | null = null
+      if (releaseResp.ok) {
+        const full = await releaseResp.json()
+        tracklist = full.tracklist?.map((t: { position: string; title: string }) => ({
           position: t.position,
           title: t.title,
-        })) ?? null,
-        _country: full.country ?? null,
+        })) ?? null
+        country = full.country ?? null
+      } else {
+        log('warn', 'Pull: release fetch failed, inserting without tracklist', {
+          releaseId, status: releaseResp.status,
+        })
       }
+
+      let medianValueCad: number | null = null
+      if (statsResp.ok) {
+        const stats = await statsResp.json()
+        medianValueCad = stats.lowest_price?.value ?? null
+      } else {
+        log('warn', 'Pull: marketplace stats fetch failed', { releaseId, status: statsResp.status })
+      }
+
+      return { ...item, _tracklist: tracklist, _country: country, _median_value_cad: medianValueCad }
     })
   )
 
   const enriched: DiscogsEnrichedItem[] = enrichResults.map((result, i) =>
     result.status === 'fulfilled'
       ? result.value
-      : { ...newItems[i], _tracklist: null, _country: null }
+      : { ...newItems[i], _tracklist: null, _country: null, _median_value_cad: null }
   )
 
   // Insert in batches of 100
@@ -298,6 +320,7 @@ async function pullFromDiscogs(
     rating: item.rating > 0 ? item.rating : null,
     tracklist: item._tracklist,
     country: item._country,
+    median_value_cad: item._median_value_cad,
     pressing: null,
     notes: null,
   }))
