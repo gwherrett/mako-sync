@@ -49,16 +49,16 @@ def fetch_pending_records(supabase_url: str, service_key: str, limit: int | None
         'apikey': service_key,
         'Authorization': f'Bearer {service_key}',
     }
-    params = {
-        'select': 'id,discogs_release_id,artist,title',
-        'discogs_release_id': 'not.is.null',
-        'median_value_cad': 'is.null',
-        'order': 'created_at.asc',
-    }
-    if limit:
-        params['limit'] = str(limit)
-
     url = f'{supabase_url}/rest/v1/physical_media'
+    params = [
+        ('select', 'id,discogs_release_id,artist,title'),
+        ('discogs_release_id', 'not.is.null'),
+        ('median_value_cad', 'is.null'),
+        ('order', 'created_at.asc'),
+    ]
+    if limit:
+        params.append(('limit', str(limit)))
+
     resp = requests.get(url, headers=headers, params=params, timeout=30)
     resp.raise_for_status()
     return resp.json()
