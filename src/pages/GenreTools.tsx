@@ -1,12 +1,14 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, Sparkles, MapPin } from 'lucide-react';
+import { ArrowLeft, Sparkles, MapPin, Disc3 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { GenreMappingTable } from '@/components/GenreMapping/GenreMappingTable';
+import { DiscogsGenreMappingTable } from '@/components/GenreMapping/DiscogsGenreMappingTable';
 import { TrackLevelProcessor } from '@/components/NoGenreTracks/TrackLevelProcessor';
 import { useGenreMapping } from '@/hooks/useGenreMapping';
+import { useDiscogsGenreMapping } from '@/hooks/useDiscogsGenreMapping';
 import { GenreMappingService } from '@/services/genreMapping.service';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/NewAuthContext';
@@ -24,6 +26,15 @@ export const GenreTools = () => {
     setBulkOverrides,
     exportToCSV,
   } = useGenreMapping();
+
+  const {
+    mappings: discogsMappings,
+    isLoading: discogsLoading,
+    isRecomputing,
+    setOverride: discogsSetOverride,
+    removeOverride: discogsRemoveOverride,
+    recomputeAll,
+  } = useDiscogsGenreMapping();
 
   // Fetch no-genre count + realtime updates (mirrors existing GenreMapping page pattern)
   useEffect(() => {
@@ -88,7 +99,11 @@ export const GenreTools = () => {
             <TabsList className="mb-6">
               <TabsTrigger value="mappings" className="gap-2">
                 <MapPin className="h-4 w-4" />
-                Genre Mappings
+                Spotify
+              </TabsTrigger>
+              <TabsTrigger value="discogs" className="gap-2">
+                <Disc3 className="h-4 w-4" />
+                Discogs
               </TabsTrigger>
               <TabsTrigger value="assign" className="gap-2">
                 <Sparkles className="h-4 w-4" />
@@ -109,6 +124,17 @@ export const GenreTools = () => {
                 onBulkOverrides={setBulkOverrides}
                 onExport={exportToCSV}
                 isLoading={isLoading}
+              />
+            </TabsContent>
+
+            <TabsContent value="discogs">
+              <DiscogsGenreMappingTable
+                mappings={discogsMappings}
+                onSetOverride={discogsSetOverride}
+                onRemoveOverride={discogsRemoveOverride}
+                onRecomputeAll={recomputeAll}
+                isLoading={discogsLoading}
+                isRecomputing={isRecomputing}
               />
             </TabsContent>
 

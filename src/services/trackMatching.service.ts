@@ -10,6 +10,22 @@ import {
   type LocalTrack,
   type SpotifyTrack,
 } from './trackMatchingEngine';
+import type { PhysicalMediaRecord } from '@/types/discogs';
+
+export interface VinylFlatTrack {
+  recordId: string;
+  recordTitle: string;
+  recordArtist: string;
+  super_genre: string | null;
+  position: string;
+  title: string;
+}
+
+export interface VinylGapRecord {
+  record: PhysicalMediaRecord;
+  missing: { position: string; title: string }[];
+  matched: LocalTrack[];
+}
 
 interface MissingTrack {
   spotifyTrack: SpotifyTrack;
@@ -306,6 +322,48 @@ export class TrackMatchingService {
     }
 
     return { matched, missing };
+  }
+
+  // Fetch all vinyl records with tracklists, flattened to one row per track.
+  // Optionally filters by physical_media.super_genre (populated by MAK-134 migration).
+  static async fetchVinylTracks(userId: string, superGenreFilter?: string): Promise<{ records: PhysicalMediaRecord[]; flat: VinylFlatTrack[] }> {
+    let query = supabase
+      .from('physical_media')
+      .select('*')
+      .eq('user_id', userId)
+      .not('tracklist', 'is', null);
+
+    if (superGenreFilter && superGenreFilter !== 'all') {
+      query = query.eq('super_genre', superGenreFilter);
+    }
+
+    const { data, error } = await withTimeout(
+      query.then(r => r),
+      30000,
+      'fetchVinylTracks timed out'
+    );
+
+    if (error) throw new Error(`Failed to fetch vinyl tracks: ${error.message}`);
+
+    const records = (data || []) as PhysicalMediaRecord[];
+    const flat: VinylFlatTrack[] = [];
+
+    for (const record of records) {
+      for (const track of record.tracklist ?? []) {
+        if (!track.title) continue;
+        flat.push({
+          recordId: record.id,
+          recordTitle: record.title,
+          recordArtist: record.artist,
+          super_genre: record.super_genre ?? null,
+          position: track.position,
+          title: track.title,
+        });
+      }
+    }
+
+    console.log(`🎵 Fetched ${records.length} vinyl records → ${flat.length} flat tracks`);
+    return { records, flat };
   }
 
   // Fetch available super genres for filtering

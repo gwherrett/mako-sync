@@ -70,6 +70,7 @@ export interface PhysicalMediaRecord {
   tracklist: DiscogsTrack[] | null;
   genres: string[] | null;
   styles: string[] | null;
+  super_genre: string | null;
   created_at: string;
   updated_at: string;
 }

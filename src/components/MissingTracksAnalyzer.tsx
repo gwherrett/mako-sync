@@ -5,7 +5,8 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { Loader2, Download, Music, Users, Filter, Upload, MoreVertical, Pencil, Pin, Trash2 } from 'lucide-react';
+import { Loader2, Download, Music, Users, Filter, Upload, MoreVertical, Pencil, Pin, Trash2, Disc3 } from 'lucide-react';
+import { VinylGapsView } from '@/components/VinylGapsView';
 import { useToast } from '@/hooks/use-toast';
 import { TrackMatchingService } from '@/services/trackMatching.service';
 import { DuplicateDetectionService } from '@/services/duplicateDetection.service';
@@ -18,11 +19,15 @@ import type { SpotifyTrackForGenreEdit } from '@/components/EditSpotifyTrackGenr
 import type { SuperGenre } from '@/types/genreMapping';
 import type { SlskdTrackToSync } from '@/types/slskd';
 
+type MissingSource = 'spotify' | 'vinyl' | 'both';
+
 interface MissingTracksAnalyzerProps {
   selectedGenre: string;
   setSelectedGenre: (genre: string) => void;
   superGenres: string[];
   sharedSearchQuery?: string;
+  source?: MissingSource;
+  onSourceChange?: (source: MissingSource) => void;
 }
 
 interface MissingTrack {
@@ -48,8 +53,11 @@ const MissingTracksAnalyzer: React.FC<MissingTracksAnalyzerProps> = ({
   selectedGenre,
   setSelectedGenre,
   superGenres,
-  sharedSearchQuery = ''
+  sharedSearchQuery = '',
+  source = 'spotify',
+  onSourceChange,
 }) => {
+  const [vinylSuperGenreFilter, setVinylSuperGenreFilter] = useState('all');
   const [missingTracks, setMissingTracks] = useState<MissingTrack[]>([]);
   const [artistGroups, setArtistGroups] = useState<ArtistGroup[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -416,15 +424,47 @@ const MissingTracksAnalyzer: React.FC<MissingTracksAnalyzerProps> = ({
     document.body.removeChild(link);
   };
 
+  // Vinyl-only view
+  if (source === 'vinyl') {
+    return (
+      <div className="space-y-4">
+        <div className="flex items-center gap-2">
+          <span className="text-sm font-medium text-muted-foreground">Source:</span>
+          {(['spotify', 'vinyl', 'both'] as MissingSource[]).map(s => (
+            <Button key={s} size="sm" variant={source === s ? 'default' : 'outline'} onClick={() => onSourceChange?.(s)} className="capitalize">
+              {s === 'vinyl' && <Disc3 className="h-4 w-4 mr-1.5" />}
+              {s === 'spotify' && <Music className="h-4 w-4 mr-1.5" />}
+              {s}
+            </Button>
+          ))}
+        </div>
+        <VinylGapsView superGenreFilter={vinylSuperGenreFilter} onSuperGenreChange={setVinylSuperGenreFilter} />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       {/* Header */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Music className="h-5 w-5" />
-            Missing Tracks Analysis
-          </CardTitle>
+          <div className="flex items-center justify-between flex-wrap gap-3">
+            <CardTitle className="flex items-center gap-2">
+              <Music className="h-5 w-5" />
+              Missing Tracks Analysis
+            </CardTitle>
+            {/* Source toggle */}
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-muted-foreground">Source:</span>
+              {(['spotify', 'vinyl', 'both'] as MissingSource[]).map(s => (
+                <Button key={s} size="sm" variant={source === s ? 'default' : 'outline'} onClick={() => onSourceChange?.(s)} className="capitalize">
+                  {s === 'vinyl' && <Disc3 className="h-4 w-4 mr-1.5" />}
+                  {s === 'spotify' && <Music className="h-4 w-4 mr-1.5" />}
+                  {s}
+                </Button>
+              ))}
+            </div>
+          </div>
           <CardDescription>
             Compare your Spotify library to local files. Select artists and push missing tracks to Slskd for wishlist searches.
           </CardDescription>
@@ -800,6 +840,16 @@ const MissingTracksAnalyzer: React.FC<MissingTracksAnalyzerProps> = ({
             </p>
           </CardContent>
         </Card>
+      )}
+
+      {/* Vinyl gaps section (source = 'both') */}
+      {source === 'both' && (
+        <div>
+          <h3 className="text-base font-semibold mb-3 flex items-center gap-2">
+            <Disc3 className="h-4 w-4" /> Vinyl Gaps
+          </h3>
+          <VinylGapsView superGenreFilter={vinylSuperGenreFilter} onSuperGenreChange={setVinylSuperGenreFilter} />
+        </div>
       )}
 
       {/* slskd Sync Progress Modal */}

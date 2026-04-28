@@ -54,16 +54,21 @@ interface LocalTrack {
 }
 
 const Index = () => {
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [selectedTrack, setSelectedTrack] = useState<SpotifyTrack | null>(null);
   const [selectedLocalTrack, setSelectedLocalTrack] = useState<LocalTrack | null>(null);
   const [isDashboardCollapsed, setIsDashboardCollapsed] = useState(true);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [isScanInProgress, setIsScanInProgress] = useState(false);
 
-  // Get initial tab from URL query param or default to 'vinyl'
+  // Get initial tab + missing source from URL query params
   const initialTab = searchParams.get('tab') || 'vinyl';
   const [activeTab, setActiveTab] = useState(initialTab);
+  const missingSource = (searchParams.get('source') as 'spotify' | 'vinyl' | 'both') || 'spotify';
+
+  const handleMissingSourceChange = (source: 'spotify' | 'vinyl' | 'both') => {
+    setSearchParams(prev => { prev.set('source', source); return prev; });
+  };
 
   // State for MissingTracksAnalyzer
   const [superGenres, setSuperGenres] = useState<string[]>([]);
@@ -425,6 +430,8 @@ const Index = () => {
               selectedGenre={selectedGenre}
               setSelectedGenre={setSelectedGenre}
               superGenres={superGenres}
+              source={missingSource}
+              onSourceChange={handleMissingSourceChange}
             />
           </TabsContent>
 
