@@ -1,7 +1,8 @@
-import { useState } from 'react';
-import { Disc3, ChevronUp, ChevronDown, ChevronsUpDown, CheckCircle2 } from 'lucide-react';
+import { useState, useCallback } from 'react';
+import { Disc3, ChevronUp, ChevronDown, ChevronsUpDown, Download, Loader2 } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { useSlskdSync } from '@/hooks/useSlskdSync';
 import type { PhysicalMediaRecord } from '@/types/discogs';
 
 interface VinylListViewProps {
@@ -9,12 +10,12 @@ interface VinylListViewProps {
   onSelect: (record: PhysicalMediaRecord) => void;
 }
 
-type SortField = 'artist' | 'title' | 'year' | 'label';
+type SortField = 'artist' | 'title' | 'year' | 'label' | 'median_value_cad';
 type SortDir = 'asc' | 'desc';
 
-function renderStars(rating: number | null): string {
-  if (rating === null) return '—';
-  return '★'.repeat(rating) + '☆'.repeat(5 - rating);
+function formatCAD(value: number | null): string {
+  if (value === null) return '—';
+  return new Intl.NumberFormat('en-CA', { style: 'currency', currency: 'CAD', maximumFractionDigits: 0 }).format(value);
 }
 
 function SortIcon({ field, sortField, sortDir }: { field: SortField; sortField: SortField; sortDir: SortDir }) {
@@ -27,6 +28,8 @@ function SortIcon({ field, sortField, sortDir }: { field: SortField; sortField: 
 export const VinylListView: React.FC<VinylListViewProps> = ({ records, onSelect }) => {
   const [sortField, setSortField] = useState<SortField>('artist');
   const [sortDir, setSortDir] = useState<SortDir>('asc');
+  const [pushingId, setPushingId] = useState<string | null>(null);
+  const { syncAlbumToSlskd } = useSlskdSync();
 
   const handleSort = (field: SortField) => {
     if (field === sortField) {
@@ -37,6 +40,18 @@ export const VinylListView: React.FC<VinylListViewProps> = ({ records, onSelect 
     }
   };
 
+  const handleSlskd = useCallback(async (e: React.MouseEvent, record: PhysicalMediaRecord) => {
+    e.stopPropagation();
+    setPushingId(record.id);
+    await syncAlbumToSlskd({
+      artist: record.artist,
+      primary_artist: record.artist,
+      title: record.title,
+      album: record.title,
+    });
+    setPushingId(null);
+  }, [syncAlbumToSlskd]);
+
   const sorted = [...records].sort((a, b) => {
     let av: string | number | null = null;
     let bv: string | number | null = null;
@@ -44,9 +59,10 @@ export const VinylListView: React.FC<VinylListViewProps> = ({ records, onSelect 
     else if (sortField === 'title') { av = a.title ?? ''; bv = b.title ?? ''; }
     else if (sortField === 'year') { av = a.year ?? 0; bv = b.year ?? 0; }
     else if (sortField === 'label') { av = a.label ?? ''; bv = b.label ?? ''; }
+    else if (sortField === 'median_value_cad') { av = a.median_value_cad ?? -1; bv = b.median_value_cad ?? -1; }
 
-    if (av === null || av === '') return sortDir === 'asc' ? 1 : -1;
-    if (bv === null || bv === '') return sortDir === 'asc' ? -1 : 1;
+    if (av === null || av === '' || av === -1) return sortDir === 'asc' ? 1 : -1;
+    if (bv === null || bv === '' || bv === -1) return sortDir === 'asc' ? -1 : 1;
     const cmp = av < bv ? -1 : av > bv ? 1 : 0;
     return sortDir === 'asc' ? cmp : -cmp;
   });
@@ -83,8 +99,8 @@ export const VinylListView: React.FC<VinylListViewProps> = ({ records, onSelect 
             {th('Year', 'year')}
             {th('Label', 'label')}
             <TableHead className="px-3 py-1.5 font-mono text-xs">Cat#</TableHead>
-            <TableHead className="px-3 py-1.5">Rating</TableHead>
-            <TableHead className="px-3 py-1.5">Discogs</TableHead>
+            {th('Value (CAD)', 'median_value_cad')}
+            <TableHead className="px-3 py-1.5">slskd</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -112,14 +128,21 @@ export const VinylListView: React.FC<VinylListViewProps> = ({ records, onSelect 
               <TableCell className="px-3 py-1.5 tabular-nums">{record.year ?? '—'}</TableCell>
               <TableCell className="px-3 py-1.5 max-w-[120px] truncate">{record.label ?? '—'}</TableCell>
               <TableCell className="px-3 py-1.5 font-mono text-xs">{record.catalogue_number ?? '—'}</TableCell>
-              <TableCell className="px-3 py-1.5 text-yellow-500 text-xs tracking-tight">{renderStars(record.rating)}</TableCell>
+              <TableCell className="px-3 py-1.5 tabular-nums text-sm">{formatCAD(record.median_value_cad)}</TableCell>
               <TableCell className="px-3 py-1.5">
-                {record.discogs_instance_id ? (
-                  <Badge variant="outline" className="text-xs text-green-600 border-green-600 gap-1">
-                    <CheckCircle2 className="h-3 w-3" />
-                    Synced
-                  </Badge>
-                ) : '—'}
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-7 w-7"
+                  onClick={(e) => handleSlskd(e, record)}
+                  disabled={pushingId === record.id}
+                  title={`Search "${record.artist} – ${record.title}" in slskd`}
+                >
+                  {pushingId === record.id
+                    ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    : <Download className="h-3.5 w-3.5" />
+                  }
+                </Button>
               </TableCell>
             </TableRow>
           ))}
