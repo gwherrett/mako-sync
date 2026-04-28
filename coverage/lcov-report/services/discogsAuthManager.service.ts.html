@@ -23,16 +23,16 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">97.89% </span>
+                <span class="strong">96.77% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>93/95</span>
+                <span class='fraction'>90/93</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">76.08% </span>
+                <span class="strong">77.55% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>35/46</span>
+                <span class='fraction'>38/49</span>
             </div>
         
             
@@ -44,9 +44,9 @@
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">97.64% </span>
+                <span class="strong">96.38% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>83/85</span>
+                <span class='fraction'>80/83</span>
             </div>
         
             
@@ -289,17 +289,7 @@
 <a name='L224'></a><a href='#L224'>224</a>
 <a name='L225'></a><a href='#L225'>225</a>
 <a name='L226'></a><a href='#L226'>226</a>
-<a name='L227'></a><a href='#L227'>227</a>
-<a name='L228'></a><a href='#L228'>228</a>
-<a name='L229'></a><a href='#L229'>229</a>
-<a name='L230'></a><a href='#L230'>230</a>
-<a name='L231'></a><a href='#L231'>231</a>
-<a name='L232'></a><a href='#L232'>232</a>
-<a name='L233'></a><a href='#L233'>233</a>
-<a name='L234'></a><a href='#L234'>234</a>
-<a name='L235'></a><a href='#L235'>235</a>
-<a name='L236'></a><a href='#L236'>236</a>
-<a name='L237'></a><a href='#L237'>237</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<a name='L227'></a><a href='#L227'>227</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -418,24 +408,14 @@
 <span class="cline-any cline-yes">3x</span>
 <span class="cline-any cline-yes">3x</span>
 <span class="cline-any cline-yes">3x</span>
-<span class="cline-any cline-yes">3x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">2x</span>
-<span class="cline-any cline-yes">3x</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">3x</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">2x</span>
-<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">1x</span>
@@ -653,32 +633,22 @@ export class DiscogsAuthManager {
     this.setState({ isLoading: true, error: null });
     try {
       const { data: sessionData } = await supabase.auth.getSession();
-      const accessToken = sessionData.session?.access_token;
-      if (!accessToken) throw new Error('Not authenticated');
+      if (!sessionData.session?.access_token) throw new Error('Not authenticated');
 &nbsp;
-      const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
-      const SUPABASE_ANON_KEY = (import.meta.env.VITE_SUPABASE_ANON_KEY ||
-<span class="branch-1 cbranch-no" title="branch not covered" >        import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY)</span> as string;
-&nbsp;
-      const response = await fetch(`${SUPABASE_URL}/functions/v1/discogs-auth`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${accessToken}`,
-          apikey: SUPABASE_ANON_KEY,
-        },
-        body: JSON.stringify({ action: 'request_token', callback_url: callbackUrl }),
+      const { data, error } = await supabase.functions.invoke('discogs-auth', {
+        body: { action: 'request_token', callback_url: callbackUrl },
       });
 &nbsp;
-      const json = await response.json();
-      if (!response.ok) throw new Error(json.error || <span class="branch-1 cbranch-no" title="branch not covered" >'Failed to get request token');</span>
+      if (error) throw new Error(error.message || <span class="branch-1 cbranch-no" title="branch not covered" >'Failed to get request token');</span>
+      <span class="missing-if-branch" title="if path not taken" >I</span>if (!data?.oauth_token || !data?.oauth_token_secret || !data?.authorize_url) {
+<span class="cstat-no" title="statement not covered" >        throw new Error('Invalid response from discogs-auth');</span>
+      }
 &nbsp;
-      // Store the request token secret in sessionStorage for the callback
-      sessionStorage.setItem('discogs_oauth_token_secret', json.oauth_token_secret);
-      sessionStorage.setItem('discogs_oauth_token', json.oauth_token);
+      sessionStorage.setItem('discogs_oauth_token_secret', data.oauth_token_secret);
+      sessionStorage.setItem('discogs_oauth_token', data.oauth_token);
 &nbsp;
       this.setState({ isLoading: false });
-      return { success: true, data: { authorizeUrl: json.authorize_url } };
+      return { success: true, data: { authorizeUrl: data.authorize_url } };
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : <span class="branch-1 cbranch-no" title="branch not covered" >String(err);</span>
       this.setState({ isLoading: false, error: msg });
@@ -778,7 +748,7 @@ export class DiscogsAuthManager {
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-04-23T19:23:07.419Z
+                at 2026-04-28T22:51:47.464Z
             </div>
         <script src="../prettify.js"></script>
         <script>
