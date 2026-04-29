@@ -143,7 +143,7 @@ interface DiscogsCollectionItem {
 interface DiscogsEnrichedItem extends DiscogsCollectionItem {
   _tracklist: Array<{ position: string; title: string }> | null
   _country: string | null
-  _median_value_cad: number | null
+  _lowest_price_cad: number | null
 }
 
 interface DiscogsCollectionResponse {
@@ -281,22 +281,22 @@ async function pullFromDiscogs(
         })
       }
 
-      let medianValueCad: number | null = null
+      let lowestPriceCad: number | null = null
       if (statsResp.ok) {
         const stats = await statsResp.json()
-        medianValueCad = stats.lowest_price?.value ?? null
+        lowestPriceCad = stats.lowest_price?.value ?? null
       } else {
         log('warn', 'Pull: marketplace stats fetch failed', { releaseId, status: statsResp.status })
       }
 
-      return { ...item, _tracklist: tracklist, _country: country, _median_value_cad: medianValueCad }
+      return { ...item, _tracklist: tracklist, _country: country, _lowest_price_cad: lowestPriceCad }
     })
   )
 
   const enriched: DiscogsEnrichedItem[] = enrichResults.map((result, i) =>
     result.status === 'fulfilled'
       ? result.value
-      : { ...newItems[i], _tracklist: null, _country: null, _median_value_cad: null }
+      : { ...newItems[i], _tracklist: null, _country: null, _lowest_price_cad: null }
   )
 
   // Insert in batches of 100
@@ -320,7 +320,7 @@ async function pullFromDiscogs(
     rating: item.rating > 0 ? item.rating : null,
     tracklist: item._tracklist,
     country: item._country,
-    median_value_cad: item._median_value_cad,
+    lowest_price_cad: item._lowest_price_cad,
     pressing: null,
     notes: null,
   }))

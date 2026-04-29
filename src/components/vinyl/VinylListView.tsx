@@ -10,7 +10,7 @@ interface VinylListViewProps {
   onSelect: (record: PhysicalMediaRecord) => void;
 }
 
-type SortField = 'artist' | 'title' | 'year' | 'label' | 'median_value_cad';
+type SortField = 'artist' | 'title' | 'year' | 'label' | 'lowest_price_cad';
 type SortDir = 'asc' | 'desc';
 
 function formatCAD(value: number | null): string {
@@ -59,7 +59,7 @@ export const VinylListView: React.FC<VinylListViewProps> = ({ records, onSelect 
     else if (sortField === 'title') { av = a.title ?? ''; bv = b.title ?? ''; }
     else if (sortField === 'year') { av = a.year ?? 0; bv = b.year ?? 0; }
     else if (sortField === 'label') { av = a.label ?? ''; bv = b.label ?? ''; }
-    else if (sortField === 'median_value_cad') { av = a.median_value_cad ?? -1; bv = b.median_value_cad ?? -1; }
+    else if (sortField === 'lowest_price_cad') { av = a.lowest_price_cad ?? -1; bv = b.lowest_price_cad ?? -1; }
 
     if (av === null || av === '' || av === -1) return sortDir === 'asc' ? 1 : -1;
     if (bv === null || bv === '' || bv === -1) return sortDir === 'asc' ? -1 : 1;
@@ -99,7 +99,7 @@ export const VinylListView: React.FC<VinylListViewProps> = ({ records, onSelect 
             {th('Year', 'year')}
             {th('Label', 'label')}
             <TableHead className="px-3 py-1.5 font-mono text-xs">Cat#</TableHead>
-            {th('Value (CAD)', 'median_value_cad')}
+            {th('Low (CAD)', 'lowest_price_cad')}
             <TableHead className="px-3 py-1.5">slskd</TableHead>
           </TableRow>
         </TableHeader>
@@ -128,7 +128,7 @@ export const VinylListView: React.FC<VinylListViewProps> = ({ records, onSelect 
               <TableCell className="px-3 py-1.5 tabular-nums">{record.year ?? '—'}</TableCell>
               <TableCell className="px-3 py-1.5 max-w-[120px] truncate">{record.label ?? '—'}</TableCell>
               <TableCell className="px-3 py-1.5 font-mono text-xs">{record.catalogue_number ?? '—'}</TableCell>
-              <TableCell className="px-3 py-1.5 tabular-nums text-sm">{formatCAD(record.median_value_cad)}</TableCell>
+              <TableCell className="px-3 py-1.5 tabular-nums text-sm">{formatCAD(record.lowest_price_cad)}</TableCell>
               <TableCell className="px-3 py-1.5">
                 <Button
                   variant="ghost"
