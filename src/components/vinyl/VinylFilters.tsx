@@ -31,10 +31,23 @@ export interface VinylFilterOptions {
   superGenres: string[];
 }
 
-function getDecade(year: number | null): string | null {
+export function getDecade(year: number | null): string | null {
   if (!year) return null;
   if (year < 1950) return 'pre-1950';
   return `${Math.floor(year / 10) * 10}s`;
+}
+
+export function buildDecadeOptions(records: PhysicalMediaRecord[]): string[] {
+  const set = new Set<string>();
+  for (const r of records) {
+    const d = getDecade(r.year);
+    if (d) set.add(d);
+  }
+  return [...set].sort((a, b) => {
+    if (a === 'pre-1950') return -1;
+    if (b === 'pre-1950') return 1;
+    return parseInt(a) - parseInt(b);
+  });
 }
 
 export function applyVinylFilters(
