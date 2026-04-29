@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { applyVinylFilters, VINYL_FILTER_DEFAULTS } from '../VinylFilters';
+import { applyVinylFilters, buildDecadeOptions, VINYL_FILTER_DEFAULTS } from '../VinylFilters';
 import type { PhysicalMediaRecord } from '@/types/discogs';
 
 function makeRecord(overrides: Partial<PhysicalMediaRecord> = {}): PhysicalMediaRecord {
@@ -39,7 +39,50 @@ const records: PhysicalMediaRecord[] = [
   makeRecord({ id: '4', artist: 'Sade', title: 'Diamond Life', label: 'Epic', year: 1984, format: 'LP', rating: null, super_genre: null, catalogue_number: null }),
 ];
 
+describe('buildDecadeOptions', () => {
+  it('returns empty array for empty collection', () => {
+    expect(buildDecadeOptions([])).toEqual([]);
+  });
+
+  it('returns empty array when all years are null', () => {
+    expect(buildDecadeOptions([makeRecord({ year: null }), makeRecord({ year: null })])).toEqual([]);
+  });
+
+  it('deduplicates decades from multiple records', () => {
+    const result = buildDecadeOptions([makeRecord({ year: 1984 }), makeRecord({ year: 1987 }), makeRecord({ year: 1992 })]);
+    expect(result).toEqual(['1980s', '1990s']);
+  });
+
+  it('sorts decades chronologically', () => {
+    const result = buildDecadeOptions([
+      makeRecord({ year: 2005 }),
+      makeRecord({ year: 1975 }),
+      makeRecord({ year: 1945 }),
+      makeRecord({ year: 1992 }),
+    ]);
+    expect(result).toEqual(['pre-1950', '1970s', '1990s', '2000s']);
+  });
+
+  it('places pre-1950 before all numeric decades', () => {
+    const result = buildDecadeOptions([makeRecord({ year: 1940 }), makeRecord({ year: 1985 })]);
+    expect(result[0]).toBe('pre-1950');
+  });
+
+  it('omits null years without affecting valid entries', () => {
+    const result = buildDecadeOptions([makeRecord({ year: 1985 }), makeRecord({ year: null })]);
+    expect(result).toEqual(['1980s']);
+  });
+});
+
 describe('applyVinylFilters', () => {
+  it('returns empty array for empty collection', () => {
+    expect(applyVinylFilters([], VINYL_FILTER_DEFAULTS)).toEqual([]);
+  });
+
+  it('returns empty array when decade filter matches nothing', () => {
+    expect(applyVinylFilters(records, { ...VINYL_FILTER_DEFAULTS, selectedDecade: '2000s' })).toEqual([]);
+  });
+
   it('returns all records when using defaults', () => {
     expect(applyVinylFilters(records, VINYL_FILTER_DEFAULTS)).toHaveLength(4);
   });
