@@ -127,7 +127,7 @@ export const AddVinylDialog: React.FC<AddVinylDialogProps> = ({ open, onOpenChan
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-lg h-[100dvh] sm:h-auto flex flex-col top-0 translate-y-0 sm:top-[50%] sm:translate-y-[-50%] rounded-none sm:rounded-lg">
+      <DialogContent className="sm:max-w-lg sm:h-auto flex flex-col max-sm:inset-0 max-sm:translate-x-0 max-sm:translate-y-0 max-sm:max-w-none max-sm:rounded-none">
         <DialogHeader className="flex-shrink-0">
           <DialogTitle>
             Add to Discogs

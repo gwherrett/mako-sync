@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Disc3, Plus, Info, X, RefreshCw, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -10,19 +10,13 @@ import { useDiscogsSync } from '@/hooks/useDiscogsSync';
 import { VinylCard } from '@/components/vinyl/VinylCard';
 import { VinylDetailPanel } from '@/components/vinyl/VinylDetailPanel';
 import { AddVinylDialog } from '@/components/vinyl/AddVinylDialog';
-import { VinylFilters, VINYL_FILTER_DEFAULTS, applyVinylFilters } from '@/components/vinyl/VinylFilters';
+import { VinylFilters, VINYL_FILTER_DEFAULTS, applyVinylFilters, buildDecadeOptions } from '@/components/vinyl/VinylFilters';
 import type { VinylFilterState, VinylFilterOptions } from '@/components/vinyl/VinylFilters';
 import { ViewModeSwitcher } from '@/components/vinyl/ViewModeSwitcher';
 import type { ViewMode } from '@/components/vinyl/ViewModeSwitcher';
 import { CoverFlowView } from '@/components/vinyl/CoverFlowView';
 import { VinylListView } from '@/components/vinyl/VinylListView';
 import type { PhysicalMediaRecord } from '@/types/discogs';
-
-function getDecade(year: number | null): string | null {
-  if (!year) return null;
-  if (year < 1950) return 'pre-1950';
-  return `${Math.floor(year / 10) * 10}s`;
-}
 
 const STORAGE_KEY = 'mako_vinyl_view_mode';
 
@@ -44,20 +38,19 @@ export const VinylTab: React.FC = () => {
     localStorage.setItem(STORAGE_KEY, mode);
   };
 
-  const filterOptions = useMemo<VinylFilterOptions>(() => {
-    const decadeSet = new Set<string>();
-    collection.forEach((r) => {
-      const d = getDecade(r.year);
-      if (d) decadeSet.add(d);
-    });
-    return {
-      artists: [...new Set(collection.map((r) => r.artist).filter(Boolean))].sort() as string[],
-      labels: [...new Set(collection.map((r) => r.label).filter((l) => l != null))].sort() as string[],
-      formats: [...new Set(collection.map((r) => r.format).filter((f) => f != null))].sort() as string[],
-      decades: [...decadeSet].sort(),
-      superGenres: [...new Set(collection.map((r) => r.super_genre).filter((g) => g != null))].sort() as string[],
-    };
-  }, [collection]);
+  const filterOptions = useMemo<VinylFilterOptions>(() => ({
+    artists: [...new Set(collection.map((r) => r.artist).filter(Boolean))].sort() as string[],
+    labels: [...new Set(collection.map((r) => r.label).filter((l) => l != null))].sort() as string[],
+    formats: [...new Set(collection.map((r) => r.format).filter((f) => f != null))].sort() as string[],
+    decades: buildDecadeOptions(collection),
+    superGenres: [...new Set(collection.map((r) => r.super_genre).filter((g) => g != null))].sort() as string[],
+  }), [collection]);
+
+  useEffect(() => {
+    if (filterState.selectedDecade && !filterOptions.decades.includes(filterState.selectedDecade)) {
+      setFilterState((prev) => ({ ...prev, selectedDecade: '' }));
+    }
+  }, [filterOptions.decades, filterState.selectedDecade]);
 
   const filteredRecords = useMemo(
     () => applyVinylFilters(collection, filterState),
