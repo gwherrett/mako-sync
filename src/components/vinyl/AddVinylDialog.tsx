@@ -127,7 +127,7 @@ export const AddVinylDialog: React.FC<AddVinylDialogProps> = ({ open, onOpenChan
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-lg h-[100dvh] sm:h-auto flex flex-col">
+      <DialogContent className="sm:max-w-lg h-[100dvh] sm:h-auto flex flex-col top-0 translate-y-0 sm:top-[50%] sm:translate-y-[-50%] rounded-none sm:rounded-lg">
         <DialogHeader className="flex-shrink-0">
           <DialogTitle>
             Add to Discogs
@@ -221,7 +221,7 @@ export const AddVinylDialog: React.FC<AddVinylDialogProps> = ({ open, onOpenChan
               </div>
             </div>
             </div>
-            <div className="flex justify-end gap-2 pt-2 flex-shrink-0 border-t mt-2">
+            <div className="flex justify-end gap-2 pt-2 pb-4 flex-shrink-0 border-t mt-2">
               <Button variant="outline" onClick={handleClose}>Cancel</Button>
               <Button onClick={() => setStep(2)} disabled={!canAdvance}>
                 Find on Discogs
@@ -257,7 +257,7 @@ export const AddVinylDialog: React.FC<AddVinylDialogProps> = ({ open, onOpenChan
               )}
             </div>
             {!isPending && (
-              <div className="flex-shrink-0 border-t pt-2">
+              <div className="flex-shrink-0 border-t pt-2 pb-4">
                 <Button variant="ghost" size="sm" onClick={() => setStep(1)} className="text-muted-foreground">
                   ← Back
                 </Button>

@@ -88,7 +88,7 @@ export const VinylTab: React.FC = () => {
             <Badge variant="secondary" className="text-xs">{badgeLabel}</Badge>
           )}
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           {!isLoading && collection.length > 0 && (
             <ViewModeSwitcher value={viewMode} onChange={handleViewMode} />
           )}
