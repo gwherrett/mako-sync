@@ -4,14 +4,11 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Loader2, Disc3, CheckCircle2, XCircle, Download, Trash2 } from 'lucide-react';
+import { Loader2, Disc3, CheckCircle2, XCircle, Trash2 } from 'lucide-react';
 import { useVinylMissingTracks } from '@/hooks/useVinylMissingTracks';
-import { useSlskdSync } from '@/hooks/useSlskdSync';
-import { SlskdStorageService } from '@/services/slskdStorage.service';
 import { usePhysicalMedia } from '@/hooks/usePhysicalMedia';
 import { useIsMobile } from '@/hooks/use-mobile';
 import type { PhysicalMediaRecord } from '@/types/discogs';
-import type { SlskdTrackToSync } from '@/types/slskd';
 
 interface VinylDetailPanelProps {
   record: PhysicalMediaRecord | null;
@@ -40,9 +37,7 @@ function RatingDisplay({ rating }: { rating: number | null }) {
 
 export const VinylDetailPanel: React.FC<VinylDetailPanelProps> = ({ record, open, onClose }) => {
   const { matched, missing, isLoading: isMatching } = useVinylMissingTracks(record);
-  const { syncToSlskd, isSyncing } = useSlskdSync();
   const { deleteRecord, isDeleting } = usePhysicalMedia();
-  const slskdConfigured = SlskdStorageService.isConfigured();
   const isMobile = useIsMobile();
 
   // Push a history entry when the sheet opens so Android back-swipe closes
@@ -59,18 +54,6 @@ export const VinylDetailPanel: React.FC<VinylDetailPanelProps> = ({ record, open
       }
     };
   }, [open, onClose]);
-
-  const handlePushToSlskd = () => {
-    if (!record || missing.length === 0) return;
-    const tracks: SlskdTrackToSync[] = missing.map(t => ({
-      id: `${record.id}-${t.position}`,
-      title: t.title,
-      artist: record.artist,
-      primary_artist: record.artist,
-      album: record.title,
-    }));
-    syncToSlskd(tracks);
-  };
 
   const handleDelete = async () => {
     if (!record) return;
@@ -178,7 +161,7 @@ export const VinylDetailPanel: React.FC<VinylDetailPanelProps> = ({ record, open
         </ScrollArea>
 
         {/* Actions */}
-        <div className="flex items-center justify-between pt-4 border-t mt-2 gap-2">
+        <div className="flex items-center pt-4 border-t mt-2">
           <Button
             variant="ghost"
             size="sm"
@@ -189,22 +172,6 @@ export const VinylDetailPanel: React.FC<VinylDetailPanelProps> = ({ record, open
             <Trash2 className="h-4 w-4 mr-1" />
             {isDeleting ? 'Removing…' : 'Remove'}
           </Button>
-
-          <div className="flex items-center gap-2">
-            {slskdConfigured && missing.length > 0 && (
-              <Button
-                size="sm"
-                onClick={handlePushToSlskd}
-                disabled={isSyncing || isMatching}
-              >
-                {isSyncing ? (
-                  <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Pushing…</>
-                ) : (
-                  <><Download className="h-4 w-4 mr-2" />Push {missing.length} missing to slskd</>
-                )}
-              </Button>
-            )}
-          </div>
         </div>
       </SheetContent>
     </Sheet>
