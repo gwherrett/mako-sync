@@ -13,7 +13,9 @@ export function useDiscogsSync() {
 
   const mutation = useMutation({
     mutationFn: async (): Promise<SyncResult> => {
+      console.log('[DiscogsSync] invoking discogs-pull-sync edge function');
       const { data, error } = await supabase.functions.invoke('discogs-pull-sync');
+      console.log('[DiscogsSync] invoke returned', { data, error });
 
       if (error) {
         let message = error.message ?? 'Discogs sync failed';
@@ -21,6 +23,7 @@ export function useDiscogsSync() {
           const parsed = typeof error.context === 'object' && error.context !== null
             ? await (error.context as Response).json?.()
             : null;
+          console.log('[DiscogsSync] error context parsed', parsed);
           if (parsed?.code === 'RATE_LIMITED') {
             message = 'Discogs rate limit hit. Please wait 60 seconds and try again.';
           } else if (parsed?.code === 'NOT_CONNECTED') {
@@ -28,15 +31,22 @@ export function useDiscogsSync() {
           } else if (parsed?.error) {
             message = parsed.details ? `${parsed.error} — ${parsed.details}` : parsed.error;
           }
-        } catch {
-          // leave message as-is
+        } catch (parseErr) {
+          console.warn('[DiscogsSync] failed to parse error context', parseErr);
         }
+        console.error('[DiscogsSync] throwing error:', message);
         throw new Error(message);
+      }
+
+      if (!data || typeof (data as SyncResult).pulled !== 'number') {
+        console.error('[DiscogsSync] unexpected response shape:', data);
+        throw new Error('Discogs sync returned an unexpected response. Check the console for details.');
       }
 
       return data as SyncResult;
     },
     onSuccess: (result) => {
+      console.log('[DiscogsSync] onSuccess', result);
       queryClient.invalidateQueries({ queryKey: ['physical_media'] });
 
       if (result.pulled === 0) {
@@ -57,6 +67,7 @@ export function useDiscogsSync() {
       }
     },
     onError: (err: Error) => {
+      console.error('[DiscogsSync] onError', err);
       toast({
         title: 'Discogs sync failed',
         description: err.message,
