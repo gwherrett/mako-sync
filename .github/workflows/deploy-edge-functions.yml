@@ -1,3 +1,4 @@
+# redeploy: 2026-05-05
 name: Deploy Supabase Edge Functions
 
 on:

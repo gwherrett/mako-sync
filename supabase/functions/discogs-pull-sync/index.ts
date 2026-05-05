@@ -1,4 +1,4 @@
-// deploy
+// deploy v2
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.100.0"
 import { Pool } from "https://deno.land/x/postgres@v0.17.0/mod.ts"
@@ -172,16 +172,24 @@ async function pullFromDiscogs(
   accessToken: string,
   accessTokenSecret: string,
 ): Promise<SyncResult> {
-  // Load existing instance IDs for deduplication
-  const { data: existingRows } = await supabaseClient
-    .from('physical_media')
-    .select('discogs_instance_id')
-    .eq('user_id', userId)
-    .not('discogs_instance_id', 'is', null)
-
-  const existingInstanceIds = new Set<number>(
-    (existingRows ?? []).map((r: { discogs_instance_id: number }) => r.discogs_instance_id)
-  )
+  // Load existing instance IDs for deduplication — paginate to handle collections > 1000
+  const DEDUP_PAGE_SIZE = 1000
+  const existingInstanceIds = new Set<number>()
+  let dedupOffset = 0
+  while (true) {
+    const { data: existingRows } = await supabaseClient
+      .from('physical_media')
+      .select('discogs_instance_id')
+      .eq('user_id', userId)
+      .not('discogs_instance_id', 'is', null)
+      .range(dedupOffset, dedupOffset + DEDUP_PAGE_SIZE - 1)
+    const rows = existingRows ?? []
+    for (const r of rows as Array<{ discogs_instance_id: number }>) {
+      existingInstanceIds.add(r.discogs_instance_id)
+    }
+    if (rows.length < DEDUP_PAGE_SIZE) break
+    dedupOffset += DEDUP_PAGE_SIZE
+  }
 
   log('info', 'Pull: existing instance IDs', { count: existingInstanceIds.size })
 
@@ -246,6 +254,10 @@ async function pullFromDiscogs(
   const enrichResults = await Promise.allSettled(
     newItems.map(async (item, i): Promise<DiscogsEnrichedItem> => {
       await new Promise(r => setTimeout(r, i * 2200))
+      if (Date.now() - startTime > BUDGET_MS) {
+        log('warn', 'Pull: enrichment budget exceeded, skipping item', { i, releaseId: item.basic_information.id })
+        return { ...item, _tracklist: null, _country: null, _lowest_price_cad: null }
+      }
       const releaseId = item.basic_information.id
       const releaseUrl = `https://api.discogs.com/releases/${releaseId}`
       const statsBaseUrl = `https://api.discogs.com/marketplace/stats/${releaseId}`
