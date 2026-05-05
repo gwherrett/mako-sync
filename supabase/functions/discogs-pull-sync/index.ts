@@ -357,10 +357,10 @@ async function pullFromDiscogs(
     const batch = rows.slice(i, i + DB_BATCH_SIZE)
     const { error: insertError } = await supabaseClient
       .from('physical_media')
-      .insert(batch)
+      .upsert(batch, { onConflict: 'user_id,discogs_instance_id', ignoreDuplicates: true })
 
     if (insertError) {
-      log('error', 'Pull: batch insert failed', { batchStart: i, error: insertError.message })
+      log('error', 'Pull: batch upsert failed', { batchStart: i, error: insertError.message })
       errors.push({ id: `batch-${i}`, reason: insertError.message })
     } else {
       pulled += batch.length

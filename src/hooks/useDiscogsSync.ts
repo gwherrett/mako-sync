@@ -21,14 +21,21 @@ export function useDiscogsSync() {
       if (error) {
         let message = error.message ?? 'Discogs sync failed';
         try {
-          const parsed = typeof error.context === 'object' && error.context !== null
-            ? await (error.context as Response).json?.()
-            : null;
+          // FunctionsHttpError stores the raw Response as .context.
+          // Read as text first, then parse — more robust than .json() directly.
+          const ctx = error.context;
+          const bodyText = ctx instanceof Response
+            ? await ctx.text()
+            : typeof ctx === 'string'
+              ? ctx
+              : null;
+          console.log('[DiscogsSync] error body:', bodyText);
+          const parsed = bodyText ? JSON.parse(bodyText) : null;
           console.log('[DiscogsSync] error context parsed', parsed);
           if (parsed?.code === 'RATE_LIMITED') {
             message = 'Discogs rate limit hit. Please wait 60 seconds and try again.';
           } else if (parsed?.code === 'NOT_CONNECTED') {
-            message = 'Discogs is not connected. Connect it on the Security page.';
+            message = 'Discogs is not connected. Re-authorise it on the Security page.';
           } else if (parsed?.error) {
             message = parsed.details ? `${parsed.error} — ${parsed.details}` : parsed.error;
           }
