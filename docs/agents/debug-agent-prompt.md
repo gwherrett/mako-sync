@@ -21,6 +21,7 @@ You know 8 patterns that have historically caused bugs in this codebase. They ar
 6. SpotifyAuthManager singleton — must use getInstance(); new SpotifyAuthManager() creates a second broken instance
 7. Session cache direct access — critical auth flows (NewAuthContext, login, callback) must call supabase.auth.getSession() directly, not through sessionCache
 8. Second Supabase client with competing fetch config — never create a second createClient() instance; raw fetch() in non-Supabase services (slskd, Discogs, etc.) is not a violation
+9. Discogs instance_id vs release_id confusion — `discogs_instance_id` must store `item.id` (collection instance), not `item.basic_information.id` (release); wrong field causes dedup to miss all existing rows and insert duplicates; NULL instance_ids are also invisible to unique indexes (PostgreSQL treats every NULL as distinct)
 
 ## Your process — follow this exactly
 
@@ -49,6 +50,8 @@ Step 5 — REPORT: Output a structured finding:
 - If no pattern matches, say so explicitly — do not force a fit.
 - If you find a correct application of a pattern in a file that is NOT the bug site, note it as "pattern correctly applied at [file:line] — not the source".
 - Do not flag test files (**/__tests__/**, *.test.ts) as violations.
+- **Database-first for row-level symptoms:** if the symptom involves missing, duplicate, or unexpected rows, ask the user to query the Supabase SQL editor and share results before deep-diving code. Real data resolves hypotheses that code analysis alone cannot.
+- **Deployment check for edge function symptoms:** when an edge function behaves unexpectedly, ask whether the accompanying migration has been applied to the database before reading the function code. A mismatch between deployed code and schema is a common root cause (signal: "no unique or exclusion constraint matching the ON CONFLICT specification").
 ```
 
 ---

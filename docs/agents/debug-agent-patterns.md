@@ -301,3 +301,60 @@ const localSupabase = createClient(url, key, {
 - Any new Edge Function utility file that might initialise its own client
 - Any test helper or debug utility that creates a standalone Supabase client
 - `src/integrations/supabase/client.ts` — the reference implementation; do not duplicate
+
+---
+
+## Pattern 9 — Discogs instance_id vs release_id field confusion
+
+**Rule:** The `discogs_instance_id` column in `physical_media` must store the Discogs **collection instance ID** (`item.id` from the collection API response), not the release ID (`item.basic_information.id`). The dedup loop keys on `discogs_instance_id`; if the wrong field is stored, every item appears "new" on every sync and a duplicate row is inserted alongside the corrupt original.
+
+**Detection signal:**
+- `discogs_instance_id` values in the DB equal to `discogs_release_id` values (run: `SELECT count(*) FROM physical_media WHERE discogs_instance_id = discogs_release_id`)
+- `discogs_instance_id IS NULL` for synced (non-manually-added) records
+- Duplicate rows sharing the same `discogs_release_id` / `discogs_master_id` but with different `discogs_instance_id`
+
+**PostgreSQL NULL behaviour to remember:** `NULL ≠ NULL` in unique index evaluation. Both a full unique index and a partial unique index allow unlimited NULL values per user in the same column. A corrupt row with `discogs_instance_id = NULL` and a correct row with a real instance_id will never conflict on the unique index — they coexist silently.
+
+**Correct example** (`supabase/functions/discogs-pull-sync/index.ts`):
+```typescript
+// item.id  = Discogs instance_id  (unique per collection entry)
+// item.basic_information.id = release_id  (shared across copies of the same release)
+discogs_instance_id: item.id,
+discogs_release_id:  item.basic_information.id ?? null,
+```
+
+**Incorrect example:**
+```typescript
+// Stores release_id in the instance_id column — dedup will always miss existing rows
+discogs_instance_id: item.basic_information.id,
+```
+
+**Recovery SQL** (run in Supabase SQL editor, then trigger a fresh sync):
+```sql
+DELETE FROM public.physical_media
+WHERE discogs_instance_id IS NULL
+   OR discogs_instance_id = discogs_release_id;
+```
+
+**Files most at risk:**
+- `supabase/functions/discogs-pull-sync/index.ts` — primary sync writer
+- Any future edge function that writes to `physical_media`
+
+---
+
+## Investigation guidance — database-first debugging
+
+When a symptom involves missing, duplicate, or unexpected rows in any table, **ask the user to inspect the Supabase table editor or run SQL queries first** before reading code. Real data resolves hypotheses that code analysis cannot. Useful queries to request early:
+
+```sql
+-- Are there actual duplicates by the natural key?
+SELECT <key_column>, count(*) FROM <table> GROUP BY <key_column> HAVING count(*) > 1;
+
+-- Does the unique index exist and is it the right shape?
+SELECT indexname, indexdef FROM pg_indexes WHERE tablename = '<table>';
+
+-- Are there corrupt sentinel values (field storing wrong ID)?
+SELECT count(*) FROM <table> WHERE discogs_instance_id = discogs_release_id;
+```
+
+**For edge function bugs specifically:** before reading edge function code, ask whether the related **database migration has been applied**. An edge function deployed before its migration runs will operate against the old schema — the bug may be in the deployment order, not the code. The signal is an error like "there is no unique or exclusion constraint matching the ON CONFLICT specification", which means the code references a constraint that doesn't exist yet in the DB.

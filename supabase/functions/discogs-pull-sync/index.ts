@@ -195,7 +195,7 @@ async function pullFromDiscogs(
   log('info', 'Pull: existing instance IDs', { count: existingInstanceIds.size })
 
   const PER_PAGE = 100
-  const BUDGET_MS = 100_000
+  const BUDGET_MS = 60_000
   const startTime = Date.now()
   const baseUrl = `https://api.discogs.com/users/${username}/collection/folders/0/releases`
   let page = 1
