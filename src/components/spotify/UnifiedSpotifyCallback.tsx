@@ -219,34 +219,37 @@ export const UnifiedSpotifyCallback: React.FC = () => {
         });
         
         if (state !== storedState && state !== backupState) {
-          console.log('❌ UNIFIED CALLBACK: State parameter mismatch');
-          
-          // SESSION DEBUG: Log session state for state mismatch
-          console.log('🔍 SESSION DEBUG (State Mismatch): Session state during security validation failure', {
-            hasSession: !!sessionRef.current,
-            hasAccessToken: !!sessionRef.current?.access_token,
-            hasUser: !!sessionRef.current?.user,
-            userId: sessionRef.current?.user?.id,
-            isAuthenticated,
-            receivedState: state?.substring(0, 10) + '...',
-            storedState: storedState?.substring(0, 10) + '...',
-            backupState: backupState?.substring(0, 10) + '...',
-            preservedSession: 'Session should be preserved - no session clearing operations performed',
-            timestamp: new Date().toISOString()
-          });
-          
-          toast({
-            title: "Security Error",
-            description: "Invalid state parameter - please try connecting again",
-            variant: "destructive",
-          });
-          
-          // Clean up stored states
+          const stateWasLost = !storedState && !backupState;
+          console.log(
+            stateWasLost
+              ? '⚠️ UNIFIED CALLBACK: State missing from storage (session interrupted)'
+              : '❌ UNIFIED CALLBACK: State parameter mismatch (security violation)',
+            { receivedState: state?.substring(0, 10) + '...', storedState, backupState }
+          );
+
           localStorage.removeItem('spotify_auth_state');
           sessionStorage.removeItem('spotify_auth_state_backup');
           sessionStorage.removeItem(executionFlag);
-          
-          setTimeout(() => navigate('/'), 2000);
+
+          if (stateWasLost) {
+            // State was lost from browser storage (cleared, cross-tab, browser crash, etc.)
+            // This is a UX interruption, not a security violation — send user back to
+            // the Security page so they can start a fresh connect flow immediately.
+            toast({
+              title: "Connection interrupted",
+              description: "The authorisation session expired. Please connect again.",
+              variant: "destructive",
+            });
+            setTimeout(() => navigate('/security'), 1500);
+          } else {
+            // State was present but wrong — genuine CSRF concern.
+            toast({
+              title: "Security Error",
+              description: "Invalid state parameter — please try connecting again",
+              variant: "destructive",
+            });
+            setTimeout(() => navigate('/'), 2000);
+          }
           return;
         }
 
