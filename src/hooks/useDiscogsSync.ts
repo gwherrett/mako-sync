@@ -4,6 +4,7 @@ import { useToast } from '@/hooks/use-toast';
 
 interface SyncResult {
   pulled: number;
+  partial: boolean;
   errors: { id: string | number; reason: string }[];
 }
 
@@ -49,7 +50,12 @@ export function useDiscogsSync() {
       console.log('[DiscogsSync] onSuccess', result);
       queryClient.invalidateQueries({ queryKey: ['physical_media'] });
 
-      if (result.pulled === 0) {
+      if (result.partial) {
+        toast({
+          title: 'Partial sync complete',
+          description: `↓ ${result.pulled} synced — click Sync again to continue importing`,
+        });
+      } else if (result.pulled === 0) {
         toast({ title: 'Already in sync', description: 'Collection is already up to date.' });
       } else {
         toast({

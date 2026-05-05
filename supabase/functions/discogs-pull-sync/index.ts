@@ -158,6 +158,7 @@ interface SyncError {
 
 interface SyncResult {
   pulled: number
+  partial: boolean
   errors: SyncError[]
 }
 
@@ -245,23 +246,32 @@ async function pullFromDiscogs(
   }
 
   if (newItems.length === 0) {
-    return { pulled: 0, errors: [] }
+    return { pulled: 0, partial: false, errors: [] }
   }
 
-  // Enrich each item with full release data (tracklist + country) and marketplace stats (CAD value).
-  // Two API calls per item — stagger at 2.2 s to stay within the Discogs 60 req/min cap.
+  // Enrich items sequentially, checking the budget before each one.
+  // Sequential processing lets us stop cleanly when time runs low and insert
+  // what's been enriched so far. The next sync call resumes automatically
+  // because the dedup set skips already-inserted instance IDs.
+  // Rate limit: 2 API calls per item, staggered to stay under Discogs 60 req/min.
   log('info', 'Pull: enriching items with release data + marketplace stats', { count: newItems.length })
-  const enrichResults = await Promise.allSettled(
-    newItems.map(async (item, i): Promise<DiscogsEnrichedItem> => {
-      await new Promise(r => setTimeout(r, i * 2200))
-      if (Date.now() - startTime > BUDGET_MS) {
-        log('warn', 'Pull: enrichment budget exceeded, skipping item', { i, releaseId: item.basic_information.id })
-        return { ...item, _tracklist: null, _country: null, _lowest_price_cad: null }
-      }
-      const releaseId = item.basic_information.id
-      const releaseUrl = `https://api.discogs.com/releases/${releaseId}`
-      const statsBaseUrl = `https://api.discogs.com/marketplace/stats/${releaseId}`
+  const enriched: DiscogsEnrichedItem[] = []
+  let partial = false
 
+  for (let i = 0; i < newItems.length; i++) {
+    if (Date.now() - startTime > BUDGET_MS) {
+      log('warn', 'Pull: enrichment budget exceeded — stopping early', { processed: i, total: newItems.length })
+      partial = true
+      break
+    }
+
+    const item = newItems[i]
+    const itemStart = Date.now()
+    const releaseId = item.basic_information.id
+    const releaseUrl = `https://api.discogs.com/releases/${releaseId}`
+    const statsBaseUrl = `https://api.discogs.com/marketplace/stats/${releaseId}`
+
+    try {
       const [releaseAuth, statsAuth] = await Promise.all([
         buildOAuthHeader('GET', releaseUrl, consumerKey, consumerSecret, accessToken, accessTokenSecret),
         buildOAuthHeader('GET', statsBaseUrl, consumerKey, consumerSecret, accessToken, accessTokenSecret, { currency: 'CAD' }),
@@ -288,9 +298,7 @@ async function pullFromDiscogs(
         })) ?? null
         country = full.country ?? null
       } else {
-        log('warn', 'Pull: release fetch failed, inserting without tracklist', {
-          releaseId, status: releaseResp.status,
-        })
+        log('warn', 'Pull: release fetch failed, inserting without tracklist', { releaseId, status: releaseResp.status })
       }
 
       let lowestPriceCad: number | null = null
@@ -301,15 +309,19 @@ async function pullFromDiscogs(
         log('warn', 'Pull: marketplace stats fetch failed', { releaseId, status: statsResp.status })
       }
 
-      return { ...item, _tracklist: tracklist, _country: country, _lowest_price_cad: lowestPriceCad }
-    })
-  )
+      enriched.push({ ...item, _tracklist: tracklist, _country: country, _lowest_price_cad: lowestPriceCad })
+    } catch (err) {
+      log('warn', 'Pull: enrichment error, inserting without enrichment', { releaseId, error: String(err) })
+      enriched.push({ ...item, _tracklist: null, _country: null, _lowest_price_cad: null })
+    }
 
-  const enriched: DiscogsEnrichedItem[] = enrichResults.map((result, i) =>
-    result.status === 'fulfilled'
-      ? result.value
-      : { ...newItems[i], _tracklist: null, _country: null, _lowest_price_cad: null }
-  )
+    // Maintain ~2.2 s between request starts to stay within Discogs 60 req/min limit
+    const itemElapsed = Date.now() - itemStart
+    const waitMs = Math.max(0, 2200 - itemElapsed)
+    if (waitMs > 0 && i < newItems.length - 1) {
+      await new Promise(r => setTimeout(r, waitMs))
+    }
+  }
 
   // Insert in batches of 100
   const syncedAt = new Date().toISOString()
@@ -339,20 +351,23 @@ async function pullFromDiscogs(
 
   const errors: SyncError[] = []
   const DB_BATCH_SIZE = 100
+  let pulled = 0
 
   for (let i = 0; i < rows.length; i += DB_BATCH_SIZE) {
+    const batch = rows.slice(i, i + DB_BATCH_SIZE)
     const { error: insertError } = await supabaseClient
       .from('physical_media')
-      .insert(rows.slice(i, i + DB_BATCH_SIZE))
+      .insert(batch)
 
     if (insertError) {
       log('error', 'Pull: batch insert failed', { batchStart: i, error: insertError.message })
       errors.push({ id: `batch-${i}`, reason: insertError.message })
+    } else {
+      pulled += batch.length
     }
   }
 
-  const pulled = rows.length - errors.length * DB_BATCH_SIZE
-  return { pulled: Math.max(pulled, 0), errors }
+  return { pulled, partial, errors }
 }
 
 // ─── Main handler ──────────────────────────────────────────────────────────

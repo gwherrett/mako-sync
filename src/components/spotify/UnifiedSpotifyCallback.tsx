@@ -485,8 +485,9 @@ export const UnifiedSpotifyCallback: React.FC = () => {
           }
         })();
 
-        const edgeFunctionTimeoutPromise = new Promise<any>((_, reject) =>
-          setTimeout(() => {
+        let edgeFunctionTimeoutId: ReturnType<typeof setTimeout>;
+        const edgeFunctionTimeoutPromise = new Promise<any>((_, reject) => {
+          edgeFunctionTimeoutId = setTimeout(() => {
             const elapsed = Date.now() - edgeFunctionStartTime;
             console.error('❌ DIRECT FETCH: Edge function timeout', {
               elapsed,
@@ -497,12 +498,12 @@ export const UnifiedSpotifyCallback: React.FC = () => {
             const timeoutError = new Error('Edge function timeout - never reached server');
             (timeoutError as any).errorType = 'NETWORK_TIMEOUT';
             reject(timeoutError);
-          }, 45000) // 45s timeout for cold-start edge functions
-        );
+          }, 45000); // 45s timeout for cold-start edge functions
+        });
 
         const response = await Promise.race([
-          edgeFunctionPromise,
-          edgeFunctionTimeoutPromise
+          edgeFunctionPromise.finally(() => clearTimeout(edgeFunctionTimeoutId!)),
+          edgeFunctionTimeoutPromise,
         ]);
 
         if (response.error) {
