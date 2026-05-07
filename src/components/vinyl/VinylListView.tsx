@@ -1,8 +1,6 @@
-import { useState, useCallback } from 'react';
-import { Disc3, ChevronUp, ChevronDown, ChevronsUpDown, Download, Loader2 } from 'lucide-react';
+import { useState } from 'react';
+import { Disc3, ChevronUp, ChevronDown, ChevronsUpDown } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Button } from '@/components/ui/button';
-import { useSlskdSync } from '@/hooks/useSlskdSync';
 import type { PhysicalMediaRecord } from '@/types/discogs';
 
 interface VinylListViewProps {
@@ -10,7 +8,7 @@ interface VinylListViewProps {
   onSelect: (record: PhysicalMediaRecord) => void;
 }
 
-type SortField = 'artist' | 'title' | 'year' | 'label' | 'lowest_price_cad';
+type SortField = 'artist' | 'title' | 'year' | 'label' | 'lowest_price_cad' | 'created_at';
 type SortDir = 'asc' | 'desc';
 
 function formatCAD(value: number | null): string {
@@ -26,10 +24,8 @@ function SortIcon({ field, sortField, sortDir }: { field: SortField; sortField: 
 }
 
 export const VinylListView: React.FC<VinylListViewProps> = ({ records, onSelect }) => {
-  const [sortField, setSortField] = useState<SortField>('artist');
-  const [sortDir, setSortDir] = useState<SortDir>('asc');
-  const [pushingId, setPushingId] = useState<string | null>(null);
-  const { syncAlbumToSlskd } = useSlskdSync();
+  const [sortField, setSortField] = useState<SortField>('created_at');
+  const [sortDir, setSortDir] = useState<SortDir>('desc');
 
   const handleSort = (field: SortField) => {
     if (field === sortField) {
@@ -40,18 +36,6 @@ export const VinylListView: React.FC<VinylListViewProps> = ({ records, onSelect 
     }
   };
 
-  const handleSlskd = useCallback(async (e: React.MouseEvent, record: PhysicalMediaRecord) => {
-    e.stopPropagation();
-    setPushingId(record.id);
-    await syncAlbumToSlskd({
-      artist: record.artist,
-      primary_artist: record.artist,
-      title: record.title,
-      album: record.title,
-    });
-    setPushingId(null);
-  }, [syncAlbumToSlskd]);
-
   const sorted = [...records].sort((a, b) => {
     let av: string | number | null = null;
     let bv: string | number | null = null;
@@ -60,6 +44,7 @@ export const VinylListView: React.FC<VinylListViewProps> = ({ records, onSelect 
     else if (sortField === 'year') { av = a.year ?? 0; bv = b.year ?? 0; }
     else if (sortField === 'label') { av = a.label ?? ''; bv = b.label ?? ''; }
     else if (sortField === 'lowest_price_cad') { av = a.lowest_price_cad ?? -1; bv = b.lowest_price_cad ?? -1; }
+    else if (sortField === 'created_at') { av = a.created_at ?? ''; bv = b.created_at ?? ''; }
 
     if (av === null || av === '' || av === -1) return sortDir === 'asc' ? 1 : -1;
     if (bv === null || bv === '' || bv === -1) return sortDir === 'asc' ? -1 : 1;
@@ -100,7 +85,7 @@ export const VinylListView: React.FC<VinylListViewProps> = ({ records, onSelect 
             {th('Label', 'label')}
             <TableHead className="px-3 py-1.5 font-mono text-xs">Cat#</TableHead>
             {th('Low (CAD)', 'lowest_price_cad')}
-            <TableHead className="px-3 py-1.5">slskd</TableHead>
+            {th('Date Added', 'created_at')}
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -129,20 +114,8 @@ export const VinylListView: React.FC<VinylListViewProps> = ({ records, onSelect 
               <TableCell className="px-3 py-1.5 max-w-[120px] truncate">{record.label ?? '—'}</TableCell>
               <TableCell className="px-3 py-1.5 font-mono text-xs">{record.catalogue_number ?? '—'}</TableCell>
               <TableCell className="px-3 py-1.5 tabular-nums text-sm">{formatCAD(record.lowest_price_cad)}</TableCell>
-              <TableCell className="px-3 py-1.5">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-7 w-7"
-                  onClick={(e) => handleSlskd(e, record)}
-                  disabled={pushingId === record.id}
-                  title={`Search "${record.artist} – ${record.title}" in slskd`}
-                >
-                  {pushingId === record.id
-                    ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                    : <Download className="h-3.5 w-3.5" />
-                  }
-                </Button>
+              <TableCell className="px-3 py-1.5 tabular-nums text-xs text-muted-foreground">
+                {record.created_at ? new Date(record.created_at).toLocaleDateString('en-CA') : '—'}
               </TableCell>
             </TableRow>
           ))}
