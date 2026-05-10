@@ -5,7 +5,14 @@
       "Bash(npx tsc:*)",
       "Bash(npm run lint:*)",
       "Bash(gh workflow *)",
-      "mcp__linear-server__get_team"
+      "mcp__linear-server__linear_get_teams",
+      "mcp__linear-server__linear_list_projects",
+      "mcp__linear-server__linear_get_project",
+      "mcp__linear-server__linear_search_issues",
+      "mcp__linear-server__linear_search_issues_by_identifier",
+      "mcp__linear-server__linear_get_user",
+      "mcp__linear-server__linear_create_issue",
+      "mcp__linear-server__linear_create_issues"
     ]
   }
 }
