@@ -21,7 +21,7 @@ import type { PhysicalMediaRecord } from '@/types/discogs';
 const STORAGE_KEY = 'mako_vinyl_view_mode';
 
 export const VinylTab: React.FC = () => {
-  const { collection, isLoading, deleteRecord } = usePhysicalMedia();
+  const { collection, isLoading } = usePhysicalMedia();
   const { isConnected: discogsConnected } = useDiscogsAuth();
   const { sync: syncWithDiscogs, isPending: isSyncing } = useDiscogsSync();
   const [addOpen, setAddOpen] = useState(false);
@@ -163,7 +163,6 @@ export const VinylTab: React.FC = () => {
               key={record.id}
               record={record}
               onClick={() => setSelectedRecord(record)}
-              onRemove={deleteRecord}
             />
           ))}
           {filteredRecords.length === 0 && (

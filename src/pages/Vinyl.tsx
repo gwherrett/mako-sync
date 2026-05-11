@@ -13,7 +13,7 @@ import { AddVinylDialog } from '@/components/vinyl/AddVinylDialog';
 import type { PhysicalMediaRecord } from '@/types/discogs';
 
 const Vinyl: React.FC = () => {
-  const { collection, isLoading, deleteRecord } = usePhysicalMedia();
+  const { collection, isLoading } = usePhysicalMedia();
   const { isConnected: discogsConnected } = useDiscogsAuth();
   const { sync: syncWithDiscogs, isPending: isSyncing } = useDiscogsSync();
   const [addOpen, setAddOpen] = useState(false);
@@ -130,7 +130,6 @@ const Vinyl: React.FC = () => {
                 key={record.id}
                 record={record}
                 onClick={() => navigate('/vinyl', { state: { selectedId: record.id } })}
-                onRemove={deleteRecord}
               />
             ))}
           </div>

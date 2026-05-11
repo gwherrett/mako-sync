@@ -1,17 +1,16 @@
 import React from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Disc3, Trash2 } from 'lucide-react';
+
+import { Disc3 } from 'lucide-react';
 import type { PhysicalMediaRecord } from '@/types/discogs';
 
 interface VinylCardProps {
   record: PhysicalMediaRecord;
   onClick: () => void;
-  onRemove: (id: string) => void;
 }
 
-export const VinylCard: React.FC<VinylCardProps> = ({ record, onClick, onRemove }) => {
+export const VinylCard: React.FC<VinylCardProps> = ({ record, onClick }) => {
 
   return (
     <Card
@@ -36,19 +35,6 @@ export const VinylCard: React.FC<VinylCardProps> = ({ record, onClick, onRemove 
             {'★'.repeat(record.rating)}{'☆'.repeat(5 - record.rating)}
           </span>
         )}
-        {/* Remove button — visible on hover */}
-        <Button
-          variant="destructive"
-          size="icon"
-          className="absolute bottom-2 right-2 h-7 w-7 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity"
-          onClick={(e) => {
-            e.stopPropagation();
-            onRemove(record.id);
-          }}
-          title="Remove record"
-        >
-          <Trash2 className="h-3.5 w-3.5" />
-        </Button>
       </div>
 
       <CardContent className="p-3">

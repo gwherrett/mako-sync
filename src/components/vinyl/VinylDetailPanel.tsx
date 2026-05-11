@@ -1,10 +1,10 @@
 import React, { useEffect } from 'react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
+
 import { Separator } from '@/components/ui/separator';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Loader2, Disc3, CheckCircle2, XCircle, Trash2 } from 'lucide-react';
+import { Loader2, Disc3, CheckCircle2, XCircle } from 'lucide-react';
 import { useVinylMissingTracks } from '@/hooks/useVinylMissingTracks';
 import { usePhysicalMedia } from '@/hooks/usePhysicalMedia';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -37,7 +37,7 @@ function RatingDisplay({ rating }: { rating: number | null }) {
 
 export const VinylDetailPanel: React.FC<VinylDetailPanelProps> = ({ record, open, onClose }) => {
   const { matched, missing, isLoading: isMatching } = useVinylMissingTracks(record);
-  const { deleteRecord, isDeleting } = usePhysicalMedia();
+
   const isMobile = useIsMobile();
 
   // Push a history entry when the sheet opens so Android back-swipe closes
@@ -54,12 +54,6 @@ export const VinylDetailPanel: React.FC<VinylDetailPanelProps> = ({ record, open
       }
     };
   }, [open, onClose]);
-
-  const handleDelete = async () => {
-    if (!record) return;
-    await deleteRecord(record.id);
-    onClose();
-  };
 
   if (!record) return null;
 
@@ -160,19 +154,7 @@ export const VinylDetailPanel: React.FC<VinylDetailPanelProps> = ({ record, open
           )}
         </ScrollArea>
 
-        {/* Actions */}
-        <div className="flex items-center pt-4 border-t mt-2">
-          <Button
-            variant="ghost"
-            size="sm"
-            className="text-destructive hover:text-destructive"
-            onClick={handleDelete}
-            disabled={isDeleting}
-          >
-            <Trash2 className="h-4 w-4 mr-1" />
-            {isDeleting ? 'Removing…' : 'Remove'}
-          </Button>
-        </div>
+
       </SheetContent>
     </Sheet>
   );
