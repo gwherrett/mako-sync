@@ -15,7 +15,7 @@ describe('downloadProcessor.service', () => {
       ['tech house', 'House'],
       ['drum and bass', 'Drum & Bass'],
       ['hip hop', 'Hip Hop'],
-      ['uk garage', 'UK Garage'],
+      ['uk garage', 'Bass'],
       ['pop', 'Pop'],
     ]);
 
