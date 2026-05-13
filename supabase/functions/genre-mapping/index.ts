@@ -18,7 +18,7 @@ const VALID_SUPER_GENRES = [
   'Drum & Bass', 'Electronic', 'Folk', 'Hip Hop', 'House',
   'Indie-Alternative', 'Jazz', 'Latin', 'Metal', 'Orchestral',
   'Other', 'Pop', 'Reggae-Dancehall', 'Rock', 'Seasonal',
-  'Soul-Funk', 'UK Garage', 'Urban', 'World'
+  'Soul-Funk', 'Urban', 'World'
 ] as const;
 
 const genreMappingSchema = z.object({
