@@ -16,7 +16,7 @@ import { SUPER_GENRES } from '@/types/genreMapping';
  * 
  * Expected core genres (alphabetically):
  * - Blues, Classical, Country/Folk, Disco, Drum & Bass, Electronic, Hip Hop, 
- *   House, Jazz, Latin, Metal, Other, Pop, Reggae/Dancehall, Rock, UK Garage, Urban, World
+ *   House, Jazz, Latin, Metal, Other, Pop, Reggae/Dancehall, Rock, Urban, World
  */
 
 /**

@@ -45,12 +45,12 @@ INSERT INTO public.discogs_term_map_base (discogs_term, term_type, super_genre) 
   ('Ghetto House',         'style', 'House'),
   ('Hard House',           'style', 'House'),
 
--- UK Garage
-  ('UK Garage',            'style', 'UK Garage'),
-  ('2-Step',               'style', 'UK Garage'),
-  ('Speed Garage',         'style', 'UK Garage'),
-  ('Bassline',             'style', 'UK Garage'),
-  ('4x4',                  'style', 'UK Garage'),
+-- UK Garage (maps to Bass)
+  ('UK Garage',            'style', 'Bass'),
+  ('2-Step',               'style', 'Bass'),
+  ('Speed Garage',         'style', 'Bass'),
+  ('Bassline',             'style', 'Bass'),
+  ('4x4',                  'style', 'Bass'),
 
 -- Drum & Bass
   ('Drum n Bass',          'style', 'Drum & Bass'),
