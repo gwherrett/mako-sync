@@ -87,11 +87,13 @@ export class GenreMappingService {
       throw new Error('No active session');
     }
 
-    const response = await fetch(`https://bzzstdpfmyqttnzhgaoa.supabase.co/functions/v1/genre-mapping?export=csv`, {
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+    const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+    const response = await fetch(`${supabaseUrl}/functions/v1/genre-mapping?export=csv`, {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${session.access_token}`,
-        'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ6enN0ZHBmbXlxdHRuemhnYW9hIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDg0NzI5NzMsImV4cCI6MjA2NDA0ODk3M30.NXT4XRuPilV2AV6KYY56-vk3AqZ8I2DQKkVjfbMcWoI'
+        'apikey': supabaseAnonKey
       }
     });
 
