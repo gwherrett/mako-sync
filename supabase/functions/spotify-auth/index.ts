@@ -233,6 +233,9 @@ serve(async (req) => {
       spotifyUserId: profileData.id
     });
 
+    const BUDGET_MS = 120_000;
+    const functionStartTime = Date.now();
+
     const dbUrl = Deno.env.get('SUPABASE_DB_URL')
     logWithContext('info', 'Database connection check', {
       hasDbUrl: !!dbUrl,
@@ -248,6 +251,14 @@ serve(async (req) => {
           timestamp: new Date().toISOString(),
           debug: 'SUPABASE_DB_URL missing'
         }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    if (Date.now() - functionStartTime > BUDGET_MS) {
+      logWithContext('error', 'Time budget exceeded before pool operations', { userId: user.id });
+      return new Response(
+        JSON.stringify({ error: 'Request timed out before token storage', code: 'TIMEOUT', timestamp: new Date().toISOString() }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
@@ -384,7 +395,9 @@ serve(async (req) => {
       refreshTokenSecretId
     });
 
-    const { error: dbError } = await supabaseClient
+    // Use the service-role admin client so this write bypasses RLS — edge
+    // functions writing auth data should not rely on user-scoped RLS.
+    const { error: dbError } = await supabaseAdmin
       .from('spotify_connections')
       .upsert(connectionData, { onConflict: 'user_id' })
 
@@ -452,8 +465,16 @@ serve(async (req) => {
       }
     }
 
-    // Close the pool
-    await pool.end()
+    // Close the pool — wrap in try-catch: vault + upsert already succeeded so a
+    // teardown error must not produce a 500 for the user.
+    try {
+      await pool.end()
+    } catch (poolEndError: any) {
+      logWithContext('warn', 'pool.end() failed during teardown (non-fatal — connection already succeeded)', {
+        userId: user.id,
+        error: poolEndError.message
+      });
+    }
 
     return new Response(
       JSON.stringify({
