@@ -9,8 +9,8 @@ echo "🔍 Scanning staged files for secrets..."
 STAGED=$(git diff --cached --name-only)
 
 if [ -n "$STAGED" ]; then
-  # Patterns: service role JWTs (role:service_role), private key headers, common secret env var values
-  SECRET_PATTERN='SUPABASE_SERVICE_ROLE_KEY\s*=\s*["\x27]?ey|"role":"service_role"|-----BEGIN (RSA |EC )?PRIVATE KEY|SPOTIFY_CLIENT_SECRET\s*=\s*["\x27]?[A-Za-z0-9]{20,}|ANTHROPIC_API_KEY\s*=\s*["\x27]?sk-ant-'
+  # Patterns: service role JWTs, private key headers, server-side secrets, VITE_-prefixed secrets (must never be in browser bundle)
+  SECRET_PATTERN='SUPABASE_SERVICE_ROLE_KEY\s*=\s*["\x27]?ey|"role":"service_role"|-----BEGIN (RSA |EC )?PRIVATE KEY|SPOTIFY_CLIENT_SECRET\s*=\s*["\x27]?[A-Za-z0-9]{20,}|ANTHROPIC_API_KEY\s*=\s*["\x27]?sk-ant-|VITE_[A-Z_]*(SERVICE_ROLE|CLIENT_SECRET|ANTHROPIC|PRIVATE)'
 
   if echo "$STAGED" | xargs git show HEAD: 2>/dev/null | grep -qE "$SECRET_PATTERN"; then
     echo "❌ Potential secret detected in staged files. Commit blocked."

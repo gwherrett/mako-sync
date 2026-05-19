@@ -131,6 +131,27 @@ supabase.auth.onAuthStateChange((event) => {
 });
 ```
 
+## Environment Variables
+
+### VITE_ prefix — public by design
+
+Any variable prefixed with `VITE_` is compiled into the client-side JavaScript bundle and is **visible to anyone** who opens browser devtools or inspects the build output. This is intentional for the following vars:
+
+| Variable | Why it's public |
+|----------|----------------|
+| `VITE_SUPABASE_URL` | Required by the Supabase JS client in the browser |
+| `VITE_SUPABASE_ANON_KEY` / `VITE_SUPABASE_PUBLISHABLE_KEY` | Supabase anon key is designed to be public — security is enforced by RLS policies, not key secrecy |
+| `VITE_SUPABASE_PROJECT_ID` | Derived from the URL; not a secret |
+| `VITE_SPOTIFY_CLIENT_ID` | Required for PKCE OAuth flow initiated in the browser |
+
+**Never add `VITE_` prefix to server-side-only secrets.** The following must never appear in the browser bundle:
+- `SUPABASE_SERVICE_ROLE_KEY` — bypasses RLS; Edge Functions only
+- `SPOTIFY_CLIENT_SECRET` — server-side token exchange only
+- `DISCOGS_CONSUMER_SECRET` — server-side OAuth only
+- `ANTHROPIC_API_KEY` — Edge Functions only
+
+The pre-commit hook will block any staged file containing `VITE_` variable names that match secret patterns (`SERVICE_ROLE`, `CLIENT_SECRET`, `ANTHROPIC_API_KEY`). See `.env.example` for the full annotated variable list.
+
 ## Deployment
 
 Hosted on **Vercel**. Pushing to `main` deploys to production and also generates a unique preview URL for that commit.
