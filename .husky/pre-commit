@@ -1,11 +1,30 @@
 #!/usr/bin/env sh
 . "$(dirname -- "$0")/_/husky.sh"
 
-# Run Mako Agents validation
+# ── Secret scan ───────────────────────────────────────────────────────────────
+# Block commits that contain patterns matching known secret formats.
+# Checks staged files only.
+echo "🔍 Scanning staged files for secrets..."
+
+STAGED=$(git diff --cached --name-only)
+
+if [ -n "$STAGED" ]; then
+  # Patterns: service role JWTs (role:service_role), private key headers, common secret env var values
+  SECRET_PATTERN='SUPABASE_SERVICE_ROLE_KEY\s*=\s*["\x27]?ey|"role":"service_role"|-----BEGIN (RSA |EC )?PRIVATE KEY|SPOTIFY_CLIENT_SECRET\s*=\s*["\x27]?[A-Za-z0-9]{20,}|ANTHROPIC_API_KEY\s*=\s*["\x27]?sk-ant-'
+
+  if echo "$STAGED" | xargs git show HEAD: 2>/dev/null | grep -qE "$SECRET_PATTERN"; then
+    echo "❌ Potential secret detected in staged files. Commit blocked."
+    echo "   Run: git diff --cached | grep -E 'SERVICE_ROLE|PRIVATE KEY|CLIENT_SECRET|ANTHROPIC'"
+    exit 1
+  fi
+fi
+
+echo "✅ Secret scan passed."
+
+# ── Mako Agents validation ────────────────────────────────────────────────────
 echo "🤖 Running Mako Agents validation..."
 npm run agents:validate
 
-# Exit with error code if validation fails
 if [ $? -ne 0 ]; then
   echo "❌ Validation failed. Please fix the issues before committing."
   exit 1

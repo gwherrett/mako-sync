@@ -1,3 +1,10 @@
+# Environment variable files — never commit secrets
+.env
+.env.local
+.env.*.local
+.env.production
+.env.staging
+
 # Logs
 logs
 *.log
