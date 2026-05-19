@@ -8,7 +8,7 @@ interface VinylListViewProps {
   onSelect: (record: PhysicalMediaRecord) => void;
 }
 
-type SortField = 'artist' | 'title' | 'year' | 'label' | 'lowest_price_cad' | 'created_at';
+type SortField = 'artist' | 'title' | 'year' | 'label' | 'lowest_price_cad' | 'suggested_price_cad' | 'created_at';
 type SortDir = 'asc' | 'desc';
 
 function formatCAD(value: number | null): string {
@@ -44,6 +44,7 @@ export const VinylListView: React.FC<VinylListViewProps> = ({ records, onSelect 
     else if (sortField === 'year') { av = a.year ?? 0; bv = b.year ?? 0; }
     else if (sortField === 'label') { av = a.label ?? ''; bv = b.label ?? ''; }
     else if (sortField === 'lowest_price_cad') { av = a.lowest_price_cad ?? -1; bv = b.lowest_price_cad ?? -1; }
+    else if (sortField === 'suggested_price_cad') { av = a.suggested_price_cad ?? -1; bv = b.suggested_price_cad ?? -1; }
     else if (sortField === 'created_at') { av = a.created_at ?? ''; bv = b.created_at ?? ''; }
 
     if (av === null || av === '' || av === -1) return sortDir === 'asc' ? 1 : -1;
@@ -85,6 +86,7 @@ export const VinylListView: React.FC<VinylListViewProps> = ({ records, onSelect 
             {th('Label', 'label')}
             <TableHead className="px-3 py-1.5 font-mono text-xs">Cat#</TableHead>
             {th('Low (CAD)', 'lowest_price_cad')}
+            {th('Suggested (VG+)', 'suggested_price_cad')}
             {th('Date Added', 'created_at')}
           </TableRow>
         </TableHeader>
@@ -114,6 +116,7 @@ export const VinylListView: React.FC<VinylListViewProps> = ({ records, onSelect 
               <TableCell className="px-3 py-1.5 max-w-[120px] truncate">{record.label ?? '—'}</TableCell>
               <TableCell className="px-3 py-1.5 font-mono text-xs">{record.catalogue_number ?? '—'}</TableCell>
               <TableCell className="px-3 py-1.5 tabular-nums text-sm">{formatCAD(record.lowest_price_cad)}</TableCell>
+              <TableCell className="px-3 py-1.5 tabular-nums text-sm">{formatCAD(record.suggested_price_cad)}</TableCell>
               <TableCell className="px-3 py-1.5 tabular-nums text-xs text-muted-foreground">
                 {record.created_at ? new Date(record.created_at).toLocaleDateString('en-CA') : '—'}
               </TableCell>

@@ -109,7 +109,7 @@ def fetch_pending_records(supabase_url: str, service_key: str, limit: int | None
         'Authorization': f'Bearer {service_key}',
     }
     params = [
-        ('select', 'id,discogs_release_id,artist,title,condition'),
+        ('select', 'id,discogs_release_id,artist,title'),
         ('discogs_release_id', 'not.is.null'),
         ('suggested_price_cad', 'is.null'),
         ('order', 'created_at.asc'),
@@ -123,6 +123,8 @@ def fetch_pending_records(supabase_url: str, service_key: str, limit: int | None
         params=params,
         timeout=30,
     )
+    if not resp.ok:
+        print(f'  Supabase error {resp.status_code}: {resp.text}', file=sys.stderr)
     resp.raise_for_status()
     return resp.json()
 
@@ -203,7 +205,7 @@ def main():
 
     for i, record in enumerate(records):
         release_id    = record['discogs_release_id']
-        condition_key = resolve_condition_key(record.get('condition'))
+        condition_key = DEFAULT_CONDITION
         label = (
             f"[{i+1}/{len(records)}] {record['artist']} – {record['title']} "
             f"(release {release_id}, condition: {condition_key})"

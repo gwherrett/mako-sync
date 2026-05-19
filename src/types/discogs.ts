@@ -72,6 +72,7 @@ export interface PhysicalMediaRecord {
   styles: string[] | null;
   super_genre: string | null;
   lowest_price_cad: number | null;
+  suggested_price_cad: number | null;
   created_at: string;
   updated_at: string;
 }
