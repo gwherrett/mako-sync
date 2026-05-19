@@ -4,7 +4,7 @@ Backfill suggested_price_cad on physical_media rows using the Discogs
 /marketplace/price_suggestions/{release_id} endpoint (requires authentication).
 
 Matches the returned price to each record's `condition` field.
-Falls back to VG+ when condition is not set or not recognised.
+Falls back to VG when condition is not set or not recognised.
 
 Usage:
   # Dry run (default) — prints what would be updated
@@ -15,6 +15,9 @@ Usage:
 
   # Limit to first N records (useful for testing)
   python backfill_suggested_price_cad.py --apply --limit 10
+
+  # Overwrite existing values (re-run with updated default)
+  python backfill_suggested_price_cad.py --apply --force
 
 Required env vars:
   SUPABASE_URL              e.g. https://xyzxyz.supabase.co
@@ -35,7 +38,7 @@ if os.name == 'nt':
     sys.stdout.reconfigure(encoding='utf-8')
 
 DISCOGS_RATE_DELAY = 1.1  # seconds between API calls (~54/min, under 60/min cap)
-DEFAULT_CONDITION = 'Very Good Plus (VG+)'
+DEFAULT_CONDITION = 'Very Good (VG)'
 
 # Map common shorthand / full-name variants stored in DB → Discogs API condition key
 _CONDITION_MAP: dict[str, str] = {
@@ -102,7 +105,7 @@ def get_env(name: str, *fallbacks: str) -> str:
     sys.exit(1)
 
 
-def fetch_pending_records(supabase_url: str, service_key: str, limit: int | None) -> list[dict]:
+def fetch_pending_records(supabase_url: str, service_key: str, limit: int | None, force: bool = False) -> list[dict]:
     """Fetch physical_media rows that need a suggested_price_cad backfill."""
     headers = {
         'apikey': service_key,
@@ -111,9 +114,10 @@ def fetch_pending_records(supabase_url: str, service_key: str, limit: int | None
     params = [
         ('select', 'id,discogs_release_id,artist,title'),
         ('discogs_release_id', 'not.is.null'),
-        ('suggested_price_cad', 'is.null'),
         ('order', 'created_at.asc'),
     ]
+    if not force:
+        params.append(('suggested_price_cad', 'is.null'))
     if limit:
         params.append(('limit', str(limit)))
 
@@ -186,15 +190,16 @@ def main():
     )
     parser.add_argument('--apply', action='store_true', help='Write values to database (default: dry run)')
     parser.add_argument('--limit', type=int, default=None, help='Max records to process')
+    parser.add_argument('--force', action='store_true', help='Overwrite records that already have a value')
     args = parser.parse_args()
 
     supabase_url    = get_env('SUPABASE_URL', 'VITE_SUPABASE_URL').rstrip('/')
     service_key     = get_env('SUPABASE_SERVICE_KEY')
     personal_token  = get_env('DISCOGS_PERSONAL_TOKEN')
 
-    print(f'Mode: {"APPLY" if args.apply else "DRY RUN"}')
+    print(f'Mode: {"APPLY" if args.apply else "DRY RUN"}{"  (force overwrite)" if args.force else ""}')
     print('Fetching records with missing suggested_price_cad…')
-    records = fetch_pending_records(supabase_url, service_key, args.limit)
+    records = fetch_pending_records(supabase_url, service_key, args.limit, args.force)
     print(f'Found {len(records)} record(s) to process\n')
 
     if not records:

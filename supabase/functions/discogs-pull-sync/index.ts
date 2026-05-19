@@ -144,6 +144,7 @@ interface DiscogsEnrichedItem extends DiscogsCollectionItem {
   _tracklist: Array<{ position: string; title: string }> | null
   _country: string | null
   _lowest_price_cad: number | null
+  _suggested_price_cad: number | null
 }
 
 interface DiscogsCollectionResponse {
@@ -270,14 +271,16 @@ async function pullFromDiscogs(
     const releaseId = item.basic_information.id
     const releaseUrl = `https://api.discogs.com/releases/${releaseId}`
     const statsBaseUrl = `https://api.discogs.com/marketplace/stats/${releaseId}`
+    const suggestionsBaseUrl = `https://api.discogs.com/marketplace/price_suggestions/${releaseId}`
 
     try {
-      const [releaseAuth, statsAuth] = await Promise.all([
+      const [releaseAuth, statsAuth, suggestionsAuth] = await Promise.all([
         buildOAuthHeader('GET', releaseUrl, consumerKey, consumerSecret, accessToken, accessTokenSecret),
         buildOAuthHeader('GET', statsBaseUrl, consumerKey, consumerSecret, accessToken, accessTokenSecret, { currency: 'CAD' }),
+        buildOAuthHeader('GET', suggestionsBaseUrl, consumerKey, consumerSecret, accessToken, accessTokenSecret),
       ])
 
-      const [releaseResp, statsResp] = await Promise.all([
+      const [releaseResp, statsResp, suggestionsResp] = await Promise.all([
         fetch(releaseUrl, {
           signal: AbortSignal.timeout(10000),
           headers: { Authorization: releaseAuth, 'User-Agent': 'MakoSync/1.0', Accept: 'application/json' },
@@ -285,6 +288,10 @@ async function pullFromDiscogs(
         fetch(`${statsBaseUrl}?currency=CAD`, {
           signal: AbortSignal.timeout(10000),
           headers: { Authorization: statsAuth, 'User-Agent': 'MakoSync/1.0', Accept: 'application/json' },
+        }),
+        fetch(suggestionsBaseUrl, {
+          signal: AbortSignal.timeout(10000),
+          headers: { Authorization: suggestionsAuth, 'User-Agent': 'MakoSync/1.0', Accept: 'application/json' },
         }),
       ])
 
@@ -309,15 +316,23 @@ async function pullFromDiscogs(
         log('warn', 'Pull: marketplace stats fetch failed', { releaseId, status: statsResp.status })
       }
 
-      enriched.push({ ...item, _tracklist: tracklist, _country: country, _lowest_price_cad: lowestPriceCad })
+      let suggestedPriceCad: number | null = null
+      if (suggestionsResp.ok) {
+        const suggestions = await suggestionsResp.json()
+        suggestedPriceCad = suggestions['Very Good (VG)']?.value ?? null
+      } else {
+        log('warn', 'Pull: price suggestions fetch failed', { releaseId, status: suggestionsResp.status })
+      }
+
+      enriched.push({ ...item, _tracklist: tracklist, _country: country, _lowest_price_cad: lowestPriceCad, _suggested_price_cad: suggestedPriceCad })
     } catch (err) {
       log('warn', 'Pull: enrichment error, inserting without enrichment', { releaseId, error: String(err) })
-      enriched.push({ ...item, _tracklist: null, _country: null, _lowest_price_cad: null })
+      enriched.push({ ...item, _tracklist: null, _country: null, _lowest_price_cad: null, _suggested_price_cad: null })
     }
 
-    // Maintain ~2.2 s between request starts to stay within Discogs 60 req/min limit
+    // Maintain ~3.3 s between request starts to stay within Discogs 60 req/min limit (3 calls/item)
     const itemElapsed = Date.now() - itemStart
-    const waitMs = Math.max(0, 2200 - itemElapsed)
+    const waitMs = Math.max(0, 3300 - itemElapsed)
     if (waitMs > 0 && i < newItems.length - 1) {
       await new Promise(r => setTimeout(r, waitMs))
     }
@@ -345,6 +360,7 @@ async function pullFromDiscogs(
     tracklist: item._tracklist,
     country: item._country,
     lowest_price_cad: item._lowest_price_cad,
+    suggested_price_cad: item._suggested_price_cad,
     pressing: null,
     notes: null,
   }))
