@@ -50,43 +50,12 @@ export const clearAllCaches = async (): Promise<void> => {
 
 export const performFullCleanup = async (): Promise<void> => {
   console.log('Starting service worker and cache cleanup...');
-  
+
   await Promise.all([
     unregisterServiceWorkers(),
     clearAllCaches()
   ]);
-  
-  // Clear localStorage and sessionStorage for auth-related data
-  try {
-    // Clear specific auth-related storage
-    const authKeys = Object.keys(localStorage).filter(key => 
-      key.includes('auth') || 
-      key.includes('token') || 
-      key.includes('session') ||
-      key.includes('supabase')
-    );
-    
-    authKeys.forEach(key => {
-      localStorage.removeItem(key);
-      console.log('Cleared localStorage key:', key);
-    });
-    
-    const sessionAuthKeys = Object.keys(sessionStorage).filter(key => 
-      key.includes('auth') || 
-      key.includes('token') || 
-      key.includes('session') ||
-      key.includes('supabase')
-    );
-    
-    sessionAuthKeys.forEach(key => {
-      sessionStorage.removeItem(key);
-      console.log('Cleared sessionStorage key:', key);
-    });
-    
-  } catch (error) {
-    console.warn('Failed to clear storage:', error);
-  }
-  
+
   console.log('Service worker and cache cleanup completed');
 };
 
