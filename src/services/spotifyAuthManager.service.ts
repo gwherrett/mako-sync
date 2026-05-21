@@ -259,11 +259,31 @@ export class SpotifyAuthManager {
           try {
             if (!connection.access_token || !connection.refresh_token) {
               healthStatus = 'error';
+            } else if (connection.expires_at && new Date(connection.expires_at) < new Date()) {
+              healthStatus = 'warning';
             }
           } catch (error) {
             logger.spotify('Token health validation failed', { error }, 'warn');
             healthStatus = 'warning';
           }
+        }
+
+        const isExpired = !!connection.expires_at && new Date(connection.expires_at) < new Date();
+
+        if (isExpired) {
+          logger.spotify('Connection found but access token is expired', undefined, 'warn');
+          this.updateState({
+            isConnected: false,
+            connection: connection as SpotifyConnection,
+            error: 'Spotify token expired — please reconnect',
+            isLoading: false,
+            healthStatus: 'error',
+          });
+          return {
+            success: false,
+            error: 'Spotify token expired — please reconnect',
+            metadata: { duration }
+          };
         }
 
         this.updateState({
