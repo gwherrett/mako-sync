@@ -85,19 +85,31 @@ serve(async (req) => {
 
       if (collectionError) throw collectionError;
 
+      // Fetch all user overrides so non-base terms can resolve their mapped value
+      const { data: userOverrides } = await adminSupabase
+        .from('discogs_genre_map_overrides')
+        .select('discogs_term, super_genre')
+        .eq('user_id', user.id);
+
+      const overrideMap = new Map<string, string>(
+        (userOverrides ?? []).map(o => [o.discogs_term, o.super_genre])
+      );
+
       const knownTerms = new Set(mapping?.map(m => m.discogs_term) ?? []);
-      const unmapped: Array<{ discogs_term: string; term_type: string; super_genre: null; is_overridden: false }> = [];
+      const unmapped: Array<{ discogs_term: string; term_type: string; super_genre: string | null; is_overridden: boolean }> = [];
 
       for (const record of collectionTerms ?? []) {
         for (const genre of record.genres ?? []) {
           if (!knownTerms.has(genre)) {
-            unmapped.push({ discogs_term: genre, term_type: 'genre', super_genre: null, is_overridden: false });
+            const override = overrideMap.get(genre) ?? null;
+            unmapped.push({ discogs_term: genre, term_type: 'genre', super_genre: override, is_overridden: override !== null });
             knownTerms.add(genre);
           }
         }
         for (const style of record.styles ?? []) {
           if (!knownTerms.has(style)) {
-            unmapped.push({ discogs_term: style, term_type: 'style', super_genre: null, is_overridden: false });
+            const override = overrideMap.get(style) ?? null;
+            unmapped.push({ discogs_term: style, term_type: 'style', super_genre: override, is_overridden: override !== null });
             knownTerms.add(style);
           }
         }
