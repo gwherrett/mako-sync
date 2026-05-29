@@ -1,26 +1,45 @@
 # Mako Sync
 
-Mako Sync is a metadata editor and syncing tool that helps music collectors bridge the gap between their Spotify library and local music collection. It automates the workflow of identifying missing tracks, downloading them via Slskd, and organizing files by Supergenre for DJ software.
+Mako Sync is a local music collection hub for DJs and music collectors. Your local files are the source of truth — Spotify and Discogs connect as enrichment layers, giving you genre metadata, library comparisons, and vinyl collection management without forcing a rigid workflow.
 
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.5-blue)](https://www.typescriptlang.org/)
 [![React](https://img.shields.io/badge/React-18.3-61dafb)](https://reactjs.org/)
 [![Supabase](https://img.shields.io/badge/Supabase-Latest-3ECF8E)](https://supabase.com/)
 
-## Who It's For
+## What It Does
 
-DJs and music collectors who want to:
-- Identify gaps in their local music library compared to Spotify
-- Organize tracks by Supergenre (24 DJ-friendly categories)
-- Automate the Spotify → Slskd → Local file workflow
-- Maintain consistent genre tagging across their collection
+**Local Files** are the core. Scan your MP3, FLAC, and M4A collection — metadata is extracted, Supergenres are assigned, and everything is available for comparison and tagging.
 
-## The 5-Step Workflow
+**Spotify** connects as an enrichment source. Sync your Liked songs to pull in genre data, compare your Spotify library against local files to find gaps, and use AI suggestions to fill in missing genres.
 
-1. **Spotify Sync** - Import your Liked songs from Spotify. Tracks are auto-mapped to Supergenres based on artist metadata.
-2. **Local Files** - Select folders to scan your local collection. Metadata is extracted and mapped to Supergenres for matching.
-3. **No Genre Tracks** - Assign Supergenres to tracks without Spotify genre data using AI suggestions or manual selection.
-4. **Missing Tracks** - Compare your Spotify library to local files. Select artists and push missing tracks to Slskd for wishlist searches.
-5. **Process Downloads** - Map ID3 genres to Supergenres and write tags for MediaMonkey collection management.
+**Discogs** connects as a vinyl collection layer. Sync your Discogs collection, browse records with pricing and tracklist data, and find which tracks from your vinyl are missing from your local digital files.
+
+These three integrations work independently — connect whichever ones are relevant to you.
+
+## Core Features
+
+### Local Files
+- Scan folders for MP3, FLAC, and M4A files
+- Extract and display metadata (title, artist, album, genre)
+- Map ID3 genres to Supergenres (24 DJ-friendly categories)
+- Write Supergenre tags back to files for MediaMonkey
+
+### Spotify Integration
+- OAuth sync of Liked songs
+- Auto-map artists to Supergenres via Spotify genre data
+- AI-assisted genre suggestions for unclassified tracks
+- Compare Spotify library vs local files — push missing tracks to Slskd wishlist
+
+### Discogs Integration
+- OAuth sync of your Discogs vinyl collection
+- Browse collection with cover art, pricing, and tracklist data
+- Find vinyl tracks missing from your local digital library
+- Incremental sync keeps your collection up to date
+
+### Genre Management
+- Supergenre mapping across Spotify and Discogs genre terms
+- Manual overrides for edge cases
+- Bulk genre assignment tools
 
 ## Quick Start
 
@@ -28,23 +47,17 @@ DJs and music collectors who want to:
 
 - Node.js 18+ and npm
 - Supabase account and project
-- Spotify Developer account
+- Spotify Developer account (optional)
+- Discogs account (optional)
 
 ### Installation
 
 ```bash
-# Clone the repository
 git clone https://github.com/gwherrett/mako-sync.git
 cd mako-sync
-
-# Install dependencies
 npm install
-
-# Set up environment variables
 cp .env.example .env
-# Edit .env with your Supabase and Spotify credentials
-
-# Start development server
+# Edit .env with your Supabase credentials and any integration keys
 npm run dev
 ```
 
@@ -52,41 +65,26 @@ npm run dev
 
 See the [docs/](docs/) folder for detailed documentation:
 
-- [Mako Sync Overview](docs/mako-sync-overview.md) - Complete workflow guide with diagrams
-- [Architecture](docs/architecture-mako-sync.md) - System design and technical architecture
-- [Product Requirements](docs/prd-mako-sync.md) - Product vision and features
+- [Mako Sync Overview](docs/mako-sync-overview.md) - Product overview and architecture
+- [Architecture](docs/architecture-mako-sync.md) - System design and technical details
 - [Deployment Guide](docs/reference/production-deployment.md) - Configuration and deployment
 
 ## Development
-
-### Available Commands
 
 ```bash
 # Development
 npm run dev              # Start dev server on port 8080
 npm run build            # Production build
-npm run preview          # Preview production build
 
-# Code Quality
+# Testing & Quality
 npm run lint             # Run ESLint
-npm run agents:validate  # Validate code patterns
 npx vitest run           # Run tests
+npx vitest run --coverage  # Run with coverage
 
-# Agents Framework
-npm run agents:validate  # Validate all agents
-npm run agents:test      # Run agent tests
+# Code Validation
+npm run agents:validate  # Validate code patterns
 npm run agents:fix       # Auto-fix violations
 ```
-
-### Code Validation
-
-This project uses the **Mako Agents Framework** - a TypeScript-based validation system enforcing coding patterns:
-
-- Debug rules (pagination, timeouts, session handling)
-- Auth rules (context consolidation, import patterns)
-- Code rules (service layer, edge functions, singletons)
-
-Run `npm run agents:validate` before committing.
 
 ## Tech Stack
 
@@ -102,13 +100,14 @@ Run `npm run agents:validate` before committing.
 - **Supabase Vault** - Secure token storage
 
 ### Integrations
-- **Spotify Web API** - Music data and OAuth
+- **Spotify Web API** - Music metadata and OAuth
+- **Discogs API** - Vinyl collection sync and release data
 - **Slskd** - P2P download automation
 - **MediaMonkey** - File organization via custom tags
 
 ## Security
 
-- OAuth 2.0 for Spotify authentication
+- OAuth 2.0 for Spotify and Discogs authentication
 - Tokens stored in Supabase Vault (encrypted at rest)
 - Row Level Security (RLS) on all tables
 - Service role keys only in edge functions
