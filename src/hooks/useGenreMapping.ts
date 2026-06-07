@@ -9,7 +9,7 @@ export const useGenreMapping = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
-  const { initialDataReady } = useAuth();
+  const { initialDataReady, dataFetchEnabled } = useAuth();
 
   const loadMappings = async () => {
     try {
@@ -122,9 +122,9 @@ export const useGenreMapping = () => {
   };
 
   useEffect(() => {
-    if (!initialDataReady) return;
+    if (!initialDataReady || !dataFetchEnabled) return;
     loadMappings();
-  }, [initialDataReady]);
+  }, [initialDataReady, dataFetchEnabled]);
 
   return {
     mappings,

@@ -1,14 +1,19 @@
 import { supabase } from '@/integrations/supabase/client';
+import { withTimeout } from '@/utils/promiseUtils';
 import type { GenreMapping, SuperGenre } from '@/types/genreMapping';
+
+const GENRE_MAPPING_INVOKE_TIMEOUT_MS = 120000;
 
 export class GenreMappingService {
   /**
    * Get effective genre mapping for current user (base + overrides)
    */
   static async getEffectiveMapping(): Promise<GenreMapping[]> {
-    const { data, error } = await supabase.functions.invoke('genre-mapping', {
-      method: 'GET'
-    });
+    const { data, error } = await withTimeout(
+      supabase.functions.invoke('genre-mapping', { method: 'GET' }),
+      GENRE_MAPPING_INVOKE_TIMEOUT_MS,
+      'Fetching genre mapping timed out'
+    );
 
     if (error) {
       throw new Error(`Failed to fetch genre mapping: ${error.message}`);
@@ -49,13 +54,17 @@ export class GenreMappingService {
    * Set user override for a Spotify genre
    */
   static async setOverride(spotifyGenre: string, superGenre: SuperGenre): Promise<void> {
-    const { error } = await supabase.functions.invoke('genre-mapping', {
-      method: 'POST',
-      body: {
-        spotify_genre: spotifyGenre,
-        super_genre: superGenre
-      }
-    });
+    const { error } = await withTimeout(
+      supabase.functions.invoke('genre-mapping', {
+        method: 'POST',
+        body: {
+          spotify_genre: spotifyGenre,
+          super_genre: superGenre
+        }
+      }),
+      GENRE_MAPPING_INVOKE_TIMEOUT_MS,
+      'Setting genre override timed out'
+    );
 
     if (error) {
       throw new Error(`Failed to set override: ${error.message}`);
@@ -66,12 +75,16 @@ export class GenreMappingService {
    * Remove user override for a Spotify genre
    */
   static async removeOverride(spotifyGenre: string): Promise<void> {
-    const { error } = await supabase.functions.invoke('genre-mapping', {
-      method: 'DELETE',
-      body: {
-        spotify_genre: spotifyGenre
-      }
-    });
+    const { error } = await withTimeout(
+      supabase.functions.invoke('genre-mapping', {
+        method: 'DELETE',
+        body: {
+          spotify_genre: spotifyGenre
+        }
+      }),
+      GENRE_MAPPING_INVOKE_TIMEOUT_MS,
+      'Removing genre override timed out'
+    );
 
     if (error) {
       throw new Error(`Failed to remove override: ${error.message}`);
