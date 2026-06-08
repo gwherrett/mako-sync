@@ -28,6 +28,7 @@ const SUPER_GENRES = [
   'Rock',
   'Seasonal',
   'Soul-Funk',
+  'Soundtrack',
   'Urban',
   'World'
 ];
