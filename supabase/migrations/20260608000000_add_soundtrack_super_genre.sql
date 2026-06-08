@@ -1,5 +1,16 @@
 -- Add 'Soundtrack' super genre
 
+-- Step -1: Defensively migrate any leftover 'UK Garage' values to 'Bass'.
+-- (Covers environments where the 20260513 "remove UK Garage" migration
+-- was not yet applied — the new enum below no longer includes that value.)
+UPDATE public.spotify_genre_map_base    SET super_genre = 'Bass' WHERE super_genre::text = 'UK Garage';
+UPDATE public.spotify_liked             SET super_genre = 'Bass' WHERE super_genre::text = 'UK Garage';
+UPDATE public.spotify_genre_map_overrides SET super_genre = 'Bass' WHERE super_genre::text = 'UK Garage';
+UPDATE public.discogs_term_map_base     SET super_genre = 'Bass' WHERE super_genre::text = 'UK Garage';
+UPDATE public.discogs_genre_map_overrides SET super_genre = 'Bass' WHERE super_genre::text = 'UK Garage';
+UPDATE public.local_mp3s               SET super_genre = 'Bass' WHERE super_genre = 'UK Garage';
+UPDATE public.physical_media           SET super_genre = 'Bass' WHERE super_genre = 'UK Garage';
+
 -- Step 0: Drop views that depend on super_genre columns
 DROP VIEW IF EXISTS v_effective_spotify_genre_map;
 DROP VIEW IF EXISTS public.v_effective_discogs_term_map;
