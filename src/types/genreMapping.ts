@@ -21,6 +21,7 @@ export type SuperGenre =
   | 'Rock'
   | 'Seasonal'
   | 'Soul-Funk'
+  | 'Soundtrack'
   | 'Urban'
   | 'World';
 
@@ -47,6 +48,7 @@ export const SUPER_GENRES: SuperGenre[] = [
   'Rock',
   'Seasonal',
   'Soul-Funk',
+  'Soundtrack',
   'Urban',
   'World'
 ];
