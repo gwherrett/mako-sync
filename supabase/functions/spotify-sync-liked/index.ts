@@ -434,17 +434,48 @@ serve(async (req) => {
       const url = `https://api.spotify.com/v1/me/tracks?limit=50&offset=${currentOffset}`
       console.log(`📥 Fetching tracks at offset ${currentOffset}`)
 
-      const response = await fetch(url, {
+      let response = await fetch(url, {
         headers: {
           'Authorization': `Bearer ${accessToken}`,
           'Content-Type': 'application/json',
         },
       })
 
+      // Rate limiting is retryable — don't burn the sync, pause and let the caller resume.
+      // (Leaving status as 'in_progress' keeps this pickup-able by the existing-sync
+      // resume check, unlike a hard 'failed' which forces the next run into incremental mode.)
+      if (response.status === 429) {
+        const retryAfterS = parseInt(response.headers.get('Retry-After') ?? '', 10) || 5
+        const remainingBudgetMs = BUDGET_MS - (Date.now() - syncStartTime)
+
+        if (retryAfterS * 1000 < remainingBudgetMs - 5000) {
+          console.warn(`⏳ Rate limited at offset ${currentOffset}, waiting ${retryAfterS}s before retry`)
+          await new Promise(resolve => setTimeout(resolve, retryAfterS * 1000))
+          response = await fetch(url, {
+            headers: {
+              'Authorization': `Bearer ${accessToken}`,
+              'Content-Type': 'application/json',
+            },
+          })
+        }
+
+        if (response.status === 429) {
+          console.warn(`⏳ Still rate limited at offset ${currentOffset} — saving progress and exiting for resume`)
+          await supabaseClient
+            .from('sync_progress')
+            .update({ last_offset: currentOffset, tracks_fetched: currentOffset })
+            .eq('sync_id', syncId)
+          return new Response(
+            JSON.stringify({ success: true, partial: true, message: 'Rate limited — will resume on next trigger', tracks_processed: newTracksCount, resume_offset: currentOffset, rate_limited: true }),
+            { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          )
+        }
+      }
+
       if (!response.ok) {
         const errorText = await response.text()
         console.error(`Failed to fetch tracks: ${response.status} ${response.statusText} - ${errorText}`)
-        
+
         // Update sync status to failed
         await supabaseClient
           .from('sync_progress')

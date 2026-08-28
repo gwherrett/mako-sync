@@ -67,7 +67,10 @@
       "Bash(do grep:*)",
       "Bash(echo \"$file\")",
       "Bash(ls /workspaces/mako-sync/*.env*)",
-      "mcp__linear-server__list_projects"
+      "mcp__linear-server__list_projects",
+      "Bash(git -C /workspaces/mako-sync log --since=\"30 days ago\" --oneline -- supabase/functions/spotify-sync-liked src/services/spotifyAuthManager.service.ts src/components/SpotifySyncButton.tsx src/hooks/useUnifiedSpotifyAuth.ts)",
+      "Bash(git -C /workspaces/mako-sync log -3 --format=\"%h %ad %s\" --date=short)",
+      "Bash(npx supabase *)"
     ]
   }
 }

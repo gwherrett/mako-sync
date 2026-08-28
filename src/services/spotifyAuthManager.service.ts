@@ -511,7 +511,10 @@ export class SpotifyAuthManager {
     }
   }
 
-  private async performSync(forceFullSync: boolean): Promise<SpotifyOperationResult> {
+  private static readonly MAX_RESUME_ATTEMPTS = 20;
+
+  private async performSync(forceFullSync: boolean, resumeAttempt: number = 0): Promise<SpotifyOperationResult> {
+    const startedAt = Date.now();
     try {
       const { session } = await sessionCache.getSession(false, 'spotify-sync');
 
@@ -532,10 +535,14 @@ export class SpotifyAuthManager {
         throw new Error(await extractFunctionError(response.error));
       }
 
-      // Partial sync: function hit the 120s time budget, progress saved — resume automatically
+      // Partial sync: function hit the time budget or a rate limit, progress saved — resume automatically
       if (response.data?.partial) {
-        logger.spotify('Sync paused for resume', { resume_offset: response.data.resume_offset });
-        return this.performSync(forceFullSync);
+        if (resumeAttempt >= SpotifyAuthManager.MAX_RESUME_ATTEMPTS) {
+          logger.spotify('Sync resume attempts exhausted', { resumeAttempt }, 'error');
+          return { success: false, error: 'Sync did not complete after repeated retries — try again shortly.' };
+        }
+        logger.spotify('Sync paused for resume', { resume_offset: response.data.resume_offset, resumeAttempt });
+        return this.performSync(forceFullSync, resumeAttempt + 1);
       }
 
       logger.spotify('Sync completed successfully');
@@ -543,7 +550,7 @@ export class SpotifyAuthManager {
         success: true,
         data: response.data,
         metadata: {
-          duration: Date.now() - Date.now()
+          duration: Date.now() - startedAt
         }
       };
     } catch (error: any) {
