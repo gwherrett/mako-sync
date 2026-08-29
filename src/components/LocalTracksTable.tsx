@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { MoreHorizontal, ChevronUp, ChevronDown, Filter, X, Edit, Trash2, FileCheck, AlertCircle, Copy } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { TrackFilters } from '@/components/common/TrackFilters';
-import { SUPER_GENRES } from '@/types/genreMapping';
+import { SUPER_GENRES, DANCE_ALL_VALUE, DANCE_SUPER_GENRES, applySuperGenreFilter } from '@/types/genreMapping';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { EditTrackMetadataDialog } from '@/components/EditTrackMetadataDialog';
@@ -172,16 +172,23 @@ const LocalTracksTable = ({ onTrackSelect, selectedTrack, refreshTrigger, isActi
 
       try {
         // Get genres that map to this supergenre from the mapping tables
-        const { data: mappings } = await supabase
+        const isDanceAll = selectedSuperGenre === DANCE_ALL_VALUE;
+        let mappingsQuery = supabase
           .from('spotify_genre_map_base')
-          .select('spotify_genre')
-          .eq('super_genre', selectedSuperGenre as Database['public']['Enums']['super_genre']);
+          .select('spotify_genre');
+        mappingsQuery = isDanceAll
+          ? mappingsQuery.in('super_genre', DANCE_SUPER_GENRES)
+          : mappingsQuery.eq('super_genre', selectedSuperGenre as Database['public']['Enums']['super_genre']);
+        const { data: mappings } = await mappingsQuery;
 
-        const { data: overrides } = await supabase
+        let overridesQuery = supabase
           .from('spotify_genre_map_overrides')
           .select('spotify_genre')
-          .eq('user_id', user.id)
-          .eq('super_genre', selectedSuperGenre as Database['public']['Enums']['super_genre']);
+          .eq('user_id', user.id);
+        overridesQuery = isDanceAll
+          ? overridesQuery.in('super_genre', DANCE_SUPER_GENRES)
+          : overridesQuery.eq('super_genre', selectedSuperGenre as Database['public']['Enums']['super_genre']);
+        const { data: overrides } = await overridesQuery;
 
         // Combine mapped genres
         const mappedGenres = new Set<string>();
@@ -264,7 +271,7 @@ const LocalTracksTable = ({ onTrackSelect, selectedTrack, refreshTrigger, isActi
       }
       if (yearFrom) query = query.gte('year', parseInt(yearFrom));
       if (yearTo) query = query.lte('year', parseInt(yearTo));
-      if (selectedSuperGenre) query = query.eq('super_genre', selectedSuperGenre);
+      query = applySuperGenreFilter(query, selectedSuperGenre);
       if (selectedArtist) query = query.eq('artist', selectedArtist);
       if (selectedAlbum) query = query.eq('album', selectedAlbum);
       if (selectedGenre) query = query.eq('genre', selectedGenre);

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Select, SelectContent, SelectItem, SelectSeparator, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Loader2, Download, Music, Users, Filter, Upload, MoreVertical, Pencil, Pin, Trash2, Disc3 } from 'lucide-react';
@@ -16,7 +16,7 @@ import { useSlskdSync } from '@/hooks/useSlskdSync';
 import { SlskdSyncProgress } from '@/components/SlskdSyncProgress';
 import { EditSpotifyTrackGenreDialog } from '@/components/EditSpotifyTrackGenreDialog';
 import type { SpotifyTrackForGenreEdit } from '@/components/EditSpotifyTrackGenreDialog';
-import type { SuperGenre } from '@/types/genreMapping';
+import { DANCE_ALL_VALUE, applySuperGenreFilter, getSuperGenreFilterLabel, type SuperGenre } from '@/types/genreMapping';
 import type { SlskdTrackToSync } from '@/types/slskd';
 
 type MissingSource = 'spotify' | 'vinyl' | 'both';
@@ -146,9 +146,7 @@ const MissingTracksAnalyzer: React.FC<MissingTracksAnalyzerProps> = ({
           .eq('user_id', user.id)
           .not('genre', 'is', null);
 
-        if (selectedGenre !== 'all') {
-          genreQuery = genreQuery.eq('super_genre', selectedGenre);
-        }
+        genreQuery = applySuperGenreFilter(genreQuery, selectedGenre);
 
         const { data: genreData } = await genreQuery.limit(50000);
         const genres = [...new Set(genreData?.map(d => d.genre).filter(Boolean) || [])].sort();
@@ -160,9 +158,7 @@ const MissingTracksAnalyzer: React.FC<MissingTracksAnalyzerProps> = ({
           .select('artist')
           .eq('user_id', user.id);
 
-        if (selectedGenre !== 'all') {
-          artistQuery = artistQuery.eq('super_genre', selectedGenre);
-        }
+        artistQuery = applySuperGenreFilter(artistQuery, selectedGenre);
         if (genreFilter !== 'all') {
           artistQuery = artistQuery.eq('genre', genreFilter);
         }
@@ -358,7 +354,7 @@ const MissingTracksAnalyzer: React.FC<MissingTracksAnalyzerProps> = ({
 
       // Build description of applied filters
       const filterParts = [];
-      if (selectedGenre !== 'all') filterParts.push(selectedGenre);
+      if (selectedGenre !== 'all') filterParts.push(getSuperGenreFilterLabel(selectedGenre));
       if (genreFilter !== 'all') filterParts.push(genreFilter);
       if (artistFilter !== 'all') filterParts.push(artistFilter);
       const genreText = filterParts.length > 0 ? filterParts.join(' → ') : 'collection';
@@ -486,6 +482,9 @@ const MissingTracksAnalyzer: React.FC<MissingTracksAnalyzerProps> = ({
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All ({superGenres.length})</SelectItem>
+                  <SelectSeparator />
+                  <SelectItem value={DANCE_ALL_VALUE}>Dance (all)</SelectItem>
+                  <SelectSeparator />
                   {superGenres.map((genre) => (
                     <SelectItem key={genre} value={genre}>
                       {genre}

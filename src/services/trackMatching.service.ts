@@ -11,6 +11,7 @@ import {
   type SpotifyTrack,
 } from './trackMatchingEngine';
 import type { PhysicalMediaRecord } from '@/types/discogs';
+import { applySuperGenreFilter } from '@/types/genreMapping';
 
 export interface VinylFlatTrack {
   recordId: string;
@@ -95,9 +96,7 @@ export class TrackMatchingService {
       .limit(50000); // Override default 1000 limit to handle large collections
 
     // Apply cascading filters
-    if (superGenreFilter && superGenreFilter !== 'all') {
-      query = query.eq('super_genre', superGenreFilter as any);
-    }
+    query = applySuperGenreFilter(query, superGenreFilter);
     if (genreFilter && genreFilter !== 'all') {
       query = query.eq('genre', genreFilter as any);
     }

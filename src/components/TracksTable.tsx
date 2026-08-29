@@ -32,6 +32,7 @@ import { openInNewTab } from '@/utils/linkUtils';
 import { DuplicateDetectionService } from '@/services/duplicateDetection.service';
 import { useGenreMappingOverrides } from '@/hooks/useGenreMappingOverrides';
 import { withQueryTimeout } from '@/utils/supabaseQuery';
+import { applySuperGenreFilter } from '@/types/genreMapping';
 
 interface SpotifyTrack {
   id: string;
@@ -166,7 +167,7 @@ const TracksTable = ({ onTrackSelect, selectedTrack, sharedSearchQuery = '', sha
       if (selectedGenre) query = query.eq('genre', selectedGenre);
       if (noGenre) query = query.is('genre', null);
       if (noSuperGenre) query = query.is('super_genre', null);
-      if (effectiveSuperGenre) query = query.eq('super_genre', effectiveSuperGenre as any);
+      else query = applySuperGenreFilter(query, effectiveSuperGenre);
       if (selectedArtist) query = query.eq('artist', selectedArtist);
       if (dateFilter === 'week') {
         const weekAgo = new Date();
@@ -262,8 +263,8 @@ const TracksTable = ({ onTrackSelect, selectedTrack, sharedSearchQuery = '', sha
         
         if (noSuperGenre) {
           query = query.is('super_genre', null);
-        } else if (effectiveSuperGenre) {
-          query = query.eq('super_genre', effectiveSuperGenre as any);
+        } else {
+          query = applySuperGenreFilter(query, effectiveSuperGenre);
         }
 
         return query.abortSignal(signal);
@@ -288,8 +289,8 @@ const TracksTable = ({ onTrackSelect, selectedTrack, sharedSearchQuery = '', sha
 
         if (noSuperGenre) {
           query = query.is('super_genre', null);
-        } else if (effectiveSuperGenre) {
-          query = query.eq('super_genre', effectiveSuperGenre as any);
+        } else {
+          query = applySuperGenreFilter(query, effectiveSuperGenre);
         }
 
         return query.abortSignal(signal);
