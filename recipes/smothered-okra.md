@@ -1,8 +1,16 @@
+---
+title: Smothered Okra
+description: Cajun style
+cuisine: Cajun
+tags:
+  - okra
+  - cajun
+  - stovetop
+---
+
 # Smothered Okra
 
-Cajun style.
-
----
+*Cajun style*
 
 ## Ingredients
 
