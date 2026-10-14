@@ -11,7 +11,10 @@ import { getArtistGenresWithCache } from '../../../supabase/functions/spotify-sy
 
 const TOKEN = 'test-access-token';
 
-function makeSupabaseMock(cachedRows: { spotify_artist_id: string; genres: string[] }[]) {
+function makeSupabaseMock(
+  cachedRows: { spotify_artist_id: string; genres: string[] }[],
+  upsert = vi.fn().mockResolvedValue({ error: null }),
+) {
   return {
     from: vi.fn().mockReturnValue({
       select: vi.fn().mockReturnValue({
@@ -19,9 +22,15 @@ function makeSupabaseMock(cachedRows: { spotify_artist_id: string; genres: strin
           gte: vi.fn().mockResolvedValue({ data: cachedRows, error: null }),
         }),
       }),
-      upsert: vi.fn().mockResolvedValue({ error: null }),
+      upsert,
     }),
   };
+}
+
+function cachedArtistIds(upsertMock: ReturnType<typeof vi.fn>): string[][] {
+  return upsertMock.mock.calls.map(call =>
+    (call[0] as { spotify_artist_id: string }[]).map(entry => entry.spotify_artist_id).sort(),
+  );
 }
 
 describe('getArtistGenresWithCache — cache-first priority', () => {
@@ -49,6 +58,7 @@ describe('getArtistGenresWithCache — cache-first priority', () => {
     expect(fetchMock).not.toHaveBeenCalled();
     expect(result.genreMap.get('artist1')).toEqual(['rock']);
     expect(result.genreMap.get('artist2')).toEqual(['pop']);
+    expect(result.complete).toBe(true);
   });
 
   it('only fetches uncached artists from Spotify', async () => {
@@ -161,5 +171,68 @@ describe('getArtistGenresWithCache — cache-first priority', () => {
 
     expect(fetchMock).not.toHaveBeenCalled();
     expect(result.genreMap.size).toBe(100);
+  });
+});
+
+describe('getArtistGenresWithCache — progress survives an interrupted lookup', () => {
+  const ids = Array.from({ length: 12 }, (_, i) => `artist${i}`);
+
+  function okFetch(onRequest?: () => void) {
+    return vi.fn().mockImplementation((url: string) => {
+      onRequest?.();
+      const id = url.split('/').pop();
+      return Promise.resolve({ ok: true, json: () => Promise.resolve({ id, genres: ['house'] }) });
+    });
+  }
+
+  beforeEach(() => {
+    vi.spyOn(console, 'log').mockImplementation(() => {});
+    vi.spyOn(console, 'warn').mockImplementation(() => {});
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('caches each window of fetched artists as it returns', async () => {
+    vi.stubGlobal('fetch', okFetch());
+    const upsertMock = vi.fn().mockResolvedValue({ error: null });
+
+    const result = await getArtistGenresWithCache(TOKEN, ids, makeSupabaseMock([], upsertMock));
+
+    expect(result.complete).toBe(true);
+    expect(cachedArtistIds(upsertMock)).toEqual([
+      ids.slice(0, 5).sort(),
+      ids.slice(5, 10).sort(),
+      ids.slice(10).sort(),
+    ]);
+  });
+
+  it('keeps earlier windows cached when the lookup fails partway', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockImplementation((url: string) => {
+      const id = url.split('/').pop()!;
+      if (ids.indexOf(id) >= 5) {
+        return Promise.resolve({ ok: false, status: 401, statusText: 'Unauthorized', text: () => Promise.resolve('') });
+      }
+      return Promise.resolve({ ok: true, json: () => Promise.resolve({ id, genres: ['house'] }) });
+    }));
+    const upsertMock = vi.fn().mockResolvedValue({ error: null });
+
+    await expect(getArtistGenresWithCache(TOKEN, ids, makeSupabaseMock([], upsertMock))).rejects.toThrow('Spotify token invalid');
+
+    expect(cachedArtistIds(upsertMock)).toEqual([ids.slice(0, 5).sort()]);
+  });
+
+  it('reports incomplete when the deadline stops the lookup, after caching what it fetched', async () => {
+    let now = 1_000_000;
+    vi.spyOn(Date, 'now').mockImplementation(() => now);
+    vi.stubGlobal('fetch', okFetch(() => { now += 1000; }));
+    const upsertMock = vi.fn().mockResolvedValue({ error: null });
+
+    const result = await getArtistGenresWithCache(TOKEN, ids, makeSupabaseMock([], upsertMock), undefined, now + 2500);
+
+    expect(result.complete).toBe(false);
+    expect(cachedArtistIds(upsertMock)).toEqual([ids.slice(0, 5).sort()]);
   });
 });

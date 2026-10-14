@@ -1,3 +1,4 @@
+import { FunctionsFetchError, FunctionsHttpError } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { sessionCache } from '@/services/sessionCache.service';
 import { logger } from '@/utils/logger';
@@ -19,6 +20,21 @@ async function extractFunctionError(error: any): Promise<string> {
     // body was not JSON or already consumed
   }
   return error?.message ?? 'Unknown error';
+}
+
+/**
+ * True when a supabase.functions.invoke error means the call ran out of time rather than failed:
+ * the client's own abort (fetchWithTimeout in integrations/supabase/client.ts), or Supabase cutting
+ * the function off (504 gateway timeout, 546 worker limit).
+ */
+export function isFunctionTimeout(error: unknown): boolean {
+  if (error instanceof FunctionsFetchError) {
+    return error.context?.name === 'AbortError';
+  }
+  if (error instanceof FunctionsHttpError) {
+    return error.context?.status === 504 || error.context?.status === 546;
+  }
+  return false;
 }
 
 /**
@@ -512,8 +528,11 @@ export class SpotifyAuthManager {
   }
 
   private static readonly MAX_RESUME_ATTEMPTS = 20;
+  // Timeouts are resumed like partial responses, but back-to-back timeouts mean something is
+  // persistently wrong — stop rather than spend up to MAX_RESUME_ATTEMPTS × 150s retrying.
+  private static readonly MAX_CONSECUTIVE_TIMEOUTS = 2;
 
-  private async performSync(forceFullSync: boolean, resumeAttempt: number = 0): Promise<SpotifyOperationResult> {
+  private async performSync(forceFullSync: boolean, resumeAttempt: number = 0, consecutiveTimeouts: number = 0): Promise<SpotifyOperationResult> {
     const startedAt = Date.now();
     try {
       const { session } = await sessionCache.getSession(false, 'spotify-sync');
@@ -530,6 +549,18 @@ export class SpotifyAuthManager {
           force_full_sync: forceFullSync
         }
       });
+
+      // Timed out: the sync is still in_progress with every written chunk saved, so a retry
+      // resumes it from the last saved chunk
+      if (response.error && isFunctionTimeout(response.error)) {
+        const timeouts = consecutiveTimeouts + 1;
+        if (timeouts >= SpotifyAuthManager.MAX_CONSECUTIVE_TIMEOUTS || resumeAttempt >= SpotifyAuthManager.MAX_RESUME_ATTEMPTS) {
+          logger.spotify('Sync timed out repeatedly', { resumeAttempt, timeouts }, 'error');
+          return { success: false, error: 'Sync timed out. Progress so far is saved — sync again to continue.' };
+        }
+        logger.spotify('Sync timed out, resuming', { resumeAttempt, timeouts }, 'warn');
+        return this.performSync(forceFullSync, resumeAttempt + 1, timeouts);
+      }
 
       if (response.error) {
         throw new Error(await extractFunctionError(response.error));

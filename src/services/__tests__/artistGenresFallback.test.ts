@@ -38,7 +38,7 @@ describe('fetchArtistGenres (single-artist endpoint)', () => {
       });
     }));
 
-    const result = await fetchArtistGenres(TOKEN, ['artist1', 'artist2', 'artist3']);
+    const { genreMap: result } = await fetchArtistGenres(TOKEN, ['artist1', 'artist2', 'artist3']);
 
     expect(result.get('artist1')).toEqual(['rock', 'alternative rock']);
     expect(result.get('artist2')).toEqual(['pop']);
@@ -105,7 +105,7 @@ describe('fetchArtistGenres (single-artist endpoint)', () => {
       });
     }));
 
-    const result = await fetchArtistGenres(TOKEN, ['good-artist', 'bad-artist']);
+    const { genreMap: result } = await fetchArtistGenres(TOKEN, ['good-artist', 'bad-artist']);
 
     expect(result.get('good-artist')).toEqual(['hip-hop']);
     expect(result.has('bad-artist')).toBe(false);
@@ -126,7 +126,7 @@ describe('fetchArtistGenres (single-artist endpoint)', () => {
     const fetchMock = vi.fn();
     vi.stubGlobal('fetch', fetchMock);
 
-    const result = await fetchArtistGenres(TOKEN, []);
+    const { genreMap: result } = await fetchArtistGenres(TOKEN, []);
 
     expect(result.size).toBe(0);
     expect(fetchMock).not.toHaveBeenCalled();
@@ -138,8 +138,88 @@ describe('fetchArtistGenres (single-artist endpoint)', () => {
       json: () => Promise.resolve({ id: 'artist1' /* no genres field */ }),
     }));
 
-    const result = await fetchArtistGenres(TOKEN, ['artist1']);
+    const { genreMap: result } = await fetchArtistGenres(TOKEN, ['artist1']);
 
     expect(result.get('artist1')).toEqual([]);
+  });
+});
+
+describe('fetchArtistGenres — deadline and per-window results', () => {
+  const TOKEN = 'test-access-token';
+  const ids = Array.from({ length: 12 }, (_, i) => `artist${i}`);
+
+  function okFetch(onRequest?: () => void) {
+    return vi.fn().mockImplementation((url: string) => {
+      onRequest?.();
+      const id = url.split('/').pop();
+      return Promise.resolve({ ok: true, json: () => Promise.resolve({ id, genres: [] }) });
+    });
+  }
+
+  beforeEach(() => {
+    vi.spyOn(console, 'log').mockImplementation(() => {});
+    vi.spyOn(console, 'warn').mockImplementation(() => {});
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('is complete when no deadline is given', async () => {
+    vi.stubGlobal('fetch', okFetch());
+
+    const { genreMap, complete } = await fetchArtistGenres(TOKEN, ['a1', 'a2']);
+
+    expect(complete).toBe(true);
+    expect(genreMap.size).toBe(2);
+  });
+
+  it('makes no requests when the deadline has already passed', async () => {
+    const fetchMock = okFetch();
+    vi.stubGlobal('fetch', fetchMock);
+
+    const { genreMap, complete } = await fetchArtistGenres(TOKEN, ['a1', 'a2'], undefined, { deadlineAt: Date.now() - 1 });
+
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(complete).toBe(false);
+    expect(genreMap.size).toBe(0);
+  });
+
+  it('stops before the next window once the deadline passes', async () => {
+    // Each request advances the clock 1s, so the deadline passes during the first window
+    let now = 1_000_000;
+    vi.spyOn(Date, 'now').mockImplementation(() => now);
+    vi.stubGlobal('fetch', okFetch(() => { now += 1000; }));
+
+    const { genreMap, complete } = await fetchArtistGenres(TOKEN, ids, undefined, { deadlineAt: now + 2500 });
+
+    expect(complete).toBe(false);
+    expect(genreMap.size).toBe(5);
+  });
+
+  it('stops instead of waiting out a Retry-After that would pass the deadline', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({ ok: false, status: 429, headers: { get: () => '30' } });
+    vi.stubGlobal('fetch', fetchMock);
+    const startedAt = Date.now();
+
+    const { genreMap, complete } = await fetchArtistGenres(TOKEN, ['a1'], undefined, { deadlineAt: Date.now() + 5000 });
+
+    expect(complete).toBe(false);
+    expect(genreMap.size).toBe(0);
+    expect(fetchMock).toHaveBeenCalledOnce();
+    expect(Date.now() - startedAt).toBeLessThan(1000);
+  });
+
+  it("hands each window's results to onWindow as it completes", async () => {
+    vi.stubGlobal('fetch', okFetch());
+    const windows: string[][] = [];
+
+    await fetchArtistGenres(TOKEN, ids, undefined, {
+      onWindow: async windowGenres => { windows.push([...windowGenres.keys()]); },
+    });
+
+    expect(windows.map(w => w.length)).toEqual([5, 5, 2]);
+    expect(windows.flat().sort()).toEqual([...ids].sort());
   });
 });
