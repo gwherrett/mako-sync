@@ -10,12 +10,22 @@ import { getArtistGenresWithCache } from './artist-genres.ts'
 
 const CHUNK_SIZE = 500 // Process 500 tracks at a time
 
+// Time budget, measured from the start of the request so startup work counts. Returning partial
+// by then keeps each invocation inside the client's 150s abort and Supabase's 150s limit.
+const BUDGET_MS = 120_000
+// Kept back after a chunk's artist lookup to write it (manual-genre lookup, upsert, progress update)
+const CHUNK_WRITE_RESERVE_MS = 10_000
+// Needed after the last chunk for the deletion pass, genre verification and completion update
+const POST_SYNC_RESERVE_MS = 15_000
+
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
 serve(async (req) => {
+  const requestStartedAt = Date.now()
+
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
   }
@@ -409,21 +419,28 @@ serve(async (req) => {
     // so tracks buffered in allChunkTracks but not yet upserted are re-fetched on resume.
     let lastPersistedOffset = startOffset
     let duplicatesRemoved = 0 // Track duplicates removed during sync
-    const syncStartTime = Date.now()
-    const BUDGET_MS = 120_000 // Stop at 120s to return before Supabase's 150s hard limit
+    const deadlineAt = requestStartedAt + BUDGET_MS
+    // Page fetches and artist lookups stop here, leaving time to write the chunk they feed
+    const chunkDeadlineAt = deadlineAt - CHUNK_WRITE_RESERVE_MS
+
+    // Save progress and return partial so the client resumes. Saves lastPersistedOffset, not
+    // currentOffset, so tracks buffered in allChunkTracks but not yet upserted are re-fetched.
+    const pauseForResume = async (message: string, extra: Record<string, unknown> = {}) => {
+      await supabaseClient
+        .from('sync_progress')
+        .update({ last_offset: lastPersistedOffset, tracks_fetched: currentOffset })
+        .eq('sync_id', syncId)
+      return new Response(
+        JSON.stringify({ success: true, partial: true, message, tracks_processed: newTracksCount, resume_offset: lastPersistedOffset, ...extra }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
 
     while (hasMore) {
-      // Time-budget check: exit gracefully before the hard 150s edge-function timeout
-      if (Date.now() - syncStartTime > BUDGET_MS) {
+      // Time-budget check: don't fetch pages there would be no time left to write
+      if (Date.now() >= chunkDeadlineAt) {
         console.log(`⏱️ Approaching time limit at offset ${currentOffset} — saving progress and exiting for resume from ${lastPersistedOffset}`)
-        await supabaseClient
-          .from('sync_progress')
-          .update({ last_offset: lastPersistedOffset, tracks_fetched: currentOffset })
-          .eq('sync_id', syncId)
-        return new Response(
-          JSON.stringify({ success: true, partial: true, message: 'Sync paused — will resume on next trigger', tracks_processed: newTracksCount, resume_offset: lastPersistedOffset }),
-          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        )
+        return await pauseForResume('Sync paused — will resume on next trigger')
       }
       const url = `https://api.spotify.com/v1/me/tracks?limit=50&offset=${currentOffset}`
       console.log(`📥 Fetching tracks at offset ${currentOffset}`)
@@ -440,9 +457,8 @@ serve(async (req) => {
       // resume check, unlike a hard 'failed' which forces the next run into incremental mode.)
       if (response.status === 429) {
         const retryAfterS = parseInt(response.headers.get('Retry-After') ?? '', 10) || 5
-        const remainingBudgetMs = BUDGET_MS - (Date.now() - syncStartTime)
 
-        if (retryAfterS * 1000 < remainingBudgetMs - 5000) {
+        if (Date.now() + retryAfterS * 1000 < chunkDeadlineAt) {
           console.warn(`⏳ Rate limited at offset ${currentOffset}, waiting ${retryAfterS}s before retry`)
           await new Promise(resolve => setTimeout(resolve, retryAfterS * 1000))
           response = await fetch(url, {
@@ -455,14 +471,7 @@ serve(async (req) => {
 
         if (response.status === 429) {
           console.warn(`⏳ Still rate limited at offset ${currentOffset} — saving progress and exiting for resume from ${lastPersistedOffset}`)
-          await supabaseClient
-            .from('sync_progress')
-            .update({ last_offset: lastPersistedOffset, tracks_fetched: currentOffset })
-            .eq('sync_id', syncId)
-          return new Response(
-            JSON.stringify({ success: true, partial: true, message: 'Rate limited — will resume on next trigger', tracks_processed: newTracksCount, resume_offset: lastPersistedOffset, rate_limited: true }),
-            { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-          )
+          return await pauseForResume('Rate limited — will resume on next trigger', { rate_limited: true })
         }
       }
 
@@ -569,9 +578,17 @@ serve(async (req) => {
         const artistIds = extractUniqueArtistIds(allChunkTracks)
         console.log(`Found ${artistIds.length} unique artists for this chunk`)
 
-        const { genreMap: artistGenreMap, cacheHits: chunkCacheHits, apiFetches: chunkApiFetches } = await getArtistGenresWithCache(accessToken, artistIds, supabaseClient, tokenRefresher)
+        const { genreMap: artistGenreMap, cacheHits: chunkCacheHits, apiFetches: chunkApiFetches, complete: lookupComplete } = await getArtistGenresWithCache(accessToken, artistIds, supabaseClient, tokenRefresher, chunkDeadlineAt)
         totalCacheHits += chunkCacheHits
         totalApiFetches += chunkApiFetches
+
+        // Don't write a chunk with artists missing (its tracks would be stored without genres) or
+        // start a write that would overrun. Pausing is safe: the artists fetched so far are cached,
+        // and the chunk is re-fetched from lastPersistedOffset on resume.
+        if (!lookupComplete || Date.now() >= deadlineAt) {
+          console.log(`⏱️ Time limit reached during artist lookup at offset ${currentOffset} — exiting for resume from ${lastPersistedOffset}`)
+          return await pauseForResume('Sync paused — will resume on next trigger')
+        }
 
         // Accumulate genre health-check stats
         for (const genres of artistGenreMap.values()) {
@@ -709,9 +726,15 @@ serve(async (req) => {
       const artistIds = extractUniqueArtistIds(allChunkTracks)
       console.log(`Found ${artistIds.length} unique artists for final batch`)
 
-      const { genreMap: artistGenreMap, cacheHits: finalCacheHits, apiFetches: finalApiFetches } = await getArtistGenresWithCache(accessToken, artistIds, supabaseClient, tokenRefresher)
+      const { genreMap: artistGenreMap, cacheHits: finalCacheHits, apiFetches: finalApiFetches, complete: lookupComplete } = await getArtistGenresWithCache(accessToken, artistIds, supabaseClient, tokenRefresher, chunkDeadlineAt)
       totalCacheHits += finalCacheHits
       totalApiFetches += finalApiFetches
+
+      // Same rule as the chunks in the loop: never write the batch with artists missing
+      if (!lookupComplete || Date.now() >= deadlineAt) {
+        console.log(`⏱️ Time limit reached during final batch artist lookup — exiting for resume from ${lastPersistedOffset}`)
+        return await pauseForResume('Sync paused — will resume on next trigger')
+      }
 
       // Accumulate genre health-check stats
       for (const genres of artistGenreMap.values()) {
@@ -773,6 +796,13 @@ serve(async (req) => {
           new_tracks_added: newTracksCount
         })
         .eq('sync_id', syncId)
+    }
+
+    // Every chunk is written. If the deletion pass and verification might not fit, pause: the resumed
+    // run starts at the end of the library, finds no more pages and goes straight to them.
+    if (isFullSync && Date.now() >= deadlineAt - POST_SYNC_RESERVE_MS) {
+      console.log(`⏱️ Not enough time left for the deletion pass — exiting for resume from ${lastPersistedOffset}`)
+      return await pauseForResume('Sync paused before cleanup — will resume on next trigger')
     }
 
     // Deletion detection: Remove tracks that are no longer in Spotify (only for full sync).
