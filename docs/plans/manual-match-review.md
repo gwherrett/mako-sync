@@ -69,7 +69,7 @@ The live `track_matches` table was inspected directly in Supabase on 2026-10-13,
 
 **Rejected: Option B,** keying `track_matches` on `(user_id, spotify_id)` with no FK to `spotify_liked`. Decisions would survive any resync, but unliking would no longer clean up rows on its own, every join would go through the natural key, and Phase 1 would become a bigger rewrite of the table.
 
-#### Phase 1 — Schema migration
+#### Phase 1 — Schema migration ([MAK-153](https://linear.app/mako-sync/issue/MAK-153))
 One new migration, `supabase/migrations/<timestamp>_extend_track_matches_for_manual_review.sql`. The key columns and FKs stay as they are, per the Phase 0.5 decision.
 - `ALTER COLUMN mp3_id DROP NOT NULL` — allows a row to mean "confirmed: no local match exists" (`mp3_id = NULL`, `is_confirmed = true`).
 - `ALTER COLUMN is_confirmed DROP DEFAULT` — the live default is `false`. Under the tri-state semantics below, an insert that leaves the column out would otherwise be saved as a rejection.
