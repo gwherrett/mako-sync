@@ -17,7 +17,7 @@ export function extractUniqueArtistIds(allTracks: SpotifyTrack[]): string[] {
   return Array.from(artistIds)
 }
 
-export function processSongsData(allTracks: SpotifyTrack[], userId: string, artistGenreMap: Map<string, string[]>, albumGenreMap: Map<string, string[]>, genreMapping: Map<string, string>) {
+export function processSongsData(allTracks: SpotifyTrack[], userId: string, syncId: string, artistGenreMap: Map<string, string[]>, albumGenreMap: Map<string, string[]>, genreMapping: Map<string, string>) {
   return allTracks.map(item => {
     // Get genre from artists only
     let primaryGenre: string | null = null
@@ -67,6 +67,8 @@ export function processSongsData(allTracks: SpotifyTrack[], userId: string, arti
       danceability: null,
       bpm: null,
       key: null,
+      // Full sync deletes the user's rows not stamped with its sync id (see deletion pass in index.ts)
+      last_seen_sync_id: syncId,
     }
   })
 }

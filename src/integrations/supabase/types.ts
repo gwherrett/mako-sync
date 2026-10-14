@@ -328,6 +328,7 @@ export type Database = {
           genre: string | null
           id: string
           key: string | null
+          last_seen_sync_id: string | null
           mix: string | null
           normalized_artist: string | null
           normalized_title: string | null
@@ -351,6 +352,7 @@ export type Database = {
           genre?: string | null
           id?: string
           key?: string | null
+          last_seen_sync_id?: string | null
           mix?: string | null
           normalized_artist?: string | null
           normalized_title?: string | null
@@ -374,6 +376,7 @@ export type Database = {
           genre?: string | null
           id?: string
           key?: string | null
+          last_seen_sync_id?: string | null
           mix?: string | null
           normalized_artist?: string | null
           normalized_title?: string | null

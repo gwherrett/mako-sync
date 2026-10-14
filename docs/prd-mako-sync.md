@@ -170,8 +170,8 @@ As a DJ, I want to connect my Spotify account so that I can sync my liked songs.
   - Preserve manually assigned `super_genre` values during sync
   - **Note:** Incremental sync does NOT detect deleted tracks (use full sync for cleanup)
 * **FR-2.8:** System SHALL support full re-sync option:
-  - Clears and re-fetches all tracks
-  - Detects and removes tracks unliked from Spotify
+  - Re-fetches all tracks and updates existing rows in place, so `spotify_liked.id` stays stable (match decisions in `track_matches` cascade from it)
+  - Detects and removes tracks unliked from Spotify (rows not stamped with the sync's `last_seen_sync_id`)
   - Recommended periodically (e.g., monthly) to clean up deleted tracks
 * **FR-2.9:** System SHALL display sync progress with:
   - Tracks fetched count
