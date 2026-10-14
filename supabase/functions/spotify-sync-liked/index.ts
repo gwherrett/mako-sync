@@ -315,9 +315,10 @@ serve(async (req) => {
       syncId = newSync.sync_id
       console.log(`🆕 Starting new sync with ID: ${syncId}`)
 
-      // Cache manually assigned genres BEFORE deletion (for full sync)
+      // Cache manually assigned genres up front (for full sync). Upserts overwrite super_genre
+      // with the auto-mapped value, so this map restores manual overrides (NFR-9).
       if (isFullSync) {
-        console.log('💾 PHASE 1: Caching manually assigned genres before full sync deletion...')
+        console.log('💾 PHASE 1: Caching manually assigned genres before full sync...')
         
         // Fetch ALL manually overridden genres with pagination (Supabase default limit is 1000)
         let allManualGenres: {spotify_id: string, super_genre: string}[] = []
@@ -379,18 +380,9 @@ serve(async (req) => {
         }
       }
 
-      // Clear existing songs only for full sync
-      if (isFullSync) {
-        console.log('🗑️ Clearing existing songs for full sync...')
-        const { error: deleteError } = await supabaseAdmin
-          .from('spotify_liked')
-          .delete()
-          .eq('user_id', user.id)
-
-        if (deleteError) {
-          throw new Error(`Failed to clear existing songs: ${deleteError.message}`)
-        }
-      }
+      // Full sync does NOT clear existing songs: the upsert on (user_id, spotify_id) updates rows
+      // in place so spotify_liked.id stays stable (track_matches cascades on delete). Unliked
+      // tracks are removed by the deletion pass at the end of the sync.
     }
 
     // Fetch genre mapping once before the sync loop (stable during sync)
@@ -413,7 +405,9 @@ serve(async (req) => {
     let allChunkTracks: any[] = []
     let newTracksCount = 0
     let olderTracksCount = 0 // Count tracks older than last sync to determine when to stop
-    const allSpotifyIds = new Set<string>() // Track all Spotify IDs from this sync for deletion detection
+    // Offset up to which every fetched track has been upserted. Pauses save this, not currentOffset,
+    // so tracks buffered in allChunkTracks but not yet upserted are re-fetched on resume.
+    let lastPersistedOffset = startOffset
     let duplicatesRemoved = 0 // Track duplicates removed during sync
     const syncStartTime = Date.now()
     const BUDGET_MS = 120_000 // Stop at 120s to return before Supabase's 150s hard limit
@@ -421,13 +415,13 @@ serve(async (req) => {
     while (hasMore) {
       // Time-budget check: exit gracefully before the hard 150s edge-function timeout
       if (Date.now() - syncStartTime > BUDGET_MS) {
-        console.log(`⏱️ Approaching time limit at offset ${currentOffset} — saving progress and exiting for resume`)
+        console.log(`⏱️ Approaching time limit at offset ${currentOffset} — saving progress and exiting for resume from ${lastPersistedOffset}`)
         await supabaseClient
           .from('sync_progress')
-          .update({ last_offset: currentOffset, tracks_fetched: currentOffset })
+          .update({ last_offset: lastPersistedOffset, tracks_fetched: currentOffset })
           .eq('sync_id', syncId)
         return new Response(
-          JSON.stringify({ success: true, partial: true, message: 'Sync paused — will resume on next trigger', tracks_processed: newTracksCount, resume_offset: currentOffset }),
+          JSON.stringify({ success: true, partial: true, message: 'Sync paused — will resume on next trigger', tracks_processed: newTracksCount, resume_offset: lastPersistedOffset }),
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         )
       }
@@ -460,13 +454,13 @@ serve(async (req) => {
         }
 
         if (response.status === 429) {
-          console.warn(`⏳ Still rate limited at offset ${currentOffset} — saving progress and exiting for resume`)
+          console.warn(`⏳ Still rate limited at offset ${currentOffset} — saving progress and exiting for resume from ${lastPersistedOffset}`)
           await supabaseClient
             .from('sync_progress')
-            .update({ last_offset: currentOffset, tracks_fetched: currentOffset })
+            .update({ last_offset: lastPersistedOffset, tracks_fetched: currentOffset })
             .eq('sync_id', syncId)
           return new Response(
-            JSON.stringify({ success: true, partial: true, message: 'Rate limited — will resume on next trigger', tracks_processed: newTracksCount, resume_offset: currentOffset, rate_limited: true }),
+            JSON.stringify({ success: true, partial: true, message: 'Rate limited — will resume on next trigger', tracks_processed: newTracksCount, resume_offset: lastPersistedOffset, rate_limited: true }),
             { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
           )
         }
@@ -489,16 +483,7 @@ serve(async (req) => {
       }
 
       const data = await response.json()
-      
-      // Track all Spotify IDs for deletion detection (only during full sync)
-      if (isFullSync) {
-        data.items.forEach((item: any) => {
-          if (item.track?.id) {
-            allSpotifyIds.add(item.track.id)
-          }
-        })
-      }
-      
+
       // For incremental sync, filter out tracks already synced and check if we've gone past our last track
       let newItems = data.items
       if (!isFullSync && lastSyncTime) {
@@ -595,11 +580,11 @@ serve(async (req) => {
         }
 
         // Process songs data
-        const songsToInsert = processSongsData(allChunkTracks, user.id, artistGenreMap, new Map(), genreMapping)
+        const songsToInsert = processSongsData(allChunkTracks, user.id, syncId, artistGenreMap, new Map(), genreMapping)
         newTracksCount += songsToInsert.length
 
         // For incremental sync, fetch existing tracks with manual genre overrides from DB
-        // For full sync, use the cached map from before deletion
+        // For full sync, use the map cached at sync start
         if (!isFullSync) {
           const spotifyIds = songsToInsert.map(s => s.spotify_id)
           const { data: existingTracks } = await supabaseClient
@@ -671,12 +656,13 @@ serve(async (req) => {
         }
 
         // Update progress
+        lastPersistedOffset = currentOffset
         await supabaseClient
           .from('sync_progress')
           .update({
             tracks_fetched: currentOffset,
             tracks_processed: currentOffset,
-            last_offset: currentOffset,
+            last_offset: lastPersistedOffset,
             new_tracks_added: newTracksCount
           })
           .eq('sync_id', syncId)
@@ -734,8 +720,8 @@ serve(async (req) => {
       }
 
       // Process songs data
-      const songsToInsert = processSongsData(allChunkTracks, user.id, artistGenreMap, new Map(), genreMapping)
-      
+      const songsToInsert = processSongsData(allChunkTracks, user.id, syncId, artistGenreMap, new Map(), genreMapping)
+
       // For incremental sync, fetch existing tracks with manual genre overrides from DB
       if (!isFullSync) {
         const spotifyIds = songsToInsert.map(s => s.spotify_id)
@@ -789,50 +775,55 @@ serve(async (req) => {
         .eq('sync_id', syncId)
     }
 
-    // Deletion detection: Remove tracks that are no longer in Spotify (only for full sync)
+    // Deletion detection: Remove tracks that are no longer in Spotify (only for full sync).
+    // Every row upserted by this sync — across all resumed invocations — has last_seen_sync_id = syncId,
+    // so the user's rows without that stamp are no longer liked on Spotify.
     let deletedTracksCount = 0
-    if (isFullSync && allSpotifyIds.size > 0) {
-      console.log(`🔍 Checking for deleted tracks (full sync with ${allSpotifyIds.size} Spotify tracks)`)
-      
-      // Get all user's tracks from database
-      const { data: dbTracks, error: fetchError } = await supabaseClient
+    if (isFullSync) {
+      const { count: stampedCount, error: stampedError } = await supabaseClient
         .from('spotify_liked')
-        .select('id, spotify_id, title, artist')
+        .select('id', { count: 'exact', head: true })
         .eq('user_id', user.id)
-      
-      if (fetchError) {
-        console.error('Error fetching database tracks for deletion check:', fetchError)
-      } else if (dbTracks) {
-        // Find tracks in DB that are NOT in Spotify anymore
-        const tracksToDelete = dbTracks.filter(track => !allSpotifyIds.has(track.spotify_id))
-        
-        if (tracksToDelete.length > 0) {
-          console.log(`🗑️  Found ${tracksToDelete.length} tracks to delete:`)
-          tracksToDelete.slice(0, 5).forEach(track => {
-            console.log(`   - "${track.title}" by ${track.artist}`)
-          })
-          if (tracksToDelete.length > 5) {
-            console.log(`   ... and ${tracksToDelete.length - 5} more`)
-          }
-          
-          // Delete tracks that are no longer in Spotify
-          const idsToDelete = tracksToDelete.map(t => t.id)
-          const { error: deleteError } = await supabaseClient
+        .eq('last_seen_sync_id', syncId)
+
+      if (stampedError) {
+        console.error('Error counting tracks seen by this sync — skipping deletion check:', stampedError)
+      } else if (!stampedCount) {
+        // Guard: never wipe the library because nothing was stamped (e.g. an empty Spotify response)
+        console.warn('⚠️  No tracks stamped by this sync — skipping deletion check')
+      } else {
+        console.log(`🔍 Checking for deleted tracks (full sync stamped ${stampedCount} tracks)`)
+        const staleFilter = `last_seen_sync_id.is.null,last_seen_sync_id.neq.${syncId}`
+
+        // Sample for logging only — the delete below uses the same filter
+        const { data: staleSample } = await supabaseClient
+          .from('spotify_liked')
+          .select('title, artist')
+          .eq('user_id', user.id)
+          .or(staleFilter)
+          .limit(5)
+
+        if (staleSample && staleSample.length > 0) {
+          const { count, error: deleteError } = await supabaseClient
             .from('spotify_liked')
-            .delete()
-            .in('id', idsToDelete)
-          
+            .delete({ count: 'exact' })
+            .eq('user_id', user.id)
+            .or(staleFilter)
+
           if (deleteError) {
             console.error('Error deleting removed tracks:', deleteError)
           } else {
-            deletedTracksCount = tracksToDelete.length
-            console.log(`✅ Successfully deleted ${deletedTracksCount} tracks that were unliked in Spotify`)
+            deletedTracksCount = count ?? 0
+            console.log(`🗑️  Deleted ${deletedTracksCount} tracks that were unliked in Spotify, including:`)
+            staleSample.forEach(track => {
+              console.log(`   - "${track.title}" by ${track.artist}`)
+            })
           }
         } else {
           console.log(`✅ No tracks to delete - database is in sync with Spotify`)
         }
       }
-    } else if (!isFullSync) {
+    } else {
       console.log(`⏭️  Skipping deletion detection (incremental sync - only checks new tracks)`)
     }
 

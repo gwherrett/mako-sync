@@ -349,9 +349,10 @@ Logs available at: `https://supabase.com/dashboard/project/{project_id}/function
 Sync operations must be resumable after interruption:
 
 1. Track progress in `sync_progress` table
-2. Store `last_offset` for pagination resume
+2. Store `last_offset` for pagination resume. It only advances after a chunk is upserted. A pause saves the offset of the last upserted chunk, not the fetch position, so tracks still in the chunk buffer are re-fetched on resume instead of skipped
 3. Cache manual genre assignments in `cached_genres` JSONB
 4. On resume: load state from database, continue from `last_offset`
+5. Never keep state that must span the whole sync in memory, because each resume is a new invocation. Full sync stamps every upserted `spotify_liked` row with `last_seen_sync_id = sync_id`. At the end it deletes the user's rows that don't carry the stamp (tracks unliked on Spotify)
 
 ### **8.3 Final Flush Pattern**
 
