@@ -8,6 +8,47 @@ import type { ProcessedFile } from '@/types/slskd';
 
 const { mapToSuperGenre, filterAudioFiles, writeSuperGenreTag } = _testExports;
 
+// vi.mock calls are hoisted above the imports, so the mock fns they close over must be too
+const { mockSetFrame, mockAddTag, mockGetBlob } = vi.hoisted(() => ({
+  mockSetFrame: vi.fn(),
+  mockAddTag: vi.fn(),
+  mockGetBlob: vi.fn().mockReturnValue(new Blob(['test'], { type: 'audio/mpeg' })),
+}));
+
+vi.mock('browser-id3-writer', () => ({
+  ID3Writer: class {
+    setFrame = mockSetFrame;
+    addTag = mockAddTag;
+    getBlob = mockGetBlob;
+  },
+}));
+
+// Mock parseBlob to avoid actual file parsing
+vi.mock('music-metadata-browser', () => ({
+  parseBlob: vi.fn().mockResolvedValue({
+    common: {
+      title: 'Test Title',
+      artist: 'Test Artist',
+      album: 'Test Album',
+      year: 2024,
+      track: { no: 1, of: 10 },
+      genre: ['Test Genre'],
+      albumartist: 'Test Album Artist',
+      composer: ['Test Composer'],
+      comment: ['Test Comment'],
+      picture: [],
+    },
+    native: {
+      'ID3v2.3': [
+        { id: 'TXXX', value: { description: 'EXISTING_CUSTOM', text: 'existing value' } },
+        { id: 'COMM', value: { description: 'Other Comment', text: 'other comment text', language: 'eng' } },
+        { id: 'COMM', value: { description: '', text: 'default comment', language: 'eng' } },
+      ],
+    },
+    format: {},
+  }),
+}));
+
 describe('downloadProcessor.service', () => {
   describe('mapToSuperGenre', () => {
     const genreMap = new Map<string, string>([
@@ -250,18 +291,6 @@ describe('downloadProcessor.service', () => {
       ];
       const genreMap = new Map<string, string>();
 
-      // Mock parseBlob to avoid actual file parsing
-      vi.mock('music-metadata-browser', () => ({
-        parseBlob: vi.fn().mockResolvedValue({
-          common: {
-            artist: 'Test Artist',
-            title: 'Test Title',
-            album: 'Test Album',
-            genre: ['Test Genre'],
-          },
-        }),
-      }));
-
       try {
         await processDownloads(files, genreMap, (progress) => {
           progressUpdates.push({
@@ -304,48 +333,8 @@ describe('downloadProcessor.service', () => {
   });
 
   describe('writeSuperGenreTag', () => {
-    // Mock browser-id3-writer
-    const mockSetFrame = vi.fn();
-    const mockAddTag = vi.fn();
-    const mockGetBlob = vi.fn().mockReturnValue(new Blob(['test'], { type: 'audio/mpeg' }));
-
     beforeEach(() => {
       vi.clearAllMocks();
-
-      // Mock ID3Writer class
-      vi.mock('browser-id3-writer', () => ({
-        default: vi.fn().mockImplementation(() => ({
-          setFrame: mockSetFrame,
-          addTag: mockAddTag,
-          getBlob: mockGetBlob,
-        })),
-      }));
-
-      // Mock music-metadata-browser parseBlob
-      vi.mock('music-metadata-browser', () => ({
-        parseBlob: vi.fn().mockResolvedValue({
-          common: {
-            title: 'Test Title',
-            artist: 'Test Artist',
-            album: 'Test Album',
-            year: 2024,
-            track: { no: 1, of: 10 },
-            genre: ['Test Genre'],
-            albumartist: 'Test Album Artist',
-            composer: ['Test Composer'],
-            comment: ['Test Comment'],
-            picture: [],
-          },
-          native: {
-            'ID3v2.3': [
-              { id: 'TXXX', value: { description: 'EXISTING_CUSTOM', text: 'existing value' } },
-              { id: 'COMM', value: { description: 'Other Comment', text: 'other comment text', language: 'eng' } },
-              { id: 'COMM', value: { description: '', text: 'default comment', language: 'eng' } },
-            ],
-          },
-          format: {},
-        }),
-      }));
     });
 
     it('writes SuperGenre to Grouping (TIT1) field', async () => {
@@ -373,9 +362,8 @@ describe('downloadProcessor.service', () => {
       );
 
       // Should have a TIT1 call with the SuperGenre value
-      if (tit1Calls.length > 0) {
-        expect(tit1Calls[0][1]).toBe('House');
-      }
+      expect(tit1Calls).toHaveLength(1);
+      expect(tit1Calls[0][1]).toBe('House');
     });
 
     it('does NOT write to COMM:Songs-DB_Custom1 (legacy format)', async () => {
@@ -397,6 +385,9 @@ describe('downloadProcessor.service', () => {
       const commCalls = mockSetFrame.mock.calls.filter(
         (call: [string, unknown]) => call[0] === 'COMM'
       );
+
+      // The writer must have run, otherwise the check below passes vacuously
+      expect(commCalls.length).toBeGreaterThan(0);
 
       const songDbCustomCall = commCalls.find(
         (call: [string, { description: string }]) =>
@@ -432,13 +423,11 @@ describe('downloadProcessor.service', () => {
           call[1]?.description === 'Other Comment'
       );
 
-      if (otherCommentCall) {
-        expect(otherCommentCall[1]).toEqual({
-          description: 'Other Comment',
-          text: 'other comment text',
-          language: 'eng',
-        });
-      }
+      expect(otherCommentCall?.[1]).toEqual({
+        description: 'Other Comment',
+        text: 'other comment text',
+        language: 'eng',
+      });
 
       // Should preserve default comment (empty description)
       const defaultCommentCall = commCalls.find(
@@ -446,13 +435,11 @@ describe('downloadProcessor.service', () => {
           call[1]?.description === ''
       );
 
-      if (defaultCommentCall) {
-        expect(defaultCommentCall[1]).toEqual({
-          description: '',
-          text: 'default comment',
-          language: 'eng',
-        });
-      }
+      expect(defaultCommentCall?.[1]).toEqual({
+        description: '',
+        text: 'default comment',
+        language: 'eng',
+      });
     });
 
     it('preserves existing TXXX frames', async () => {
@@ -480,12 +467,10 @@ describe('downloadProcessor.service', () => {
           call[1]?.description === 'EXISTING_CUSTOM'
       );
 
-      if (existingCustomCall) {
-        expect(existingCustomCall[1]).toEqual({
-          description: 'EXISTING_CUSTOM',
-          value: 'existing value',
-        });
-      }
+      expect(existingCustomCall?.[1]).toEqual({
+        description: 'EXISTING_CUSTOM',
+        value: 'existing value',
+      });
     });
   });
 });

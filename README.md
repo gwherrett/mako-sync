@@ -45,7 +45,7 @@ These three integrations work independently — connect whichever ones are relev
 
 ### Prerequisites
 
-- Node.js 18+ and npm
+- Node.js 24 and npm (set in `engines` in `package.json`; CI and Vercel build on 24)
 - Supabase account and project
 - Spotify Developer account (optional)
 - Discogs account (optional)
