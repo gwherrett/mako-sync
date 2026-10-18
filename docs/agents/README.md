@@ -54,8 +54,8 @@ agents/
 │       ├── SupabaseClientImportRule.ts
 │       ├── EdgeFunctionIsolationRule.ts
 │       ├── SuperGenresSortingRule.ts
-│       ├── BufferGlobalSetupRule.ts
-│       └── SpotifyManagerSingletonRule.ts
+│       ├── SpotifyManagerSingletonRule.ts
+│       └── EdgeFunctionDeployRegistrationRule.ts
 ├── cli/                      # CLI tool
 │   ├── index.ts             # Main CLI entry point
 │   ├── formatters.ts        # Output formatters
@@ -97,8 +97,8 @@ Validates coding best practices and architectural patterns:
 - **code-002-supabase-client-import** - Enforces correct Supabase client import patterns
 - **code-003-edge-function-isolation** - Prevents Node.js-specific code in edge functions
 - **code-004-super-genres-sorting** - Enforces alphabetical sorting in SUPER_GENRES array
-- **code-005-buffer-global-setup** - Validates Buffer global setup in edge functions
 - **code-006-spotify-manager-singleton** - Enforces singleton pattern for SpotifyManager
+- **code-007-edge-function-deploy-registration** - Requires a deploy step in deploy-edge-functions.yml for every edge function
 
 ## Installation
 

@@ -5,14 +5,40 @@ import {
   _testExports,
 } from '../downloadProcessor.service';
 import type { ProcessedFile } from '@/types/slskd';
+import { parseBlob } from 'music-metadata';
 
-const { mapToSuperGenre, filterAudioFiles, writeSuperGenreTag } = _testExports;
+const { mapToSuperGenre, filterAudioFiles, writeSuperGenreTag, extractFileMetadata } = _testExports;
+
+type ParsedMetadata = Awaited<ReturnType<typeof parseBlob>>;
 
 // vi.mock calls are hoisted above the imports, so the mock fns they close over must be too
-const { mockSetFrame, mockAddTag, mockGetBlob } = vi.hoisted(() => ({
+const { mockSetFrame, mockAddTag, mockGetBlob, baseMetadata } = vi.hoisted(() => ({
   mockSetFrame: vi.fn(),
   mockAddTag: vi.fn(),
   mockGetBlob: vi.fn().mockReturnValue(new Blob(['test'], { type: 'audio/mpeg' })),
+  // Shaped like music-metadata 12 output: comments are objects with a `descriptor`
+  baseMetadata: {
+    common: {
+      title: 'Test Title',
+      artist: 'Test Artist',
+      album: 'Test Album',
+      year: 2024,
+      track: { no: 1, of: 10 },
+      genre: ['Test Genre'],
+      albumartist: 'Test Album Artist',
+      composer: ['Test Composer'],
+      comment: [{ descriptor: '', language: 'eng', text: 'Test Comment' }],
+      picture: [] as Array<{ format: string; type?: string; description?: string; data: Uint8Array }>,
+    },
+    native: {
+      'ID3v2.3': [
+        { id: 'TXXX', value: { description: 'EXISTING_CUSTOM', text: 'existing value' } },
+        { id: 'COMM', value: { language: 'eng', descriptor: 'Other Comment', text: 'other comment text' } },
+        { id: 'COMM', value: { language: 'eng', descriptor: '', text: 'default comment' } },
+      ],
+    },
+    format: { tagTypes: ['ID3v2.3'] },
+  },
 }));
 
 vi.mock('browser-id3-writer', () => ({
@@ -24,30 +50,12 @@ vi.mock('browser-id3-writer', () => ({
 }));
 
 // Mock parseBlob to avoid actual file parsing
-vi.mock('music-metadata-browser', () => ({
-  parseBlob: vi.fn().mockResolvedValue({
-    common: {
-      title: 'Test Title',
-      artist: 'Test Artist',
-      album: 'Test Album',
-      year: 2024,
-      track: { no: 1, of: 10 },
-      genre: ['Test Genre'],
-      albumartist: 'Test Album Artist',
-      composer: ['Test Composer'],
-      comment: ['Test Comment'],
-      picture: [],
-    },
-    native: {
-      'ID3v2.3': [
-        { id: 'TXXX', value: { description: 'EXISTING_CUSTOM', text: 'existing value' } },
-        { id: 'COMM', value: { description: 'Other Comment', text: 'other comment text', language: 'eng' } },
-        { id: 'COMM', value: { description: '', text: 'default comment', language: 'eng' } },
-      ],
-    },
-    format: {},
-  }),
+vi.mock('music-metadata', () => ({
+  parseBlob: vi.fn().mockResolvedValue(baseMetadata),
 }));
+
+const mockNextParse = (metadata: object) =>
+  vi.mocked(parseBlob).mockResolvedValueOnce(metadata as unknown as ParsedMetadata);
 
 describe('downloadProcessor.service', () => {
   describe('mapToSuperGenre', () => {
@@ -280,7 +288,7 @@ describe('downloadProcessor.service', () => {
   });
 
   describe('processDownloads', () => {
-    // Note: Full integration tests would require mocking music-metadata-browser
+    // Note: Full integration tests would require mocking music-metadata
     // These tests focus on the orchestration logic
 
     it('reports progress during processing', async () => {
@@ -398,48 +406,101 @@ describe('downloadProcessor.service', () => {
       expect(songDbCustomCall).toBeUndefined();
     });
 
-    it('preserves all existing COMM frames', async () => {
+    const mp3File = () => {
       const id3Header = new Uint8Array([
         0x49, 0x44, 0x33, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0x0a,
       ]);
-      const padding = new Uint8Array(10);
-      const fileContent = new Uint8Array([...id3Header, ...padding]);
+      return new File([id3Header, new Uint8Array(10)], 'test.mp3', { type: 'audio/mpeg' });
+    };
 
-      const file = new File([fileContent], 'test.mp3', { type: 'audio/mpeg' });
+    const framesWritten = (id: string) =>
+      mockSetFrame.mock.calls.filter((call: [string, unknown]) => call[0] === id);
 
-      try {
-        await writeSuperGenreTag(file, 'Drum & Bass');
-      } catch {
-        // May fail in test environment
-      }
+    it('carries over only the default comment, without a descriptor', async () => {
+      await writeSuperGenreTag(mp3File(), 'Drum & Bass');
 
-      const commCalls = mockSetFrame.mock.calls.filter(
-        (call: [string, unknown]) => call[0] === 'COMM'
-      );
+      // music-metadata 12 reports every COMM frame under "COMM". With music-metadata 7 the described
+      // ones arrived as "COMM:<descriptor>" and were never carried over, so they must stay dropped
+      // rather than being rewritten with an empty descriptor.
+      expect(framesWritten('COMM').map((call) => call[1])).toEqual([
+        { description: '', text: 'default comment', language: 'eng' },
+      ]);
+    });
 
-      // Should preserve "Other Comment" COMM frame
-      const otherCommentCall = commCalls.find(
-        (call: [string, { description: string }]) =>
-          call[1]?.description === 'Other Comment'
-      );
-
-      expect(otherCommentCall?.[1]).toEqual({
-        description: 'Other Comment',
-        text: 'other comment text',
-        language: 'eng',
+    it('falls back to the first default common.comment when no native default comment exists', async () => {
+      mockNextParse({
+        ...baseMetadata,
+        common: {
+          ...baseMetadata.common,
+          comment: [
+            { descriptor: 'iTunNORM', language: 'eng', text: ' 00000721 00000834' },
+            { text: 'ID3v1 comment' },
+          ],
+        },
+        native: {},
       });
 
-      // Should preserve default comment (empty description)
-      const defaultCommentCall = commCalls.find(
-        (call: [string, { description: string }]) =>
-          call[1]?.description === ''
-      );
+      await writeSuperGenreTag(mp3File(), 'House');
 
-      expect(defaultCommentCall?.[1]).toEqual({
-        description: '',
-        text: 'default comment',
-        language: 'eng',
+      expect(framesWritten('COMM').map((call) => call[1])).toEqual([
+        { description: '', text: 'ID3v1 comment', language: 'eng' },
+      ]);
+    });
+
+    it('does not turn a described common.comment into the default comment', async () => {
+      mockNextParse({
+        ...baseMetadata,
+        common: {
+          ...baseMetadata.common,
+          comment: [{ descriptor: 'iTunPGAP', language: 'eng', text: '0' }],
+        },
+        native: {},
       });
+
+      await writeSuperGenreTag(mp3File(), 'House');
+
+      expect(framesWritten('COMM')).toHaveLength(0);
+    });
+
+    it('writes each genre of a slash-joined ID3v2.3 genre separately', async () => {
+      mockNextParse({
+        ...baseMetadata,
+        common: { ...baseMetadata.common, genre: ['Hip Hop/Rap'] },
+        format: { tagTypes: ['ID3v2.3'] },
+      });
+
+      await writeSuperGenreTag(mp3File(), 'Hip Hop');
+
+      expect(framesWritten('TCON').map((call) => call[1])).toEqual([['Hip Hop', 'Rap']]);
+    });
+
+    it('keeps a slash inside an ID3v2.4 genre', async () => {
+      mockNextParse({
+        ...baseMetadata,
+        common: { ...baseMetadata.common, genre: ['Hip Hop/Rap'] },
+        format: { tagTypes: ['ID3v2.4'] },
+      });
+
+      await writeSuperGenreTag(mp3File(), 'Hip Hop');
+
+      expect(framesWritten('TCON').map((call) => call[1])).toEqual([['Hip Hop/Rap']]);
+    });
+
+    it('passes cover art through as the Uint8Array music-metadata returns', async () => {
+      const data = new Uint8Array([0x89, 0x50, 0x4e, 0x47]);
+      mockNextParse({
+        ...baseMetadata,
+        common: {
+          ...baseMetadata.common,
+          picture: [{ format: 'image/png', type: 'Cover (front)', description: 'front', data }],
+        },
+      });
+
+      await writeSuperGenreTag(mp3File(), 'House');
+
+      expect(framesWritten('APIC').map((call) => call[1])).toEqual([
+        { type: 3, data, description: 'front', useUnicodeEncoding: false },
+      ]);
     });
 
     it('preserves existing TXXX frames', async () => {
@@ -471,6 +532,46 @@ describe('downloadProcessor.service', () => {
         description: 'EXISTING_CUSTOM',
         value: 'existing value',
       });
+    });
+  });
+
+  // music-metadata 7 split a slash-joined ID3v2.2/2.3 genre ("Hip Hop/Rap") into two values;
+  // 12 keeps it as one. Genre mapping was built around the split values.
+  describe('extractFileMetadata genres', () => {
+    const mp3 = () => new File(['test'], 'test.mp3', { type: 'audio/mpeg' });
+    const parsed = (tagType: string, genre: string) => ({
+      common: { artist: 'Artist', title: 'Title', genre: [genre] },
+      native: { [tagType]: [{ id: 'TCON', value: genre }] },
+      format: { tagTypes: [tagType] },
+    });
+
+    it('splits a slash-joined ID3v2.3 genre so each part can be mapped', async () => {
+      mockNextParse(parsed('ID3v2.3', 'Hip Hop/Rap'));
+
+      const { genres } = await extractFileMetadata(mp3());
+
+      expect(genres).toEqual(['Hip Hop', 'Rap']);
+    });
+
+    it('keeps a slash-joined ID3v2.4 genre whole', async () => {
+      mockNextParse(parsed('ID3v2.4', 'Hip Hop/Rap'));
+
+      const { genres } = await extractFileMetadata(mp3());
+
+      expect(genres).toEqual(['Hip Hop/Rap']);
+    });
+
+    it('still maps a slash-joined ID3v2.3 genre by its first part', async () => {
+      mockNextParse(parsed('ID3v2.3', 'Hip Hop/Rap'));
+      // "rap" comes first in the map: the whole string would partial-match it before "hip hop"
+      const genreMap = new Map([
+        ['rap', 'Rap'],
+        ['hip hop', 'Hip Hop'],
+      ]);
+
+      const { genres } = await extractFileMetadata(mp3());
+
+      expect(mapToSuperGenre(genres, genreMap)).toBe('Hip Hop');
     });
   });
 });

@@ -168,38 +168,36 @@ const { data } = useQuery({
 
 ---
 
-## Pattern 5 — Buffer global setup
+## Pattern 5 — music-metadata result shapes
 
-**Rule:** `music-metadata-browser` requires `window.Buffer` to be set before any parse call. Missing setup causes silent parse failures — the library returns empty metadata with no error thrown.
+**Rule:** Read genres and comments from `parseBlob()` results through the helpers in `src/utils/audioTags.ts`. music-metadata 12 differs from the 7.x this app was first built on in ways loose typing and hand-written test mocks hide, so a mismatch shows up as wrong data rather than an error.
+
+- ID3v2.2/2.3 genres such as `Hip Hop/Rap` arrive as one value. Use `splitLegacyId3Genres(genres, metadata.format.tagTypes)` so the scanner and the SuperGenre mapping see each genre.
+- `common.comment` is a list of `{ descriptor, language, text }` that includes described comments (`iTunNORM`, `iTunPGAP`, ...). Use `getDefaultCommentText(common.comment)`.
+- Native `COMM` values use `descriptor` (7.x used `description`) and every comment is reported under the id `COMM`. Described `TXXX` frames are reported as `TXXX:<description>` with a string value.
 
 **Detection signal:**
-- `import ... from 'music-metadata-browser'` or `parseBlob(` in a file
-- No `window.Buffer = Buffer` or `globalThis.Buffer = Buffer` earlier in the same file (or in a guaranteed-earlier module)
-- The `import { Buffer } from 'buffer'` import is missing alongside the setup line
+- `common.genre?.[0]`, or `common.genre` passed straight to the genre mapper or a `TCON` writer
+- `common.comment[0]` used as text
+- `.description` read from a native `COMM` value
+- A unit test that mocks `parseBlob()` with a native tag shape that real files never produce
 
-**Correct example** (`src/services/downloadProcessor.service.ts:29-31` — use this as the reference to copy):
+**Correct example** (`src/services/metadataExtractor.ts`):
 ```typescript
-import { parseBlob } from 'music-metadata-browser';
-import { Buffer } from 'buffer';
-
-// Must appear before any parseBlob() call
-if (typeof window !== 'undefined') {
-  window.Buffer = Buffer;
-}
+genre = splitLegacyId3Genres(metadata.common.genre, metadata.format?.tagTypes)[0] || null;
 ```
 
 **Incorrect example:**
 ```typescript
-import { parseBlob } from 'music-metadata-browser';
-// Buffer never set — parseBlob() returns empty tags silently
-
-const metadata = await parseBlob(file);  // fails silently
+genre = metadata.common.genre?.[0] || null;  // "Hip Hop/Rap" stays one genre and stops mapping
 ```
 
 **Files most at risk:**
-- `src/services/metadataExtractor.ts` — primary parse entry point
-- `src/services/downloadProcessor.service.ts` — already correct, use as reference
-- Any new service or component that calls `parseBlob()` directly
+- `src/services/metadataExtractor.ts` — scanner
+- `src/services/downloadProcessor.service.ts` — genre mapping and the tag writer
+- Any new code that reads `parseBlob()` results
+
+The regression test that runs the real parser is `src/services/__tests__/audioTagging.roundtrip.test.ts`.
 
 ---
 

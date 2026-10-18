@@ -224,7 +224,7 @@ As a music collector, I want to scan my local music files so that I can compare 
   - Search functionality
 
 **Priority:** P0 (Critical)  
-**Dependencies:** music-metadata-browser library  
+**Dependencies:** music-metadata library  
 **Estimated Effort:** 13 story points
 
 ---
@@ -686,7 +686,7 @@ This ensures the "unmapped/unprocessed" count accurately reflects tracks that tr
 * **Form Management:** React Hook Form + Zod validation
 * **UI Components:** shadcn/ui (customized)
 * **Backend:** Supabase (Auth, Database, Edge Functions, Vault)
-* **Metadata Parsing:** music-metadata-browser
+* **Metadata Parsing:** music-metadata
 
 ### **5.4 Component Architecture**
 
