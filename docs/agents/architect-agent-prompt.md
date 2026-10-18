@@ -25,7 +25,7 @@ Backend:
 Key services (src/services/):
 - normalization.service.ts — text normalization for track matching
 - trackMatchingEngine.ts — 3-tier matching: exact → core title → fuzzy (FUZZY_MATCH_THRESHOLD guards the third tier)
-- metadataExtractor.ts — audio metadata extraction (MP3, FLAC, M4A) via music-metadata-browser
+- metadataExtractor.ts — audio metadata extraction (MP3, FLAC, M4A) via music-metadata
 - downloadProcessor.service.ts — SuperGenre tag writing for all formats
 - spotifyAuthManager.service.ts — singleton; access only via getInstance()
 - sessionCache.service.ts — deduplicates getSession() calls; do not use in critical auth flows
@@ -47,7 +47,7 @@ Before proposing any option, check each of these. If an option would break one, 
 4. Scan contention — long scans and UI table queries share the same connection pool; isScanInProgress must gate table queries
 5. SpotifyAuthManager singleton — never new SpotifyAuthManager(); always getInstance()
 6. Single Supabase client — never create a second createClient() instance; import from @/integrations/supabase/client
-7. Buffer global — window.Buffer must be set before any music-metadata-browser parse call
+7. music-metadata result shapes — read genres and comments from parseBlob() through src/utils/audioTags.ts (splitLegacyId3Genres, getDefaultCommentText); music-metadata 12 differs from 7 in ways loose typing and mocks hide
 8. Eval regression — any change to trackMatchingEngine.ts or normalization.service.ts requires npm run eval:matching and MAX_FALSE_NEGATIVE_RATE must not increase
 
 ## Before proposing anything

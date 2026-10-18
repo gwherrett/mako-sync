@@ -2,7 +2,7 @@
  * Download Processor Service
  *
  * Processes downloaded MP3 files from slskd:
- * - Extracts metadata (artist, title, album, genre) using music-metadata-browser
+ * - Extracts metadata (artist, title, album, genre) using music-metadata
  * - Maps ID3 genre tags to SuperGenre using the effective genre map
  * - Writes SuperGenre to Grouping (TIT1) ID3 tag using browser-id3-writer
  * - Uses File System Access API to write tags back to original files in place
@@ -11,10 +11,14 @@
  * (Serato, Rekordbox, Traktor) and media players (MediaMonkey, iTunes).
  */
 
-import { parseBlob } from 'music-metadata-browser';
+import { parseBlob, type IAudioMetadata } from 'music-metadata';
 import { ID3Writer } from 'browser-id3-writer';
-import { Buffer } from 'buffer';
 import { withTimeout } from '@/utils/promiseUtils';
+import {
+  getDefaultCommentText,
+  splitLegacyId3Genres,
+  type AudioComment,
+} from '@/utils/audioTags';
 import type {
   ProcessedFile,
   ProcessingResult,
@@ -24,11 +28,6 @@ import type {
 import type { FileWithHandle } from './directoryHandle.service';
 import { isSupportedAudioFile, stripAudioExtension } from './fileScanner';
 import { writeFlacGroupingTag } from './flacTagWriter';
-
-// Make Buffer available globally for music-metadata-browser
-if (typeof window !== 'undefined') {
-  window.Buffer = Buffer;
-}
 
 // Timeout for parsing individual files (30 seconds)
 const PARSE_TIMEOUT_MS = 30000;
@@ -87,12 +86,9 @@ async function extractFileMetadata(file: File): Promise<{
   const genresSet = new Set<string>();
 
   // 1. Standard common.genre (ID3v2 TCON)
-  if (metadata.common.genre) {
-    const commonGenres = Array.isArray(metadata.common.genre)
-      ? metadata.common.genre
-      : [metadata.common.genre];
-    commonGenres.forEach((g) => g && genresSet.add(g));
-  }
+  splitLegacyId3Genres(metadata.common.genre, metadata.format.tagTypes).forEach((g) =>
+    genresSet.add(g)
+  );
 
   // 2. Check native ID3v2 tags for additional genre info
   const id3v23 = metadata.native['ID3v2.3'] || [];
@@ -105,7 +101,11 @@ async function extractFileMetadata(file: File): Promise<{
       const val = typeof tag.value === 'string' ? tag.value : String(tag.value);
       // Handle numeric genre codes like "(17)" for Rock
       const cleaned = val.replace(/^\(\d+\)/, '').trim();
-      if (cleaned) genresSet.add(cleaned);
+      if (cleaned) {
+        // ID3v2.3 TCON values like "Hip Hop/Rap" hold several genres (see splitLegacyId3Genres)
+        const tagType = id3v23.includes(tag) ? 'ID3v2.3' : 'ID3v2.4';
+        splitLegacyId3Genres([cleaned], [tagType]).forEach((g) => genresSet.add(g));
+      }
     }
     // TXXX frames - check for genre-related custom tags
     if (tag.id === 'TXXX' && tag.value) {
@@ -495,8 +495,11 @@ async function writeSuperGenreTag(file: File, superGenre: string): Promise<Blob>
 /**
  * Write SuperGenre tag using pre-parsed metadata (avoids re-parsing the file)
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-async function writeSuperGenreTagFromMetadata(file: File, superGenre: string, metadata: any): Promise<Blob> {
+async function writeSuperGenreTagFromMetadata(
+  file: File,
+  superGenre: string,
+  metadata: IAudioMetadata
+): Promise<Blob> {
   const arrayBuffer = await file.arrayBuffer();
   const writer = new ID3Writer(arrayBuffer);
 
@@ -520,8 +523,9 @@ async function writeSuperGenreTagFromMetadata(file: File, superGenre: string, me
       ? `${common.track.no}/${common.track.of}`
       : String(common.track.no));
   }
-  if (common.genre && common.genre.length > 0) {
-    writer.setFrame('TCON', common.genre);
+  const genres = splitLegacyId3Genres(common.genre, metadata.format.tagTypes);
+  if (genres.length > 0) {
+    writer.setFrame('TCON', genres);
   }
   if (common.albumartist) {
     writer.setFrame('TPE2', common.albumartist);
@@ -536,7 +540,8 @@ async function writeSuperGenreTagFromMetadata(file: File, superGenre: string, me
 
   let hasDefaultComment = false;
   for (const tag of id3v2Native) {
-    // Preserve TXXX frames
+    // Preserve TXXX frames. Note: music-metadata reports described TXXX frames as
+    // "TXXX:<description>" with a string value, so this branch does not match real files.
     if (tag.id === 'TXXX' && tag.value) {
       const txxx = tag.value as { description?: string; text?: string };
       const desc = txxx.description || '';
@@ -547,28 +552,26 @@ async function writeSuperGenreTagFromMetadata(file: File, superGenre: string, me
         });
       }
     }
-    // Preserve all COMM frames
+    // Carry over the default comment (no descriptor). music-metadata 12 reports every COMM frame
+    // under "COMM" with a `descriptor`; 7 reported described ones (Songs-DB_Custom1, iTunNORM, ...)
+    // as "COMM:<descriptor>", which this loop never matched. They stay dropped, as before.
     if (tag.id === 'COMM' && tag.value) {
-      const comm = tag.value as { description?: string; text?: string; language?: string };
-      const desc = comm.description || '';
-      if (comm.text) {
+      const comm = tag.value as AudioComment;
+      if (!comm.descriptor && comm.text) {
         writer.setFrame('COMM', {
-          description: desc,
+          description: '',
           text: comm.text,
           language: comm.language || 'eng',
         });
-        if (desc === '') hasDefaultComment = true;
+        hasDefaultComment = true;
       }
     }
   }
 
-  // If no native COMM frame with empty description was found, use common.comment as fallback
-  if (!hasDefaultComment && common.comment && common.comment.length > 0) {
-    writer.setFrame('COMM', {
-      description: '',
-      text: common.comment[0],
-      language: 'eng',
-    });
+  // If no native default COMM frame was found, fall back to common.comment (e.g. an ID3v1 comment)
+  const fallbackComment = hasDefaultComment ? null : getDefaultCommentText(common.comment);
+  if (fallbackComment) {
+    writer.setFrame('COMM', { description: '', text: fallbackComment, language: 'eng' });
   }
 
   // Preserve cover art if present
@@ -775,12 +778,13 @@ export async function getFileDebugMetadata(file: File): Promise<FileDebugMetadat
       title: metadata.common.title,
       artist: metadata.common.artist,
       album: metadata.common.album,
-      genre: metadata.common.genre,
+      genre: splitLegacyId3Genres(metadata.common.genre, metadata.format.tagTypes),
       year: metadata.common.year,
       track: metadata.common.track,
       albumartist: metadata.common.albumartist,
       composer: metadata.common.composer,
-      comment: metadata.common.comment,
+      // Default comments only (described ones such as iTunNORM show up under `tags` above)
+      comment: metadata.common.comment?.filter((c) => !c.descriptor).map((c) => c.text ?? ''),
       bpm: metadata.common.bpm,
       key: metadata.common.key,
     },

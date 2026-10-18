@@ -17,7 +17,7 @@ You know 8 patterns that have historically caused bugs in this codebase. They ar
 2. withTimeout requirement — DB and edge function calls must be wrapped; PostgrestFilterBuilder needs .then(r => r) before withTimeout
 3. Auth event settle window — TOKEN_REFRESHED + SIGNED_IN fire in sequence; DB writes within 1500ms of either event race the setSession lock
 4. Scan contention — long-running scans compete with UI queries; missing isScanInProgress guard or AbortController cancellation
-5. Buffer global setup — window.Buffer must be set before any music-metadata-browser parse call
+5. music-metadata result shapes — read genres and comments from parseBlob() through src/utils/audioTags.ts; music-metadata 12 differs from 7 in ways loose typing and mocks hide
 6. SpotifyAuthManager singleton — must use getInstance(); new SpotifyAuthManager() creates a second broken instance
 7. Session cache direct access — critical auth flows (NewAuthContext, login, callback) must call supabase.auth.getSession() directly, not through sessionCache
 8. Second Supabase client with competing fetch config — never create a second createClient() instance; raw fetch() in non-Supabase services (slskd, Discogs, etc.) is not a violation

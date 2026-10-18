@@ -21,7 +21,7 @@ npm run agents:test              # Run framework tests
 ## Critical Non-Obvious Patterns
 
 - **File System Access API Required**: Local file scanning only works in Chromium browsers and fails in iframes (like Lovable preview). Must open deployed app in new tab for testing.
-- **Buffer Global Required**: `music-metadata-browser` needs `window.Buffer = Buffer` set globally for MP3 parsing to work.
+- **music-metadata Result Shapes**: Read genres and comments from `parseBlob()` through `src/utils/audioTags.ts` (`splitLegacyId3Genres`, `getDefaultCommentText`). music-metadata 12 reports an ID3v2.3 genre like `Hip Hop/Rap` as one value and lists every comment, including iTunes `iTunNORM` frames, in `common.comment`.
 - **Supabase Client Import**: Always use `import { supabase } from '@/integrations/supabase/client'` - never use env vars directly.
 - **TypeScript Strict Mode Disabled**: `tsconfig.app.json` has `strict: false` and disabled linting rules - project allows loose typing.
 - **Service Layer Pattern**: All Supabase operations must go through `src/services/*.service.ts` files, never direct queries in components.
@@ -41,7 +41,7 @@ npm run agents:test              # Run framework tests
 
 ## File Processing
 
-- **Metadata Extraction**: Uses `music-metadata-browser` with extensive fallback logic across ID3v2.4/2.3/1.1 and vorbis tags.
+- **Metadata Extraction**: Uses `music-metadata` with extensive fallback logic across ID3v2.4/2.3/1.1 and vorbis tags.
 - **Normalization Service**: Complex text processing for track matching - handles diacritics, punctuation, featuring artists, and mix extraction.
 - **Hash Generation**: Files hashed with SHA-256 for duplicate detection using Web Crypto API.
 - **Batch Processing**: Files processed in batches of 5 for metadata extraction to prevent memory issues.

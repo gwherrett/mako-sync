@@ -178,8 +178,8 @@ npm run agents:validate:code  # Easiest to fix first
 - `code-002` - Supabase import path
 - `code-003` - Edge function isolation
 - `code-004` - SUPER_GENRES sorting
-- `code-005` - Buffer global setup
 - `code-006` - Spotify manager singleton
+- `code-007` - Edge function deploy registration
 
 ---
 

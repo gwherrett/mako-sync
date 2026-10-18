@@ -8,7 +8,6 @@ import {
   SupabaseClientImportRule,
   EdgeFunctionIsolationRule,
   SuperGenresSortingRule,
-  BufferGlobalSetupRule,
   SpotifyManagerSingletonRule,
   EdgeFunctionDeployRegistrationRule
 } from '../rules/code';
@@ -27,7 +26,6 @@ export class CodeAgent extends BaseAgent {
     this.registerRule(new SupabaseClientImportRule());
     this.registerRule(new EdgeFunctionIsolationRule());
     this.registerRule(new SuperGenresSortingRule());
-    this.registerRule(new BufferGlobalSetupRule());
     this.registerRule(new SpotifyManagerSingletonRule());
     this.registerRule(new EdgeFunctionDeployRegistrationRule());
   }

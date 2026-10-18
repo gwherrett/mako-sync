@@ -1,8 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { extractMetadata, extractMetadataBatch, type ScannedTrack } from '../metadataExtractor';
 
-// Mock music-metadata-browser
-vi.mock('music-metadata-browser', () => ({
+// Mock music-metadata
+vi.mock('music-metadata', () => ({
   parseBlob: vi.fn(),
 }));
 
@@ -16,7 +16,7 @@ vi.mock('@/utils/promiseUtils', () => ({
   withTimeout: vi.fn((promise) => promise),
 }));
 
-import { parseBlob } from 'music-metadata-browser';
+import { parseBlob } from 'music-metadata';
 
 describe('metadataExtractor', () => {
   beforeEach(() => {
@@ -718,6 +718,82 @@ describe('metadataExtractor', () => {
       const result = await extractMetadata(file);
 
       expect(result.year).toBe(1995);
+    });
+  });
+
+  // music-metadata 7 split a slash-joined ID3v2.2/2.3 genre ("Hip Hop/Rap") into two values;
+  // 12 keeps it as one. The scanner stores the first genre, so it splits these itself.
+  describe('slash-joined genres', () => {
+    type ParsedMetadata = Awaited<ReturnType<typeof parseBlob>>;
+
+    const scan = async (metadata: object, fileName = 'test.mp3') => {
+      vi.mocked(parseBlob).mockResolvedValue(metadata as unknown as ParsedMetadata);
+      const file = new File(['test'], fileName, { type: 'audio/mpeg' });
+      Object.defineProperty(file, 'lastModified', { value: Date.now() });
+      return extractMetadata(file);
+    };
+
+    it('stores the first genre of an ID3v2.3 "Hip Hop/Rap" genre', async () => {
+      const result = await scan({
+        common: { genre: ['Hip Hop/Rap'] },
+        format: { tagTypes: ['ID3v2.3', 'ID3v1'] },
+        native: {},
+      });
+
+      expect(result.genre).toBe('Hip Hop');
+    });
+
+    it('stores the first genre of an ID3v2.2 "Hip Hop/Rap" genre', async () => {
+      const result = await scan({
+        common: { genre: ['Hip Hop/Rap'] },
+        format: { tagTypes: ['ID3v2.2'] },
+        native: {},
+      });
+
+      expect(result.genre).toBe('Hip Hop');
+    });
+
+    it('keeps the slash in an ID3v2.4 genre', async () => {
+      const result = await scan({
+        common: { genre: ['Hip Hop/Rap'] },
+        format: { tagTypes: ['ID3v2.4'] },
+        native: {},
+      });
+
+      expect(result.genre).toBe('Hip Hop/Rap');
+    });
+
+    it('keeps the slash in a FLAC (vorbis) genre', async () => {
+      const result = await scan(
+        {
+          common: { genre: ['R&B/Soul'] },
+          format: { tagTypes: ['vorbis'] },
+          native: {},
+        },
+        'test.flac'
+      );
+
+      expect(result.genre).toBe('R&B/Soul');
+    });
+
+    it('splits the native ID3v2.3 TCON fallback', async () => {
+      const result = await scan({
+        common: {},
+        format: {},
+        native: { 'ID3v2.3': [{ id: 'TCON', value: 'Hip Hop/Rap' }] },
+      });
+
+      expect(result.genre).toBe('Hip Hop');
+    });
+
+    it('keeps the slash in the native ID3v2.4 TCON fallback', async () => {
+      const result = await scan({
+        common: {},
+        format: {},
+        native: { 'ID3v2.4': [{ id: 'TCON', value: 'Hip Hop/Rap' }] },
+      });
+
+      expect(result.genre).toBe('Hip Hop/Rap');
     });
   });
 });

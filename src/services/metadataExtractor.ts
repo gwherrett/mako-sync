@@ -1,6 +1,6 @@
-import { parseBlob } from 'music-metadata-browser';
-import { Buffer } from 'buffer';
+import { parseBlob } from 'music-metadata';
 import { generateFileHash } from '@/utils/fileHash';
+import { splitLegacyId3Genres } from '@/utils/audioTags';
 import { NormalizationService } from './normalization.service';
 import { z } from 'zod';
 import { withTimeout } from '@/utils/promiseUtils';
@@ -53,11 +53,6 @@ const extractYearFromString = (dateStr: string): number | null => {
   
   return null;
 };
-
-// Make Buffer available globally for music-metadata-browser
-if (typeof window !== 'undefined') {
-  window.Buffer = Buffer;
-}
 
 // Validation schema for MP3 metadata to prevent malicious data
 const metadataSchema = z.object({
@@ -207,8 +202,8 @@ export const extractMetadata = async (file: File): Promise<ScannedTrack> => {
       artist = metadata.common.artist || null;
       album = metadata.common.album || null;
       year = metadata.common.year || null;
-      genre = metadata.common.genre?.[0] || null;
-      super_genre = (metadata.common as any).grouping || null;
+      genre = splitLegacyId3Genres(metadata.common.genre, metadata.format?.tagTypes)[0] || null;
+      super_genre = metadata.common.grouping || null;
       bpm = metadata.common.bpm || null;
       key = metadata.common.key || null;
 
@@ -295,7 +290,10 @@ export const extractMetadata = async (file: File): Promise<ScannedTrack> => {
               }
             }
             if (!genre && (tag.id === 'TCON' || tag.id === 'GENRE' || tag.id === 'Genre')) {
-              genre = typeof tag.value === 'string' ? tag.value : null;
+              // ID3v2.3 TCON values like "Hip Hop/Rap" hold several genres (see splitLegacyId3Genres)
+              genre = typeof tag.value === 'string'
+                ? splitLegacyId3Genres([tag.value], [format])[0] || null
+                : null;
             }
             if (!super_genre && tag.id === 'TIT1') {
               super_genre = typeof tag.value === 'string' ? tag.value : null;

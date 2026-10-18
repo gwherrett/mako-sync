@@ -60,7 +60,7 @@ npm run agents:fix       # Auto-fix violations
 - `normalization.service.ts` - Text normalization for track matching (critical for matching accuracy)
 - `trackMatchingEngine.ts` - Core matching engine (3-tier: exact, core title, fuzzy)
 - `trackMatching.service.ts` - Matching orchestration between Spotify and local files
-- `metadataExtractor.ts` - Audio metadata extraction using music-metadata-browser (MP3, FLAC, M4A)
+- `metadataExtractor.ts` - Audio metadata extraction using music-metadata (MP3, FLAC, M4A); compatibility helpers for genres and comments live in `src/utils/audioTags.ts`
 - `downloadProcessor.service.ts` - Multi-format SuperGenre tag writing; `writeTagsInPlace()` uses a single-parse optimisation (metadata + grouping check in one pass); `writeSuperGenreTag()` dispatches by extension to the MP3 (ID3) or FLAC (Vorbis Comment) writer
 - `flacTagWriter.ts` - Browser-native FLAC Vorbis Comment writer; `writeFlacGroupingTag(buffer, superGenre)` parses FLAC metadata blocks, updates/creates the VORBIS_COMMENT block, and returns a new Blob
 - `spotifyAuthManager.service.ts` - Spotify connection management (singleton via `getInstance()`)
@@ -177,7 +177,7 @@ Hosted on **Vercel**. Pushing to `main` deploys to production and also generates
 
 See [AGENTS.md](AGENTS.md) for additional critical non-obvious patterns including:
 - File System API browser limitations
-- Buffer global requirement for MP3 parsing
+- music-metadata result shapes (genre split, comment descriptors)
 - Supabase 1000-row pagination limits
 - SpotifyAuthManager singleton usage
 - Session cache direct access requirements
