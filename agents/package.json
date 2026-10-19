@@ -22,7 +22,7 @@
   "author": "Mako Sync",
   "license": "MIT",
   "devDependencies": {
-    "@typescript-eslint/parser": "^8.52.0",
+    "@typescript-eslint/parser": "^8.71.2",
     "@typescript-eslint/typescript-estree": "^8.52.0",
     "typescript": "^5.9.3"
   }
