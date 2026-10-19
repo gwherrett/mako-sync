@@ -4,21 +4,16 @@
  * Processes downloaded MP3 files from slskd:
  * - Extracts metadata (artist, title, album, genre) using music-metadata
  * - Maps ID3 genre tags to SuperGenre using the effective genre map
- * - Writes SuperGenre to Grouping (TIT1) ID3 tag using browser-id3-writer
+ * - Writes SuperGenre to the Grouping tag (ID3 TIT1 for MP3, GROUPING for FLAC), changing nothing else
  * - Uses File System Access API to write tags back to original files in place
  *
  * Grouping (TIT1) is a standard ID3 field supported by all major DJ software
  * (Serato, Rekordbox, Traktor) and media players (MediaMonkey, iTunes).
  */
 
-import { parseBlob, type IAudioMetadata } from 'music-metadata';
-import { ID3Writer } from 'browser-id3-writer';
+import { parseBlob } from 'music-metadata';
 import { withTimeout } from '@/utils/promiseUtils';
-import {
-  getDefaultCommentText,
-  splitLegacyId3Genres,
-  type AudioComment,
-} from '@/utils/audioTags';
+import { splitLegacyId3Genres } from '@/utils/audioTags';
 import type {
   ProcessedFile,
   ProcessingResult,
@@ -28,6 +23,7 @@ import type {
 import type { FileWithHandle } from './directoryHandle.service';
 import { isSupportedAudioFile, stripAudioExtension } from './fileScanner';
 import { writeFlacGroupingTag } from './flacTagWriter';
+import { writeId3GroupingTag } from './id3TagWriter';
 
 // Timeout for parsing individual files (30 seconds)
 const PARSE_TIMEOUT_MS = 30000;
@@ -455,143 +451,23 @@ export function reprocessWithUpdatedMap(
 }
 
 /**
- * Write SuperGenre to Grouping (TIT1) ID3 tag for MP3 files while preserving existing tags
+ * Write SuperGenre to the Grouping tag, dispatching by format: MP3 to the ID3 writer (TIT1),
+ * FLAC to the Vorbis Comment writer (GROUPING). Both patch the existing tag, so every other
+ * tag and the audio data stay as they were.
  *
- * Grouping (TIT1) is a standard ID3 field supported by all major DJ software
- * (Serato, Rekordbox, Traktor) and media players (MediaMonkey, iTunes).
+ * Grouping is a standard field supported by all major DJ software (Serato, Rekordbox, Traktor)
+ * and media players (MediaMonkey, iTunes).
  *
- * ID3Writer replaces all tags by default, so we need to:
- * 1. Read existing metadata
- * 2. Re-write all important tags
- * 3. Add SuperGenre to Grouping field
- *
- * @param file - The original MP3 file
+ * @param file - The original audio file
  * @param superGenre - The SuperGenre to write
- * @returns A new Blob with the updated ID3 tag
- */
-async function writeMp3SuperGenreTag(file: File, superGenre: string): Promise<Blob> {
-  // First, read existing metadata so we can preserve it
-  const metadata = await parseBlob(file, {
-    includeChapters: false,
-    skipCovers: false, // We want to preserve cover art
-  });
-
-  return writeSuperGenreTagFromMetadata(file, superGenre, metadata);
-}
-
-/**
- * Format-dispatching entry point for writing SuperGenre to any supported audio format.
- * Routes MP3 to the ID3 writer and FLAC to the Vorbis Comment writer.
+ * @returns A new Blob with the updated tag
+ * @throws If the format isn't supported, or the file's tag can't be changed safely
  */
 async function writeSuperGenreTag(file: File, superGenre: string): Promise<Blob> {
   const ext = file.name.toLowerCase().split('.').pop();
-  if (ext === 'flac') {
-    const buffer = await file.arrayBuffer();
-    return writeFlacGroupingTag(buffer, superGenre);
-  }
-  return writeMp3SuperGenreTag(file, superGenre);
-}
-
-/**
- * Write SuperGenre tag using pre-parsed metadata (avoids re-parsing the file)
- */
-async function writeSuperGenreTagFromMetadata(
-  file: File,
-  superGenre: string,
-  metadata: IAudioMetadata
-): Promise<Blob> {
-  const arrayBuffer = await file.arrayBuffer();
-  const writer = new ID3Writer(arrayBuffer);
-
-  // Preserve common tags
-  const common = metadata.common;
-
-  if (common.title) {
-    writer.setFrame('TIT2', common.title);
-  }
-  if (common.artist) {
-    writer.setFrame('TPE1', [common.artist]);
-  }
-  if (common.album) {
-    writer.setFrame('TALB', common.album);
-  }
-  if (common.year) {
-    writer.setFrame('TYER', common.year);
-  }
-  if (common.track?.no) {
-    writer.setFrame('TRCK', common.track.of
-      ? `${common.track.no}/${common.track.of}`
-      : String(common.track.no));
-  }
-  const genres = splitLegacyId3Genres(common.genre, metadata.format.tagTypes);
-  if (genres.length > 0) {
-    writer.setFrame('TCON', genres);
-  }
-  if (common.albumartist) {
-    writer.setFrame('TPE2', common.albumartist);
-  }
-  if (common.composer && common.composer.length > 0) {
-    writer.setFrame('TCOM', common.composer);
-  }
-  // Preserve existing TXXX and COMM frames from native tags
-  const id3v23 = metadata.native['ID3v2.3'] || [];
-  const id3v24 = metadata.native['ID3v2.4'] || [];
-  const id3v2Native = [...id3v23, ...id3v24];
-
-  let hasDefaultComment = false;
-  for (const tag of id3v2Native) {
-    // Preserve TXXX frames. Note: music-metadata reports described TXXX frames as
-    // "TXXX:<description>" with a string value, so this branch does not match real files.
-    if (tag.id === 'TXXX' && tag.value) {
-      const txxx = tag.value as { description?: string; text?: string };
-      const desc = txxx.description || '';
-      if (txxx.text) {
-        writer.setFrame('TXXX', {
-          description: desc,
-          value: txxx.text,
-        });
-      }
-    }
-    // Carry over the default comment (no descriptor). music-metadata 12 reports every COMM frame
-    // under "COMM" with a `descriptor`; 7 reported described ones (Songs-DB_Custom1, iTunNORM, ...)
-    // as "COMM:<descriptor>", which this loop never matched. They stay dropped, as before.
-    if (tag.id === 'COMM' && tag.value) {
-      const comm = tag.value as AudioComment;
-      if (!comm.descriptor && comm.text) {
-        writer.setFrame('COMM', {
-          description: '',
-          text: comm.text,
-          language: comm.language || 'eng',
-        });
-        hasDefaultComment = true;
-      }
-    }
-  }
-
-  // If no native default COMM frame was found, fall back to common.comment (e.g. an ID3v1 comment)
-  const fallbackComment = hasDefaultComment ? null : getDefaultCommentText(common.comment);
-  if (fallbackComment) {
-    writer.setFrame('COMM', { description: '', text: fallbackComment, language: 'eng' });
-  }
-
-  // Preserve cover art if present
-  if (common.picture && common.picture.length > 0) {
-    const pic = common.picture[0];
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (writer as any).setFrame('APIC', {
-      type: pic.type === 'Cover (front)' ? 3 : 0,
-      data: pic.data,
-      description: pic.description || '',
-      useUnicodeEncoding: false,
-    });
-  }
-
-  // Write SuperGenre to Grouping field (TIT1)
-  // Standard ID3 field supported by Serato, Rekordbox, Traktor, MediaMonkey, iTunes
-  writer.setFrame('TIT1', superGenre);
-
-  writer.addTag();
-  return writer.getBlob();
+  if (ext === 'flac') return writeFlacGroupingTag(await file.arrayBuffer(), superGenre);
+  if (ext === 'mp3') return writeId3GroupingTag(await file.arrayBuffer(), superGenre);
+  throw new Error(`Tag writing is not supported for .${ext} files`);
 }
 
 // Batch size for parallel tag writing
@@ -604,11 +480,12 @@ const TAG_WRITE_BATCH_SIZE = 5;
 async function writeTagForSingleFile(
   file: ProcessedFile
 ): Promise<'skipped' | 'written'> {
-  // Single parse: read metadata (with covers for preservation) and check existing TIT1
+  // Single parse to check the existing grouping. The writers patch the file's own bytes,
+  // so nothing else (covers included) is needed from it.
   const metadata = await withTimeout(
     parseBlob(file.file, {
       includeChapters: false,
-      skipCovers: false,
+      skipCovers: true,
     }),
     PARSE_TIMEOUT_MS,
     `Metadata parsing timed out for ${file.filename}`
@@ -619,12 +496,8 @@ async function writeTagForSingleFile(
     return 'skipped';
   }
 
-  // Write tag — FLAC uses the Vorbis Comment writer; MP3 uses the ID3 path
-  const ext = file.file.name.toLowerCase().split('.').pop();
-  const taggedBlob =
-    ext === 'flac'
-      ? writeFlacGroupingTag(await file.file.arrayBuffer(), file.superGenre!)
-      : await writeSuperGenreTagFromMetadata(file.file, file.superGenre!, metadata);
+  // Throws before the file is opened for writing if its tag can't be changed safely
+  const taggedBlob = await writeSuperGenreTag(file.file, file.superGenre!);
 
   // Write back to original file using the handle
   const writable = await file.fileHandle!.createWritable();
@@ -638,7 +511,7 @@ async function writeTagForSingleFile(
  * Write SuperGenre tags to all mapped files in place using File System Access API
  *
  * Optimized with:
- * - Single parse per file (check existing tag + read metadata in one pass)
+ * - Single parse per file (only to check the existing Grouping tag)
  * - Parallel batching (processes TAG_WRITE_BATCH_SIZE files concurrently)
  * - Skip files where existing Grouping tag already matches target
  *
@@ -798,7 +671,6 @@ export const _testExports = {
   processFile,
   filterAudioFiles,
   writeSuperGenreTag,
-  writeMp3SuperGenreTag,
   getExistingGroupingTag,
 };
 
