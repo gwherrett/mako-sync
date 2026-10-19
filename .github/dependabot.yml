@@ -1,0 +1,28 @@
+# Dependabot config (MAK-162).
+#
+# Minor and patch bumps are grouped into one PR per ecosystem. Major bumps
+# match no group, so each one arrives as its own PR and can be reviewed and
+# tested on its own.
+version: 2
+updates:
+  - package-ecosystem: npm
+    directories:
+      - "/"
+      - "/agents"
+    schedule:
+      interval: weekly
+    groups:
+      npm-minor-patch:
+        applies-to: version-updates
+        update-types: [minor, patch]
+      npm-security-minor-patch:
+        applies-to: security-updates
+        update-types: [minor, patch]
+
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: weekly
+    groups:
+      actions-minor-patch:
+        update-types: [minor, patch]
