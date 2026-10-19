@@ -1,6 +1,6 @@
 # Manual Match Review: Architecture + UI Plan
 
-**Status:** Backlog. Phase 0 done ([MAK-151](https://linear.app/mako-sync/issue/MAK-151)). Phase 1 is blocked on the full-sync fix ([MAK-152](https://linear.app/mako-sync/issue/MAK-152)).
+**Status:** In progress. Phase 0 ([MAK-151](https://linear.app/mako-sync/issue/MAK-151)) and Phase 0.5 ([MAK-152](https://linear.app/mako-sync/issue/MAK-152), closed 2026-10-18) are done. Phase 1 ([MAK-153](https://linear.app/mako-sync/issue/MAK-153)) is unblocked and next.
 **Linear project:** [Manual Match Review](https://linear.app/mako-sync/project/manual-match-review-67092b2d3c1b)
 
 ---
@@ -19,7 +19,7 @@ This document covers two approved plans, in sequence: (1) the backend/data-model
 
 ### Current State (verified)
 
-- **`src/services/trackMatchingEngine.ts`** — stateless 3-tier matcher (Tier 1 exact, Tier 2/2b core-title, Tier 3 fuzzy ≥85% Levenshtein, same-artist only at every tier — no cross-artist fuzzy candidates). Bug: Tier 1/2 branches of `matchTrack()` (lines ~228-238) return a match without attaching `matchedLocalTrack` (only Tier 2b/3 do) — needs fixing since persisting a confirmed match requires the local track id.
+- **`src/services/trackMatchingEngine.ts`** — stateless 3-tier matcher (Tier 1 exact, Tier 2/2b core-title, Tier 3 fuzzy ≥85% Levenshtein, same-artist only at every tier — no cross-artist fuzzy candidates). Bug: Tier 1/2 branches of `matchTrack()` (lines ~230-237) return a match without attaching `matchedLocalTrack` (only Tier 2b/3 do) — needs fixing since persisting a confirmed match requires the local track id.
 - **`src/services/trackMatching.service.ts`** — `findMissingTracks()` re-implements the tier logic inline (duplicates, doesn't call, the engine) and **discards matched tracks**, returning only misses. Genre filtering (`applySuperGenreFilter` → genre → artist cascade) applies only to the Spotify side; local files are always fetched unfiltered. Nothing is ever persisted — every "Analyze" click recomputes from scratch.
 - **`track_matches` table** — already exists in Supabase (`mp3_id`, `spotify_track_id`, `match_method`, `match_confidence`, `is_confirmed`, `matched_at`), RLS scoped to `auth.uid()`, but **no `CREATE TABLE` migration exists in `supabase/migrations/`** (only RLS-policy migrations reference it) and **no application code reads or writes it today**. It was likely hand-created via the Supabase dashboard. The live schema was inspected in Phase 0; see the findings there. Note that `spotify_track_id` is a uuid FK to `spotify_liked.id`, not Spotify's own track id (`spotify_liked.spotify_id`).
 - **Genre taxonomy asymmetry** — `spotify_liked.super_genre` is a proper enum driven by `spotify_genre_map_base`/`spotify_genre_map_overrides`. `local_mp3s.super_genre` is raw, unmapped ID3 "Grouping" text with no reconciliation to the same enum/mapping tables. (Per the decision below, v1 sidesteps this rather than fixing it.)
@@ -57,7 +57,9 @@ The live `track_matches` table was inspected directly in Supabase on 2026-10-13,
 - The RLS changes in Phase 1 are now spelled out exactly.
 - The cascade on `spotify_track_id` led to a blocker: a full Spotify sync would delete every review decision. See "Phase 0.5" below.
 
-#### Phase 0.5 — Make full Spotify sync non-destructive ([MAK-152](https://linear.app/mako-sync/issue/MAK-152), blocks Phase 1)
+#### Phase 0.5 — Make full Spotify sync non-destructive (done, [MAK-152](https://linear.app/mako-sync/issue/MAK-152))
+**Result (checked 2026-10-18):** a full sync that paused and resumed over 21 minutes kept every `spotify_liked` id, all rows carry a `last_seen_sync_id`, manual overrides survived, and incremental sync is unchanged. The unlike check wasn't run before close. The next full sync should report `1 removed`, because the table has one more row than Spotify's liked count.
+
 **Problem:** a full sync (`spotify-sync-liked/index.ts`, ~line 382) deletes all of a user's `spotify_liked` rows, then re-inserts them with new ids. Because `track_matches.spotify_track_id` cascades on delete, this would wipe every confirmed match, rejection and confirmed-missing row, which defeats the goal of keeping decisions durable. Incremental syncs are fine: they upsert on `(user_id, spotify_id)`, which keeps row ids. Unliking a track also cascades, which is the behaviour we want.
 
 **Decision (approved 2026-10-13): Option A, make full sync non-destructive.**
@@ -107,7 +109,7 @@ Fix `trackMatchingEngine.ts` so Tier 1 and Tier 2 (non-2b) branches of `matchTra
 
 ### Risks / Notes Carried Forward (not addressed in this change)
 - `super_genre_manual_override` propagation in `supabase/functions/spotify-sync-liked/index.ts`: a concurrent sync could shift the genre-filtered subset mid-review session. Unrelated pre-existing issue, flagged for awareness only.
-- **Tag writes orphan confirmed matches (found in Phase 0).** `local_mp3s.hash` is a SHA-256 of the whole file, and the scanner upserts on `hash`. Writing a SuperGenre tag changes the file's bytes, so the next scan inserts a new `local_mp3s` row, and any confirmed match still points at the old row. Not addressed in v1. Options include re-pointing matches by `file_path` on rescan, or deleting superseded rows.
+- **Re-tagged files orphan confirmed matches ([MAK-164](https://linear.app/mako-sync/issue/MAK-164), Low, not a blocker).** `local_mp3s.hash` is a SHA-256 of the whole file, and the scanner upserts on `hash`. Any tag write changes the hash, whether it's the app's SuperGenre writer or a genre edit in MediaMonkey. The next scan then inserts a new row and leaves the old one, so a confirmed match keeps pointing at the old row, and deleting that row later would cascade away the decision. A check on 2026-10-18 found 4 such leftover pairs (3 MP3, 1 FLAC), and the stale rows were deleted. Re-pointing matches by `file_path` won't work: it stores only the filename, and 12 other same-name pairs turned out to be different files. MAK-164 lists the options; hashing only the audio is the likely fix. Until it lands, a re-tagged file that already has a confirmed match needs re-reviewing after the next scan.
 - `SuperGenre` TS union vs. DB enum drift (`Soul-Jazz` missing from the TS union; `Reggae/Dancehall` vs `Reggae-Dancehall` duplicate) — pre-existing, worth cleaning up before it's load-bearing for genre-filtered UI, but not part of this change.
 - **Eval infrastructure refactor is explicitly out of scope and deferred to its own later phased project**, to start only after this implementation is complete. The offline `eval-cases.json`/CSV pipeline (used once, and stale relative to how eval tooling has evolved since) stays untouched here — this plan does not redesign, unify, or migrate it. The `failure_category` column added to `track_matches` (Phase 1) is kept loosely vocabulary-compatible only so that future project has the option to draw on real review data; no merge mechanism is being built now.
 
@@ -117,7 +119,7 @@ Fix `trackMatchingEngine.ts` so Tier 1 and Tier 2 (non-2b) branches of `matchTra
 - Manual Supabase check: after Phase 1 migration, confirm `track_matches` accepts `mp3_id = NULL` inserts and the partial unique indexes reject duplicate confirmed rows, via the SQL editor or a scratch script — before wiring the UI in Part 2.
 - Confirm an insert that leaves `is_confirmed` out stores `null`, not `false`, and that an UPDATE pointing `mp3_id` at another user's MP3 is rejected by RLS.
 - Confirm review decisions survive a sync. With some `track_matches` rows in place, run a full Spotify sync that pauses and resumes at least once (requires MAK-152), and check that the row count is unchanged and the rows still point at the same `spotify_liked` rows.
-- `npm run lint` and full `npx vitest run --coverage` (60% threshold) before considering Part 1 complete.
+- `npm run lint` and full `npx vitest run --coverage` (70% threshold) before considering Part 1 complete.
 
 ---
 
