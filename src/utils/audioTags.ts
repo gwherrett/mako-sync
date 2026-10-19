@@ -33,15 +33,3 @@ export function splitLegacyId3Genres(
     .map((genre) => genre.trim())
     .filter(Boolean);
 }
-
-/**
- * Text of the first default comment, i.e. the first one without a descriptor.
- *
- * music-metadata 7 only put default comments in `common.comment`, as plain strings.
- * 12 lists every comment as an `IComment`, including described ones such as the iTunes
- * `iTunNORM` / `iTunPGAP` frames, so taking `comment[0]` would pick up that junk.
- */
-export function getDefaultCommentText(comments: readonly AudioComment[] | undefined): string | null {
-  const defaultComment = comments?.find((comment) => !comment.descriptor && comment.text);
-  return defaultComment?.text ?? null;
-}

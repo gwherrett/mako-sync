@@ -2,8 +2,12 @@ import { describe, it, expect, vi, beforeEach, Mock } from 'vitest';
 import {
   processDownloads,
   reprocessWithUpdatedMap,
+  writeTagsInPlace,
   _testExports,
 } from '../downloadProcessor.service';
+import { writeFlacGroupingTag } from '../flacTagWriter';
+import { UNPATCHABLE_ID3_TAG_ERROR, writeId3GroupingTag } from '../id3TagWriter';
+import { concatBytes, frame, silentMp3Frames, tag, text } from './fixtures/id3';
 import type { ProcessedFile } from '@/types/slskd';
 import { parseBlob } from 'music-metadata';
 
@@ -12,10 +16,7 @@ const { mapToSuperGenre, filterAudioFiles, writeSuperGenreTag, extractFileMetada
 type ParsedMetadata = Awaited<ReturnType<typeof parseBlob>>;
 
 // vi.mock calls are hoisted above the imports, so the mock fns they close over must be too
-const { mockSetFrame, mockAddTag, mockGetBlob, baseMetadata } = vi.hoisted(() => ({
-  mockSetFrame: vi.fn(),
-  mockAddTag: vi.fn(),
-  mockGetBlob: vi.fn().mockReturnValue(new Blob(['test'], { type: 'audio/mpeg' })),
+const { baseMetadata } = vi.hoisted(() => ({
   // Shaped like music-metadata 12 output: comments are objects with a `descriptor`
   baseMetadata: {
     common: {
@@ -38,14 +39,6 @@ const { mockSetFrame, mockAddTag, mockGetBlob, baseMetadata } = vi.hoisted(() =>
       ],
     },
     format: { tagTypes: ['ID3v2.3'] },
-  },
-}));
-
-vi.mock('browser-id3-writer', () => ({
-  ID3Writer: class {
-    setFrame = mockSetFrame;
-    addTag = mockAddTag;
-    getBlob = mockGetBlob;
   },
 }));
 
@@ -341,197 +334,103 @@ describe('downloadProcessor.service', () => {
   });
 
   describe('writeSuperGenreTag', () => {
+    const bytesOf = async (blob: Blob | Promise<Blob>) => new Uint8Array(await (await blob).arrayBuffer());
+    const mp3 = () => concatBytes(tag(3, [frame(3, 'TIT2', text('Title'))], { padding: 64 }), silentMp3Frames());
+    // fLaC marker and a STREAMINFO block (the last metadata block), all zeros
+    const flac = () => Uint8Array.from([0x66, 0x4c, 0x61, 0x43, 0x80, 0x00, 0x00, 0x22, ...new Array(34).fill(0)]);
+
+    it('writes the Grouping (TIT1) frame of an MP3 with the ID3 writer', async () => {
+      const file = new File([mp3()], 'Track.MP3', { type: 'audio/mpeg' });
+
+      expect(await bytesOf(writeSuperGenreTag(file, 'House'))).toEqual(
+        await bytesOf(writeId3GroupingTag(mp3().buffer, 'House'))
+      );
+    });
+
+    it('writes the GROUPING comment of a FLAC with the Vorbis Comment writer', async () => {
+      const file = new File([flac()], 'track.flac', { type: 'audio/flac' });
+
+      expect(await bytesOf(writeSuperGenreTag(file, 'House'))).toEqual(
+        await bytesOf(writeFlacGroupingTag(flac().buffer, 'House'))
+      );
+    });
+
+    it('rejects formats it cannot write', async () => {
+      const file = new File([new Uint8Array(16)], 'track.m4a', { type: 'audio/mp4' });
+
+      await expect(writeSuperGenreTag(file, 'House')).rejects.toThrow('Tag writing is not supported for .m4a files');
+    });
+
+    it('rejects an MP3 whose ID3 tag cannot be changed safely', async () => {
+      const file = new File([tag(3, [frame(3, 'TIT2', text('Title'))], { flags: 0x40 })], 'track.mp3');
+
+      await expect(writeSuperGenreTag(file, 'House')).rejects.toThrow(UNPATCHABLE_ID3_TAG_ERROR);
+    });
+  });
+
+  describe('writeTagsInPlace', () => {
     beforeEach(() => {
-      vi.clearAllMocks();
+      vi.spyOn(console, 'log').mockImplementation(() => {});
+      vi.spyOn(console, 'error').mockImplementation(() => {});
     });
 
-    it('writes SuperGenre to Grouping (TIT1) field', async () => {
-      // Create a minimal valid MP3 file buffer (ID3v2 header + minimal frame data)
-      const id3Header = new Uint8Array([
-        0x49, 0x44, 0x33, // "ID3"
-        0x03, 0x00,       // Version 2.3
-        0x00,             // Flags
-        0x00, 0x00, 0x00, 0x0a, // Size (10 bytes)
-      ]);
-      const padding = new Uint8Array(10);
-      const fileContent = new Uint8Array([...id3Header, ...padding]);
-
-      const file = new File([fileContent], 'test.mp3', { type: 'audio/mpeg' });
-
-      try {
-        await writeSuperGenreTag(file, 'House');
-      } catch {
-        // May fail in test environment due to mocking complexity
-      }
-
-      // Verify TIT1 (Grouping) frame was called with SuperGenre value
-      const tit1Calls = mockSetFrame.mock.calls.filter(
-        (call: [string, unknown]) => call[0] === 'TIT1'
-      );
-
-      // Should have a TIT1 call with the SuperGenre value
-      expect(tit1Calls).toHaveLength(1);
-      expect(tit1Calls[0][1]).toBe('House');
-    });
-
-    it('does NOT write to COMM:Songs-DB_Custom1 (legacy format)', async () => {
-      const id3Header = new Uint8Array([
-        0x49, 0x44, 0x33, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0x0a,
-      ]);
-      const padding = new Uint8Array(10);
-      const fileContent = new Uint8Array([...id3Header, ...padding]);
-
-      const file = new File([fileContent], 'test.mp3', { type: 'audio/mpeg' });
-
-      try {
-        await writeSuperGenreTag(file, 'Techno');
-      } catch {
-        // May fail in test environment
-      }
-
-      // Verify NO COMM frame was written with Songs-DB_Custom1 description
-      const commCalls = mockSetFrame.mock.calls.filter(
-        (call: [string, unknown]) => call[0] === 'COMM'
-      );
-
-      // The writer must have run, otherwise the check below passes vacuously
-      expect(commCalls.length).toBeGreaterThan(0);
-
-      const songDbCustomCall = commCalls.find(
-        (call: [string, { description: string }]) =>
-          call[1]?.description === 'Songs-DB_Custom1'
-      );
-
-      // Should NOT find any COMM:Songs-DB_Custom1 - we use TIT1 (Grouping) now
-      expect(songDbCustomCall).toBeUndefined();
-    });
-
-    const mp3File = () => {
-      const id3Header = new Uint8Array([
-        0x49, 0x44, 0x33, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0x0a,
-      ]);
-      return new File([id3Header, new Uint8Array(10)], 'test.mp3', { type: 'audio/mpeg' });
+    const handleFor = () => {
+      const writable = { write: vi.fn(), close: vi.fn() };
+      const fileHandle = { createWritable: vi.fn().mockResolvedValue(writable) };
+      return { writable, fileHandle };
     };
 
-    const framesWritten = (id: string) =>
-      mockSetFrame.mock.calls.filter((call: [string, unknown]) => call[0] === id);
-
-    it('carries over only the default comment, without a descriptor', async () => {
-      await writeSuperGenreTag(mp3File(), 'Drum & Bass');
-
-      // music-metadata 12 reports every COMM frame under "COMM". With music-metadata 7 the described
-      // ones arrived as "COMM:<descriptor>" and were never carried over, so they must stay dropped
-      // rather than being rewritten with an empty descriptor.
-      expect(framesWritten('COMM').map((call) => call[1])).toEqual([
-        { description: '', text: 'default comment', language: 'eng' },
-      ]);
+    const mappedFile = (file: File, fileHandle: object): ProcessedFile => ({
+      filename: file.name,
+      relativePath: file.name,
+      artist: 'Artist',
+      title: 'Title',
+      album: null,
+      genres: ['deep house'],
+      superGenre: 'House',
+      status: 'mapped',
+      file,
+      fileHandle: fileHandle as unknown as FileSystemFileHandle,
     });
 
-    it('falls back to the first default common.comment when no native default comment exists', async () => {
-      mockNextParse({
-        ...baseMetadata,
-        common: {
-          ...baseMetadata.common,
-          comment: [
-            { descriptor: 'iTunNORM', language: 'eng', text: ' 00000721 00000834' },
-            { text: 'ID3v1 comment' },
-          ],
-        },
-        native: {},
-      });
+    const mp3File = (flags = 0) =>
+      new File([tag(3, [frame(3, 'TIT2', text('Title'))], { padding: 64, flags }), silentMp3Frames()], 'track.mp3');
 
-      await writeSuperGenreTag(mp3File(), 'House');
+    it('writes the patched file back through its handle', async () => {
+      const { writable, fileHandle } = handleFor();
+      const file = mp3File();
 
-      expect(framesWritten('COMM').map((call) => call[1])).toEqual([
-        { description: '', text: 'ID3v1 comment', language: 'eng' },
-      ]);
-    });
+      const result = await writeTagsInPlace([mappedFile(file, fileHandle)]);
 
-    it('does not turn a described common.comment into the default comment', async () => {
-      mockNextParse({
-        ...baseMetadata,
-        common: {
-          ...baseMetadata.common,
-          comment: [{ descriptor: 'iTunPGAP', language: 'eng', text: '0' }],
-        },
-        native: {},
-      });
-
-      await writeSuperGenreTag(mp3File(), 'House');
-
-      expect(framesWritten('COMM')).toHaveLength(0);
-    });
-
-    it('writes each genre of a slash-joined ID3v2.3 genre separately', async () => {
-      mockNextParse({
-        ...baseMetadata,
-        common: { ...baseMetadata.common, genre: ['Hip Hop/Rap'] },
-        format: { tagTypes: ['ID3v2.3'] },
-      });
-
-      await writeSuperGenreTag(mp3File(), 'Hip Hop');
-
-      expect(framesWritten('TCON').map((call) => call[1])).toEqual([['Hip Hop', 'Rap']]);
-    });
-
-    it('keeps a slash inside an ID3v2.4 genre', async () => {
-      mockNextParse({
-        ...baseMetadata,
-        common: { ...baseMetadata.common, genre: ['Hip Hop/Rap'] },
-        format: { tagTypes: ['ID3v2.4'] },
-      });
-
-      await writeSuperGenreTag(mp3File(), 'Hip Hop');
-
-      expect(framesWritten('TCON').map((call) => call[1])).toEqual([['Hip Hop/Rap']]);
-    });
-
-    it('passes cover art through as the Uint8Array music-metadata returns', async () => {
-      const data = new Uint8Array([0x89, 0x50, 0x4e, 0x47]);
-      mockNextParse({
-        ...baseMetadata,
-        common: {
-          ...baseMetadata.common,
-          picture: [{ format: 'image/png', type: 'Cover (front)', description: 'front', data }],
-        },
-      });
-
-      await writeSuperGenreTag(mp3File(), 'House');
-
-      expect(framesWritten('APIC').map((call) => call[1])).toEqual([
-        { type: 3, data, description: 'front', useUnicodeEncoding: false },
-      ]);
-    });
-
-    it('preserves existing TXXX frames', async () => {
-      const id3Header = new Uint8Array([
-        0x49, 0x44, 0x33, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0x0a,
-      ]);
-      const padding = new Uint8Array(10);
-      const fileContent = new Uint8Array([...id3Header, ...padding]);
-
-      const file = new File([fileContent], 'test.mp3', { type: 'audio/mpeg' });
-
-      try {
-        await writeSuperGenreTag(file, 'Techno');
-      } catch {
-        // May fail in test environment
-      }
-
-      // Verify existing TXXX frames are preserved
-      const txxxCalls = mockSetFrame.mock.calls.filter(
-        (call: [string, unknown]) => call[0] === 'TXXX'
+      expect(result).toEqual({ success: 1, skipped: 0, errors: [] });
+      const written = writable.write.mock.calls[0][0] as Blob;
+      expect(new Uint8Array(await written.arrayBuffer())).toEqual(
+        new Uint8Array(await writeId3GroupingTag(await file.arrayBuffer(), 'House').arrayBuffer())
       );
+      expect(writable.close).toHaveBeenCalled();
+    });
 
-      const existingCustomCall = txxxCalls.find(
-        (call: [string, { description: string }]) =>
-          call[1]?.description === 'EXISTING_CUSTOM'
-      );
+    it('skips a file whose Grouping already holds the SuperGenre', async () => {
+      mockNextParse({ ...baseMetadata, common: { ...baseMetadata.common, grouping: 'House' } });
+      const { fileHandle } = handleFor();
 
-      expect(existingCustomCall?.[1]).toEqual({
-        description: 'EXISTING_CUSTOM',
-        value: 'existing value',
+      const result = await writeTagsInPlace([mappedFile(mp3File(), fileHandle)]);
+
+      expect(result).toEqual({ success: 0, skipped: 1, errors: [] });
+      expect(fileHandle.createWritable).not.toHaveBeenCalled();
+    });
+
+    it('reports a file whose ID3 tag cannot be changed safely and never opens it for writing', async () => {
+      const { fileHandle } = handleFor();
+
+      const result = await writeTagsInPlace([mappedFile(mp3File(0x40), fileHandle)]);
+
+      expect(result).toEqual({
+        success: 0,
+        skipped: 0,
+        errors: [{ filename: 'track.mp3', error: expect.stringContaining(UNPATCHABLE_ID3_TAG_ERROR) }],
       });
+      expect(fileHandle.createWritable).not.toHaveBeenCalled();
     });
   });
 

@@ -60,8 +60,9 @@ npm run agents:fix       # Auto-fix violations
 - `normalization.service.ts` - Text normalization for track matching (critical for matching accuracy)
 - `trackMatchingEngine.ts` - Core matching engine (3-tier: exact, core title, fuzzy)
 - `trackMatching.service.ts` - Matching orchestration between Spotify and local files
-- `metadataExtractor.ts` - Audio metadata extraction using music-metadata (MP3, FLAC, M4A); compatibility helpers for genres and comments live in `src/utils/audioTags.ts`
-- `downloadProcessor.service.ts` - Multi-format SuperGenre tag writing; `writeTagsInPlace()` uses a single-parse optimisation (metadata + grouping check in one pass); `writeSuperGenreTag()` dispatches by extension to the MP3 (ID3) or FLAC (Vorbis Comment) writer
+- `metadataExtractor.ts` - Audio metadata extraction using music-metadata (MP3, FLAC, M4A); compatibility helpers for genres live in `src/utils/audioTags.ts`
+- `downloadProcessor.service.ts` - Multi-format SuperGenre tag writing; `writeTagsInPlace()` parses each file once to skip those whose Grouping already matches; `writeSuperGenreTag()` dispatches by extension to the MP3 (ID3) or FLAC (Vorbis Comment) writer
+- `id3TagWriter.ts` - Browser-native ID3v2.2/2.3/2.4 writer; `writeId3GroupingTag(buffer, superGenre)` patches only the Grouping (TIT1) frame and keeps every other frame (Serato GEOB, TBPM, TKEY, TXXX, ...) and the audio byte for byte. Tags it can't patch safely throw `UNPATCHABLE_ID3_TAG_ERROR` and are left untouched; never fall back to rebuilding the tag
 - `flacTagWriter.ts` - Browser-native FLAC Vorbis Comment writer; `writeFlacGroupingTag(buffer, superGenre)` parses FLAC metadata blocks, updates/creates the VORBIS_COMMENT block, and returns a new Blob
 - `spotifyAuthManager.service.ts` - Spotify connection management (singleton via `getInstance()`)
 - `sessionCache.service.ts` - Auth session caching with timeouts

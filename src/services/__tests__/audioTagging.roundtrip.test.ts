@@ -4,52 +4,49 @@
  * what the parser returns changes between versions; this one can.
  */
 import { describe, it, expect } from 'vitest';
-import { ID3Writer } from 'browser-id3-writer';
 import { parseBlob } from 'music-metadata';
 import { extractMetadata } from '../metadataExtractor';
 import { _testExports } from '../downloadProcessor.service';
 import type { AudioComment } from '@/utils/audioTags';
+import {
+  comment,
+  frame,
+  object,
+  picture,
+  PNG,
+  popularimeter,
+  silentMp3Frames,
+  tag,
+  text,
+  uniqueFileId,
+  userText,
+} from './fixtures/id3';
 
 const { extractFileMetadata, writeSuperGenreTag } = _testExports;
 
-// 1x1 PNG
-const PNG = Uint8Array.from(
-  atob('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=='),
-  (char) => char.charCodeAt(0)
-);
-
-/** Eight silent MPEG-1 Layer III frames (128 kbps, 44.1 kHz): enough for a parser to read the format. */
-const silentMp3Frames = (): Uint8Array => {
-  const FRAME_LENGTH = 417;
-  const frames = new Uint8Array(FRAME_LENGTH * 8);
-  for (let i = 0; i < 8; i++) frames.set([0xff, 0xfb, 0x90, 0x00], i * FRAME_LENGTH);
-  return frames;
-};
-
-/** An ID3v2.3 MP3 tagged the way DJ and library tools do. */
+/** An ID3v2.3 MP3 tagged the way DJ and library tools do, and analysed by Serato. */
 const taggedMp3 = (): File => {
-  const writer = new ID3Writer(silentMp3Frames().buffer as ArrayBuffer);
-  writer
-    .setFrame('TIT2', 'Real Title')
-    .setFrame('TPE1', ['Real Artist'])
-    .setFrame('TALB', 'Real Album')
-    .setFrame('TYER', 2021)
-    .setFrame('TRCK', '3/12')
-    .setFrame('TCON', ['Hip Hop/Rap']) // one frame holding two genres, as ID3v2.3 taggers write them
-    .setFrame('TBPM', 124)
-    .setFrame('TKEY', 'Am')
-    .setFrame('TIT1', 'Old Grouping')
-    .setFrame('COMM', { description: '', text: 'plain comment', language: 'eng' })
-    .setFrame('COMM', { description: 'Songs-DB_Custom1', text: 'House', language: 'eng' })
-    .setFrame('COMM', { description: 'iTunNORM', text: ' 00000721 00000834', language: 'eng' })
-    .setFrame('APIC', {
-      type: 3,
-      data: PNG.buffer as ArrayBuffer,
-      description: 'front',
-      useUnicodeEncoding: false,
-    });
-  writer.addTag();
-  return new File([writer.getBlob()], 'track.mp3', { type: 'audio/mpeg' });
+  const frames = [
+    frame(3, 'TIT2', text('Real Title')),
+    frame(3, 'TPE1', text('Real Artist')),
+    frame(3, 'TALB', text('Real Album')),
+    frame(3, 'TYER', text('2021')),
+    frame(3, 'TRCK', text('3/12')),
+    frame(3, 'TCON', text('Hip Hop/Rap')), // one frame holding two genres, as ID3v2.3 taggers write them
+    frame(3, 'TBPM', text('124')),
+    frame(3, 'TKEY', text('Am')),
+    frame(3, 'TIT1', text('Old Grouping')),
+    frame(3, 'COMM', comment('', 'plain comment')),
+    frame(3, 'COMM', comment('Songs-DB_Custom1', 'House')),
+    frame(3, 'COMM', comment('iTunNORM', ' 00000721 00000834')),
+    frame(3, 'TXXX', userText('SERATO_PLAYCOUNT', '12')),
+    frame(3, 'GEOB', object('Serato Markers2', [0x01, 0x01, 0x41, 0x51, 0x3d])),
+    frame(3, 'POPM', popularimeter('traktor@native-instruments.de', 196, 7)),
+    frame(3, 'UFID', uniqueFileId('http://musicbrainz.org', 'b1a9c0e9')),
+    frame(3, 'APIC', picture(3, PNG, 'front')),
+    frame(3, 'APIC', picture(3, PNG, 'back')),
+  ];
+  return new File([tag(3, frames, { padding: 256 }), silentMp3Frames()], 'track.mp3', { type: 'audio/mpeg' });
 };
 
 describe('scanner and tag writer against the real music-metadata parser', () => {
@@ -81,7 +78,9 @@ describe('scanner and tag writer against the real music-metadata parser', () => 
   });
 
   describe('writing the SuperGenre', () => {
-    const rewrite = async () => parseBlob(await writeSuperGenreTag(taggedMp3(), 'House'), { skipCovers: false });
+    const written = async () =>
+      new File([await writeSuperGenreTag(taggedMp3(), 'House')], 'track.mp3', { type: 'audio/mpeg' });
+    const rewrite = async () => parseBlob(await written(), { skipCovers: false });
 
     it('replaces the grouping and keeps the core tags', async () => {
       const { common } = await rewrite();
@@ -96,28 +95,45 @@ describe('scanner and tag writer against the real music-metadata parser', () => 
       });
     });
 
-    it('writes both parts of the slash-joined genre', async () => {
-      const { native } = await rewrite();
+    it('keeps BPM, key and genres for the next scan', async () => {
+      const file = await written();
 
-      const genreText = native['ID3v2.3'].filter((tag) => tag.id === 'TCON').map((tag) => String(tag.value));
-      expect(genreText.join(';')).toContain('Hip Hop');
-      expect(genreText.join(';')).toContain('Rap');
+      expect(await extractMetadata(file)).toMatchObject({
+        bpm: 124,
+        key: 'Am',
+        genre: 'Hip Hop',
+        super_genre: 'House',
+      });
+      expect((await extractFileMetadata(file)).genres).toEqual(['Hip Hop', 'Rap']);
     });
 
-    it('keeps the default comment and does not rewrite described comments as default ones', async () => {
+    it('keeps every comment, including described ones', async () => {
       const { native } = await rewrite();
 
       const comments = native['ID3v2.3']
         .filter((tag) => tag.id === 'COMM')
         .map((tag) => tag.value as AudioComment);
-      expect(comments).toEqual([expect.objectContaining({ descriptor: '', text: 'plain comment' })]);
+      expect(comments.map(({ descriptor, text }) => ({ descriptor, text }))).toEqual([
+        { descriptor: '', text: 'plain comment' },
+        { descriptor: 'Songs-DB_Custom1', text: 'House' },
+        { descriptor: 'iTunNORM', text: ' 00000721 00000834' },
+      ]);
     });
 
-    it('keeps the cover art byte for byte', async () => {
+    it('keeps Serato data, the play count, rating and file id', async () => {
+      const { native } = await rewrite();
+
+      const ids = native['ID3v2.3'].map((tag) => tag.id);
+      expect(ids).toEqual(expect.arrayContaining(['TXXX:SERATO_PLAYCOUNT', 'GEOB', 'POPM', 'UFID']));
+      expect(native['ID3v2.3'].find((tag) => tag.id === 'GEOB')?.value).toMatchObject({
+        description: 'Serato Markers2',
+      });
+    });
+
+    it('keeps every picture byte for byte', async () => {
       const { common } = await rewrite();
 
-      expect(common.picture).toHaveLength(1);
-      expect(common.picture?.[0].data).toEqual(PNG);
+      expect(common.picture?.map((picture) => picture.data)).toEqual([PNG, PNG]);
     });
   });
 });

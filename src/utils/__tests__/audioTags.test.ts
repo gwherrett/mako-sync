@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { getDefaultCommentText, splitLegacyId3Genres } from '../audioTags';
+import { splitLegacyId3Genres } from '../audioTags';
 
 describe('audioTags', () => {
   describe('splitLegacyId3Genres', () => {
@@ -61,46 +61,6 @@ describe('audioTags', () => {
       const genres = ['Hip Hop/Rap'];
       splitLegacyId3Genres(genres, ['ID3v2.3']);
       expect(genres).toEqual(['Hip Hop/Rap']);
-    });
-  });
-
-  describe('getDefaultCommentText', () => {
-    it('returns null when there are no comments', () => {
-      expect(getDefaultCommentText(undefined)).toBeNull();
-      expect(getDefaultCommentText([])).toBeNull();
-    });
-
-    it('returns the text of a comment with an empty descriptor', () => {
-      expect(getDefaultCommentText([{ descriptor: '', language: 'eng', text: 'Great tune' }])).toBe(
-        'Great tune'
-      );
-    });
-
-    it('returns the text of a comment that has no descriptor at all (FLAC, ID3v1)', () => {
-      expect(getDefaultCommentText([{ text: 'Great tune' }])).toBe('Great tune');
-    });
-
-    it('skips described comments such as the iTunes normalization frames', () => {
-      expect(
-        getDefaultCommentText([
-          { descriptor: 'iTunNORM', language: 'eng', text: ' 00000721 00000834' },
-          { descriptor: 'iTunPGAP', language: 'eng', text: '0' },
-          { descriptor: '', language: 'eng', text: 'Great tune' },
-        ])
-      ).toBe('Great tune');
-    });
-
-    it('returns null when every comment is described', () => {
-      expect(
-        getDefaultCommentText([
-          { descriptor: 'iTunNORM', language: 'eng', text: ' 00000721 00000834' },
-          { descriptor: 'Songs-DB_Custom1', language: 'eng', text: 'House' },
-        ])
-      ).toBeNull();
-    });
-
-    it('skips default comments with no text', () => {
-      expect(getDefaultCommentText([{ descriptor: '', text: '' }, { text: 'Second' }])).toBe('Second');
     });
   });
 });
