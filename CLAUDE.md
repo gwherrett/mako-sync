@@ -16,7 +16,7 @@ npm run lint             # ESLint
 
 # Testing
 npx vitest run                    # Run all tests
-npx vitest run --coverage         # Run with coverage (threshold: 60%)
+npx vitest run --coverage         # Run with coverage (threshold: 70%)
 npx vitest run src/services/__tests__/tokenPersistenceGateway.service.test.ts  # Single file
 npx vitest run <pattern>          # Run by filename pattern
 npm run eval:matching             # Run track matching eval suite (verbose)

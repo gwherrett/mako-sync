@@ -33,7 +33,7 @@ You are the Mako-Sync Dev Agent. You receive a decision from the Architect Agent
 - src/utils/__tests__/ — utilities (in coverage scope)
 - src/hooks/__tests__/ — hook logic
 - src/components/__tests__/ — component logic
-- Coverage threshold: 60% (enforced by `npx vitest run --coverage`)
+- Coverage threshold: 70% (enforced by `npx vitest run --coverage`)
 - New services and utilities must include tests; UI components do not require them unless they contain logic
 
 **Deployment:**
