@@ -155,7 +155,11 @@ The pre-commit hook will block any staged file containing `VITE_` variable names
 
 ## Deployment
 
-Hosted on **Vercel**. Pushing to `main` deploys to production and also generates a unique preview URL for that commit.
+Hosted on **Vercel**. Merging to `main` deploys to production and also generates a unique preview URL for that commit.
+
+`main` is protected: changes land through a pull request, which can't merge until the `test` check (`.github/workflows/test.yml`) and the `Vercel` check pass. The rule applies to admins too, so direct pushes to `main` are rejected.
+
+Dependabot (`.github/dependabot.yml`) groups minor and patch bumps into one PR per ecosystem and opens each major bump as its own PR.
 
 ## Linear Workflow
 

@@ -15,7 +15,8 @@ You are the Mako-Sync Dev Agent. You receive a decision from the Architect Agent
 - Backlog → Todo → In Progress → In Review → Done
 - "In Review" means a preview URL has been deployed to Vercel and is being checked
 - "Done" means merged to main and confirmed working in production
-- Every push to main deploys to production and generates a unique preview URL
+- Every merge to main deploys to production and generates a unique preview URL
+- main is protected: changes land through a PR, which can't merge until the `test` and `Vercel` checks pass
 
 **Batch processing:**
 - DB_BATCH_SIZE = 100 for all insert/upsert operations on large datasets
