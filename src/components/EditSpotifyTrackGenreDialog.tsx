@@ -19,6 +19,7 @@ import { Label } from '@/components/ui/label';
 import { Music } from 'lucide-react';
 import { SUPER_GENRES, type SuperGenre } from '@/types/genreMapping';
 import { TrackGenreService } from '@/services/trackGenre.service';
+import { useToast } from '@/hooks/use-toast';
 
 export interface SpotifyTrackForGenreEdit {
   id: string;
@@ -44,6 +45,7 @@ export function EditSpotifyTrackGenreDialog({
 }: EditSpotifyTrackGenreDialogProps) {
   const [selectedGenre, setSelectedGenre] = useState<SuperGenre | null>(null);
   const [saving, setSaving] = useState(false);
+  const { toast } = useToast();
 
   useEffect(() => {
     if (track) {
@@ -58,6 +60,9 @@ export function EditSpotifyTrackGenreDialog({
       await TrackGenreService.assignGenreToTrack(track.id, selectedGenre);
       onSaved(track.id, selectedGenre, true);
       onOpenChange(false);
+    } catch (error) {
+      console.error('Error assigning genre:', error);
+      toast({ title: 'Error', description: 'Failed to save SuperGenre', variant: 'destructive' });
     } finally {
       setSaving(false);
     }
@@ -70,6 +75,9 @@ export function EditSpotifyTrackGenreDialog({
       await TrackGenreService.resetGenreOverride(track.id);
       onSaved(track.id, track.super_genre, false);
       onOpenChange(false);
+    } catch (error) {
+      console.error('Error resetting genre override:', error);
+      toast({ title: 'Error', description: 'Failed to reset SuperGenre', variant: 'destructive' });
     } finally {
       setSaving(false);
     }
