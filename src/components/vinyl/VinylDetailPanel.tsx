@@ -67,7 +67,7 @@ export const VinylDetailPanel: React.FC<VinylDetailPanelProps> = ({ record, open
         }
       >
         {isMobile && (
-          <div className="flex justify-center pt-3 pb-1 flex-shrink-0">
+          <div className="flex justify-center pt-3 pb-1 shrink-0">
             <div className="w-12 h-1.5 rounded-full bg-muted-foreground/30" />
           </div>
         )}
@@ -77,10 +77,10 @@ export const VinylDetailPanel: React.FC<VinylDetailPanelProps> = ({ record, open
               <img
                 src={record.cover_image_url}
                 alt=""
-                className="w-14 h-14 object-cover rounded flex-shrink-0"
+                className="w-14 h-14 object-cover rounded shrink-0"
               />
             ) : (
-              <div className="w-14 h-14 bg-muted rounded flex items-center justify-center flex-shrink-0">
+              <div className="w-14 h-14 bg-muted rounded flex items-center justify-center shrink-0">
                 <Disc3 className="h-7 w-7 text-muted-foreground/40" />
               </div>
             )}
@@ -130,14 +130,14 @@ export const VinylDetailPanel: React.FC<VinylDetailPanelProps> = ({ record, open
                     const isFound = !isMatching && !isMissing;
                     return (
                       <div key={i} className="flex items-center gap-2 text-sm py-0.5">
-                        <span className="text-muted-foreground w-6 text-right flex-shrink-0 text-xs">
+                        <span className="text-muted-foreground w-6 text-right shrink-0 text-xs">
                           {t.position}
                         </span>
                         <span className="flex-1 truncate">{t.title}</span>
                         {!isMatching && (
                           isFound
-                            ? <CheckCircle2 className="h-4 w-4 text-green-500 flex-shrink-0" />
-                            : <XCircle className="h-4 w-4 text-red-400 flex-shrink-0" />
+                            ? <CheckCircle2 className="h-4 w-4 text-green-500 shrink-0" />
+                            : <XCircle className="h-4 w-4 text-red-400 shrink-0" />
                         )}
                       </div>
                     );

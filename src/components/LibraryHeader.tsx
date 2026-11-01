@@ -37,7 +37,7 @@ const LibraryHeader = ({ isDashboardCollapsed, onToggleDashboard }: LibraryHeade
         {/* Top row with logo and user controls */}
         <div className="flex items-center justify-between p-3 sm:p-4">
           <Link to="/" className="flex items-center space-x-3 sm:space-x-4 group">
-            <BrandLogo size={40} className="flex-shrink-0 group-hover:animate-swim-shake sm:w-14 sm:h-14" />
+            <BrandLogo size={40} className="shrink-0 group-hover:animate-swim-shake sm:w-14 sm:h-14" />
             <div className="flex flex-col justify-center transition-transform duration-300 group-hover:translate-x-1">
               <h1 className="text-2xl sm:text-3xl font-bold text-white leading-tight">Mako Sync</h1>
             </div>

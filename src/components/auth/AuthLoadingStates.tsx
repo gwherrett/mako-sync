@@ -145,7 +145,7 @@ export const AuthLoadingOverlay = ({
 
   return (
     <div className={cn(
-      'fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center',
+      'fixed inset-0 bg-background/80 backdrop-blur-xs z-50 flex items-center justify-center',
       className
     )}>
       <AuthLoadingStates

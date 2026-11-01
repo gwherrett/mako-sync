@@ -619,7 +619,7 @@ export const UnifiedSpotifyCallback: React.FC = () => {
   // Show retry UI when callback failed
   if (callbackFailed) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-background to-muted flex items-center justify-center p-4">
+      <div className="min-h-screen bg-linear-to-br from-background to-muted flex items-center justify-center p-4">
         <div className="flex flex-col items-center gap-4 p-6 bg-card rounded-lg shadow-lg max-w-md">
           <AlertCircle className="w-12 h-12 text-destructive" />
           <h2 className="text-xl font-semibold">Connection Failed</h2>
@@ -641,7 +641,7 @@ export const UnifiedSpotifyCallback: React.FC = () => {
   // Enhanced loading screen with step progress
   if (isProcessing) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-background to-muted flex items-center justify-center p-4">
+      <div className="min-h-screen bg-linear-to-br from-background to-muted flex items-center justify-center p-4">
         <div className="flex flex-col items-center space-y-4">
           <div className="p-4 bg-green-500/10 rounded-full">
             <Music className="h-8 w-8 text-green-500" />
@@ -671,7 +671,7 @@ export const UnifiedSpotifyCallback: React.FC = () => {
 
   // This should rarely be seen as the component redirects quickly
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background to-muted flex items-center justify-center p-4">
+    <div className="min-h-screen bg-linear-to-br from-background to-muted flex items-center justify-center p-4">
       <div className="text-center">
         <p className="text-lg">Processing complete. Redirecting...</p>
       </div>

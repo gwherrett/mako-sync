@@ -211,7 +211,7 @@ export const CoverFlowView: React.FC<CoverFlowViewProps> = ({ records, onSelect 
         )}
 
         {/* Caption bar */}
-        <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/80 to-transparent px-4 py-3 text-center z-20">
+        <div className="absolute bottom-0 inset-x-0 bg-linear-to-t from-black/80 to-transparent px-4 py-3 text-center z-20">
           <p className="text-white text-sm font-medium truncate">
             {active.title} — {active.artist}
           </p>

@@ -163,9 +163,9 @@ export const DiscogsReleaseSelector: React.FC<DiscogsReleaseSelectorProps> = ({
                   >
                     <CardContent className="flex items-center gap-3 p-3">
                       {r.thumb ? (
-                        <img src={r.thumb} alt="" className="w-12 h-12 object-cover rounded flex-shrink-0" />
+                        <img src={r.thumb} alt="" className="w-12 h-12 object-cover rounded shrink-0" />
                       ) : (
-                        <div className="w-12 h-12 bg-muted rounded flex-shrink-0" />
+                        <div className="w-12 h-12 bg-muted rounded shrink-0" />
                       )}
                       <div className="flex-1 min-w-0">
                         <p className="font-medium text-sm truncate">{r.releaseTitle || r.title}</p>
@@ -183,7 +183,7 @@ export const DiscogsReleaseSelector: React.FC<DiscogsReleaseSelectorProps> = ({
                         )}
                       </div>
                       {selectedId === r.id && (
-                        <CheckCircle2 className="h-5 w-5 text-primary flex-shrink-0" />
+                        <CheckCircle2 className="h-5 w-5 text-primary shrink-0" />
                       )}
                     </CardContent>
                   </Card>

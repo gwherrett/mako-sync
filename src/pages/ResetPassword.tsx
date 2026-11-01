@@ -105,7 +105,7 @@ const ResetPassword = () => {
   // Invalid token state
   if (tokenValid === false) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-expos-dark via-expos-dark-elevated to-black flex items-center justify-center p-4">
+      <div className="min-h-screen bg-linear-to-br from-expos-dark via-expos-dark-elevated to-black flex items-center justify-center p-4">
         <Card className="w-full max-w-md bg-spotify-dark border-white/10">
           <CardHeader className="text-center">
             <div className="w-16 h-16 bg-red-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -141,7 +141,7 @@ const ResetPassword = () => {
   // Loading state while validating token
   if (tokenValid === null) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-expos-dark via-expos-dark-elevated to-black flex items-center justify-center p-4">
+      <div className="min-h-screen bg-linear-to-br from-expos-dark via-expos-dark-elevated to-black flex items-center justify-center p-4">
         <div className="text-center">
           <Loader2 className="w-8 h-8 animate-spin text-green-400 mx-auto mb-4" />
           <p className="text-gray-400">Validating reset link...</p>
@@ -153,7 +153,7 @@ const ResetPassword = () => {
   // Success state
   if (resetComplete) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-expos-dark via-expos-dark-elevated to-black flex items-center justify-center p-4">
+      <div className="min-h-screen bg-linear-to-br from-expos-dark via-expos-dark-elevated to-black flex items-center justify-center p-4">
         <Card className="w-full max-w-md bg-spotify-dark border-white/10">
           <CardHeader className="text-center">
             <div className="w-16 h-16 bg-green-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -188,7 +188,7 @@ const ResetPassword = () => {
 
   // Password reset form
   return (
-    <div className="min-h-screen bg-gradient-to-br from-expos-dark via-expos-dark-elevated to-black flex items-center justify-center p-4">
+    <div className="min-h-screen bg-linear-to-br from-expos-dark via-expos-dark-elevated to-black flex items-center justify-center p-4">
       <Card className="w-full max-w-md bg-spotify-dark border-white/10">
         <CardHeader className="text-center">
           <div className="w-16 h-16 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-4">

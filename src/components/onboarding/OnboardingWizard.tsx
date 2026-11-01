@@ -102,7 +102,7 @@ const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete }) => {
   const currentStepData = steps[currentStep];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-expos-dark via-expos-dark-elevated to-black flex items-center justify-center p-4">
+    <div className="min-h-screen bg-linear-to-br from-expos-dark via-expos-dark-elevated to-black flex items-center justify-center p-4">
       <Card className="w-full max-w-4xl bg-spotify-dark border-white/10">
         <CardHeader>
           <div className="flex items-center justify-between mb-4">
