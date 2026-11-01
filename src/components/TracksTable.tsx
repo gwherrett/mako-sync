@@ -558,7 +558,7 @@ const TracksTable = ({ onTrackSelect, selectedTrack, sharedSearchQuery = '', sha
                           <Button
                             variant="ghost"
                             size="sm"
-                            className="flex-shrink-0 h-6 w-6 p-0 text-muted-foreground hover:text-destructive"
+                            className="shrink-0 h-6 w-6 p-0 text-muted-foreground hover:text-destructive"
                             onClick={(e) => { e.stopPropagation(); handleUnlikeTrack(track); }}
                             disabled={unlikingTrackId === track.id}
                             title="Unlike on Spotify"

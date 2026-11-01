@@ -1,9 +1,154 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap')
+layer(base);
 
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+/* Scan only src/ for class names, as the v3 `content` globs did. Without this,
+   v4 also scans tracked non-source folders such as coverage/ and docs/ */
+@import 'tailwindcss' source('.');
 
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import 'tw-animate-css';
+
+@custom-variant dark (&:is(.dark *));
+
+@utility container {
+  margin-inline: auto;
+  padding-inline: 2rem;
+  @media (width >= --theme(--breakpoint-sm)) {
+    max-width: none;
+  }
+  @media (width >= 1400px) {
+    max-width: 1400px;
+  }
+}
+
+@theme {
+  --color-border: hsl(var(--border));
+  --color-input: hsl(var(--input));
+  --color-ring: hsl(var(--ring));
+  --color-background: hsl(var(--background));
+  --color-foreground: hsl(var(--foreground));
+
+  --color-primary: hsl(var(--primary));
+  --color-primary-foreground: hsl(var(--primary-foreground));
+
+  --color-secondary: hsl(var(--secondary));
+  --color-secondary-foreground: hsl(var(--secondary-foreground));
+
+  --color-destructive: hsl(var(--destructive));
+  --color-destructive-foreground: hsl(var(--destructive-foreground));
+
+  --color-muted: hsl(var(--muted));
+  --color-muted-foreground: hsl(var(--muted-foreground));
+
+  --color-accent: hsl(var(--accent));
+  --color-accent-foreground: hsl(var(--accent-foreground));
+
+  --color-popover: hsl(var(--popover));
+  --color-popover-foreground: hsl(var(--popover-foreground));
+
+  --color-card: hsl(var(--card));
+  --color-card-foreground: hsl(var(--card-foreground));
+
+  --color-sidebar: hsl(var(--sidebar-background));
+  --color-sidebar-foreground: hsl(var(--sidebar-foreground));
+  --color-sidebar-primary: hsl(var(--sidebar-primary));
+  --color-sidebar-primary-foreground: hsl(var(--sidebar-primary-foreground));
+  --color-sidebar-accent: hsl(var(--sidebar-accent));
+  --color-sidebar-accent-foreground: hsl(var(--sidebar-accent-foreground));
+  --color-sidebar-border: hsl(var(--sidebar-border));
+  --color-sidebar-ring: hsl(var(--sidebar-ring));
+
+  --color-expos-blue: hsl(var(--expos-blue));
+  --color-expos-blue-light: hsl(var(--expos-blue-light));
+  --color-expos-red: hsl(var(--expos-red));
+  --color-expos-dark: hsl(var(--expos-dark));
+  --color-expos-dark-elevated: hsl(var(--expos-dark-elevated));
+
+  --radius-lg: var(--radius);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-sm: calc(var(--radius) - 4px);
+
+  --animate-accordion-down: accordion-down 0.2s ease-out;
+  --animate-accordion-up: accordion-up 0.2s ease-out;
+
+  @keyframes accordion-down {
+    from {
+      height: 0;
+    }
+    to {
+      height: var(--radix-accordion-content-height);
+    }
+  }
+  @keyframes accordion-up {
+    from {
+      height: var(--radix-accordion-content-height);
+    }
+    to {
+      height: 0;
+    }
+  }
+}
+
+/*
+  The default border color has changed to `currentcolor` in Tailwind CSS v4,
+  so we've added these compatibility styles to make sure everything still
+  looks the same as it did with Tailwind CSS v3.
+
+  If we ever want to remove these styles, we need to add an explicit border
+  color utility to any element that depends on these defaults.
+*/
+@layer base {
+  *,
+  ::after,
+  ::before,
+  ::backdrop,
+  ::file-selector-button {
+    border-color: var(--color-gray-200, currentcolor);
+  }
+
+  /* v4 gives buttons the default cursor; keep v3's pointer */
+  button:not(:disabled),
+  [role='button']:not(:disabled) {
+    cursor: pointer;
+  }
+}
+
+@utility expos-gradient {
+  background: linear-gradient(
+    135deg,
+    hsl(var(--expos-blue)) 0%,
+    hsl(var(--expos-red)) 100%
+  );
+}
+
+@utility expos-blue-gradient {
+  background: linear-gradient(
+    135deg,
+    hsl(var(--expos-blue)) 0%,
+    hsl(var(--expos-blue-light)) 100%
+  );
+}
+
+@utility expos-red-gradient {
+  background: linear-gradient(135deg, hsl(var(--expos-red)) 0%, #ff4444 100%);
+}
+
+@utility spotify-gradient {
+  background: linear-gradient(135deg, #1db954 0%, #1ed760 100%);
+}
+
+@utility glass-card {
+  background: rgba(0, 61, 165, 0.15);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(0, 61, 165, 0.3);
+}
+
+@utility animate-tail-splash {
+  animation: tail-splash 2s ease-in-out infinite;
+}
+
+@utility animate-swim-shake {
+  animation: swim-shake 0.6s ease-in-out;
+}
 
 @layer base {
   :root {
@@ -55,28 +200,6 @@
 }
 
 @layer utilities {
-  .expos-gradient {
-    background: linear-gradient(135deg, hsl(var(--expos-blue)) 0%, hsl(var(--expos-red)) 100%);
-  }
-  
-  .expos-blue-gradient {
-    background: linear-gradient(135deg, hsl(var(--expos-blue)) 0%, hsl(var(--expos-blue-light)) 100%);
-  }
-  
-  .expos-red-gradient {
-    background: linear-gradient(135deg, hsl(var(--expos-red)) 0%, #ff4444 100%);
-  }
-  
-  .spotify-gradient {
-    background: linear-gradient(135deg, #1DB954 0%, #1ED760 100%);
-  }
-  
-  .glass-card {
-    background: rgba(0, 61, 165, 0.15);
-    backdrop-filter: blur(10px);
-    border: 1px solid rgba(0, 61, 165, 0.3);
-  }
-
   @keyframes tail-splash {
     0%, 100% {
       opacity: 0;
@@ -88,10 +211,6 @@
     }
   }
 
-  .animate-tail-splash {
-    animation: tail-splash 2s ease-in-out infinite;
-  }
-
   @keyframes swim-shake {
     0%, 100% { transform: translateX(0); }
     10% { transform: translateX(-3px); }
@@ -99,9 +218,5 @@
     30% { transform: translateX(-3px); }
     40% { transform: translateX(3px); }
     50% { transform: translateX(0); }
-  }
-
-  .animate-swim-shake {
-    animation: swim-shake 0.6s ease-in-out;
   }
 }

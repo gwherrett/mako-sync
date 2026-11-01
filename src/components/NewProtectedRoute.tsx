@@ -34,7 +34,7 @@ const NewProtectedRoute: React.FC<ProtectedRouteProps> = ({
   // Show loading spinner while auth is loading
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-expos-dark via-expos-dark-elevated to-black flex items-center justify-center">
+      <div className="min-h-screen bg-linear-to-br from-expos-dark via-expos-dark-elevated to-black flex items-center justify-center">
         <div className="text-center">
           <Loader2 className="w-8 h-8 animate-spin text-green-400 mx-auto mb-4" />
           <h2 className="text-xl font-semibold text-white mb-2">Loading...</h2>
@@ -52,7 +52,7 @@ const NewProtectedRoute: React.FC<ProtectedRouteProps> = ({
   // Check role access
   if (allowedRoles && !hasRoleAccess) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-expos-dark via-expos-dark-elevated to-black flex items-center justify-center">
+      <div className="min-h-screen bg-linear-to-br from-expos-dark via-expos-dark-elevated to-black flex items-center justify-center">
         <div className="text-center max-w-md mx-auto p-8">
           <div className="w-16 h-16 bg-red-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
             <Loader2 className="w-8 h-8 text-red-400" />
@@ -72,7 +72,7 @@ const NewProtectedRoute: React.FC<ProtectedRouteProps> = ({
   // Check email verification
   if (requireEmailVerification && !isEmailVerified) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-expos-dark via-expos-dark-elevated to-black flex items-center justify-center">
+      <div className="min-h-screen bg-linear-to-br from-expos-dark via-expos-dark-elevated to-black flex items-center justify-center">
         <div className="text-center max-w-md mx-auto p-8">
           <div className="w-16 h-16 bg-yellow-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
             <Loader2 className="w-8 h-8 text-yellow-400" />
@@ -92,7 +92,7 @@ const NewProtectedRoute: React.FC<ProtectedRouteProps> = ({
   // Check onboarding completion
   if (requireOnboarding && !isOnboardingComplete) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-expos-dark via-expos-dark-elevated to-black flex items-center justify-center">
+      <div className="min-h-screen bg-linear-to-br from-expos-dark via-expos-dark-elevated to-black flex items-center justify-center">
         <div className="text-center max-w-md mx-auto p-8">
           <div className="w-16 h-16 bg-blue-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
             <Loader2 className="w-8 h-8 text-blue-400" />

@@ -181,7 +181,7 @@ export const SpotifyAuthFlow = ({
                 step.status === 'pending' && 'border-muted bg-muted/20'
               )}
             >
-              <div className="flex-shrink-0 mt-0.5">
+              <div className="shrink-0 mt-0.5">
                 {getStepIcon(step, index)}
               </div>
               
@@ -212,7 +212,7 @@ export const SpotifyAuthFlow = ({
               </div>
 
               {step.status === 'active' && index === currentStep && (
-                <div className="flex-shrink-0">
+                <div className="shrink-0">
                   <div className="h-2 w-2 bg-blue-500 rounded-full animate-pulse" />
                 </div>
               )}
