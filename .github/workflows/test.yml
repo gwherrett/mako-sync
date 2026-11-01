@@ -32,3 +32,11 @@ jobs:
           name: coverage-report
           path: coverage/
           retention-days: 30
+
+      - name: Install agents dependencies
+        run: npm ci
+        working-directory: agents
+
+      - name: Run agents tests
+        run: npm test
+        working-directory: agents
