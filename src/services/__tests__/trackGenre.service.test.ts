@@ -288,30 +288,40 @@ describe('TrackGenreService', () => {
   });
 
   describe('assignGenreToTrack', () => {
-    it('should update track with super_genre and set manual override flag', async () => {
-      const updateFn = vi.fn().mockReturnValue({
-        eq: vi.fn().mockResolvedValue({ data: null, error: null })
-      });
+    const mockUpdateEqSelect = (result: { data: unknown; error: unknown }) => {
+      const selectFn = vi.fn().mockResolvedValue(result);
+      const eqFn = vi.fn().mockReturnValue({ select: selectFn });
+      const updateFn = vi.fn().mockReturnValue({ eq: eqFn });
       vi.mocked(supabase.from).mockReturnValue({ update: updateFn } as any);
+      return { updateFn, eqFn, selectFn };
+    };
+
+    it('should update track with super_genre and set manual override flag', async () => {
+      const { updateFn, eqFn, selectFn } = mockUpdateEqSelect({ data: [{ id: 'track-123' }], error: null });
 
       await TrackGenreService.assignGenreToTrack('track-123', 'Rock');
 
       expect(supabase.from).toHaveBeenCalledWith('spotify_liked');
       expect(updateFn).toHaveBeenCalledWith({ super_genre: 'Rock', super_genre_manual_override: true });
+      expect(eqFn).toHaveBeenCalledWith('id', 'track-123');
+      expect(selectFn).toHaveBeenCalledWith('id');
     });
 
     it('should throw error when update fails', async () => {
       const mockError = { message: 'Update failed' };
-
-      vi.mocked(supabase.from).mockReturnValue({
-        update: vi.fn().mockReturnValue({
-          eq: vi.fn().mockResolvedValue({ data: null, error: mockError })
-        })
-      } as any);
+      mockUpdateEqSelect({ data: null, error: mockError });
 
       await expect(
         TrackGenreService.assignGenreToTrack('track-123', 'Rock')
       ).rejects.toEqual(mockError);
+    });
+
+    it('should throw when no row was updated', async () => {
+      mockUpdateEqSelect({ data: [], error: null });
+
+      await expect(
+        TrackGenreService.assignGenreToTrack('missing-id', 'Rock')
+      ).rejects.toThrow('No track was updated for id missing-id');
     });
   });
 
@@ -501,30 +511,52 @@ describe('TrackGenreService', () => {
   });
 
   describe('assignGenreToMultipleTracks', () => {
-    it('should update multiple tracks with genre', async () => {
-      vi.mocked(supabase.from).mockReturnValue({
-        update: vi.fn().mockReturnValue({
-          in: vi.fn().mockResolvedValue({ data: null, error: null })
-        })
-      } as any);
+    const mockUpdateInSelect = (result: { data: unknown; error: unknown }) => {
+      const selectFn = vi.fn().mockResolvedValue(result);
+      const inFn = vi.fn().mockReturnValue({ select: selectFn });
+      const updateFn = vi.fn().mockReturnValue({ in: inFn });
+      vi.mocked(supabase.from).mockReturnValue({ update: updateFn } as any);
+      return { updateFn, inFn, selectFn };
+    };
+
+    it('should update multiple tracks and set the manual override flag', async () => {
+      const { updateFn, inFn, selectFn } = mockUpdateInSelect({
+        data: [{ id: 'id1' }, { id: 'id2' }, { id: 'id3' }],
+        error: null,
+      });
 
       await TrackGenreService.assignGenreToMultipleTracks(['id1', 'id2', 'id3'], 'Jazz');
 
       expect(supabase.from).toHaveBeenCalledWith('spotify_liked');
+      // Without the flag, a full sync re-derives super_genre and wipes the assignment
+      expect(updateFn).toHaveBeenCalledWith({ super_genre: 'Jazz', super_genre_manual_override: true });
+      expect(inFn).toHaveBeenCalledWith('id', ['id1', 'id2', 'id3']);
+      expect(selectFn).toHaveBeenCalledWith('id');
     });
 
     it('should throw error when bulk update fails', async () => {
       const mockError = { message: 'Bulk update failed' };
-
-      vi.mocked(supabase.from).mockReturnValue({
-        update: vi.fn().mockReturnValue({
-          in: vi.fn().mockResolvedValue({ data: null, error: mockError })
-        })
-      } as any);
+      mockUpdateInSelect({ data: null, error: mockError });
 
       await expect(
         TrackGenreService.assignGenreToMultipleTracks(['id1', 'id2'], 'Pop')
       ).rejects.toEqual(mockError);
+    });
+
+    it('should throw when fewer tracks were updated than requested', async () => {
+      mockUpdateInSelect({ data: [{ id: 'id1' }], error: null });
+
+      await expect(
+        TrackGenreService.assignGenreToMultipleTracks(['id1', 'id2'], 'Pop')
+      ).rejects.toThrow('Only 1 of 2 tracks were updated');
+    });
+
+    it('should count duplicate ids once', async () => {
+      mockUpdateInSelect({ data: [{ id: 'id1' }], error: null });
+
+      await expect(
+        TrackGenreService.assignGenreToMultipleTracks(['id1', 'id1'], 'Pop')
+      ).resolves.toBeUndefined();
     });
   });
 });

@@ -138,14 +138,20 @@ export class TrackGenreService {
    * Assign a super genre directly to a track and pin it against sync overwrites.
    */
   static async assignGenreToTrack(trackId: string, superGenre: SuperGenre): Promise<void> {
-    const { error } = await supabase
+    const { data, error } = await supabase
       .from('spotify_liked')
       .update({ super_genre: superGenre, super_genre_manual_override: true })
-      .eq('id', trackId);
+      .eq('id', trackId)
+      .select('id');
 
     if (error) {
       console.error('Error assigning genre to track:', error);
       throw error;
+    }
+
+    // An update that matches no rows (wrong id, RLS) returns no error, so check
+    if (!data || data.length === 0) {
+      throw new Error(`No track was updated for id ${trackId}`);
     }
   }
 
@@ -228,17 +234,24 @@ export class TrackGenreService {
   }
 
   /**
-   * Assign genre to multiple tracks at once
+   * Assign genre to multiple tracks at once and pin them against sync overwrites.
    */
   static async assignGenreToMultipleTracks(trackIds: string[], superGenre: SuperGenre): Promise<void> {
-    const { error } = await supabase
+    const { data, error } = await supabase
       .from('spotify_liked')
-      .update({ super_genre: superGenre })
-      .in('id', trackIds);
+      .update({ super_genre: superGenre, super_genre_manual_override: true })
+      .in('id', trackIds)
+      .select('id');
 
     if (error) {
       console.error('Error assigning genre to multiple tracks:', error);
       throw error;
+    }
+
+    const requested = new Set(trackIds).size;
+    const updated = data?.length ?? 0;
+    if (updated < requested) {
+      throw new Error(`Only ${updated} of ${requested} tracks were updated`);
     }
   }
 }
