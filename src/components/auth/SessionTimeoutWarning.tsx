@@ -77,7 +77,7 @@ const SessionTimeoutWarningComponent = ({
       )}
     >
       <div className="flex items-start gap-3">
-        <Clock className="h-4 w-4 mt-0.5 flex-shrink-0" />
+        <Clock className="h-4 w-4 mt-0.5 shrink-0" />
         <div className="flex-1 space-y-3">
           <div className="flex items-center justify-between">
             <AlertDescription className="text-sm font-medium">

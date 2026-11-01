@@ -75,7 +75,7 @@ const Vinyl: React.FC = () => {
         {/* Discogs connection banner */}
         {!discogsConnected && !bannerDismissed && (
           <div className="flex items-center gap-3 p-3 rounded-lg border bg-muted/40 text-sm">
-            <Info className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+            <Info className="h-4 w-4 text-muted-foreground shrink-0" />
             <p className="flex-1 text-muted-foreground">
               Connect Discogs on the{' '}
               <Link to="/security" className="underline hover:text-foreground">Security page</Link>
