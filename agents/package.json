@@ -11,7 +11,7 @@
     "validate:debug": "ts-node cli/index.ts --agents debug",
     "validate:auth": "ts-node cli/index.ts --agents auth",
     "validate:json": "ts-node cli/index.ts --json",
-    "test": "jest"
+    "test": "vitest run"
   },
   "keywords": [
     "validation",
@@ -24,6 +24,7 @@
   "devDependencies": {
     "@typescript-eslint/parser": "^8.72.1",
     "@typescript-eslint/typescript-estree": "^8.52.0",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "vitest": "^5.0.5"
   }
 }

@@ -1,7 +1,8 @@
+import { vi, type Mock } from 'vitest';
 import { EdgeFunctionDeployRegistrationRule } from '../../../rules/code/EdgeFunctionDeployRegistrationRule';
 import { ValidationContext } from '../../../core/types';
 
-jest.mock('fs');
+vi.mock('fs');
 import { readFileSync } from 'fs';
 
 const WORKFLOW_WITH_MY_FUNC = `
@@ -25,17 +26,17 @@ describe('EdgeFunctionDeployRegistrationRule', () => {
   });
 
   afterEach(() => {
-    jest.restoreAllMocks();
+    vi.restoreAllMocks();
   });
 
   it('reports no violation when function is registered in workflow', () => {
-    (readFileSync as jest.Mock).mockReturnValue(WORKFLOW_WITH_MY_FUNC);
+    (readFileSync as Mock).mockReturnValue(WORKFLOW_WITH_MY_FUNC);
     const violations = rule.validate(ctx('/project/supabase/functions/my-function/index.ts'));
     expect(violations).toHaveLength(0);
   });
 
   it('reports error when function is missing from workflow', () => {
-    (readFileSync as jest.Mock).mockReturnValue(WORKFLOW_WITHOUT_MY_FUNC);
+    (readFileSync as Mock).mockReturnValue(WORKFLOW_WITHOUT_MY_FUNC);
     const violations = rule.validate(ctx('/project/supabase/functions/my-function/index.ts'));
     expect(violations).toHaveLength(1);
     expect(violations[0].severity).toBe('error');
@@ -44,19 +45,19 @@ describe('EdgeFunctionDeployRegistrationRule', () => {
   });
 
   it('ignores shared utility directories (starting with _)', () => {
-    (readFileSync as jest.Mock).mockReturnValue(WORKFLOW_WITHOUT_MY_FUNC);
+    (readFileSync as Mock).mockReturnValue(WORKFLOW_WITHOUT_MY_FUNC);
     const violations = rule.validate(ctx('/project/supabase/functions/_shared/index.ts'));
     expect(violations).toHaveLength(0);
   });
 
   it('ignores files that are not edge function index.ts', () => {
-    (readFileSync as jest.Mock).mockReturnValue(WORKFLOW_WITHOUT_MY_FUNC);
+    (readFileSync as Mock).mockReturnValue(WORKFLOW_WITHOUT_MY_FUNC);
     const violations = rule.validate(ctx('/project/src/services/someService.ts'));
     expect(violations).toHaveLength(0);
   });
 
   it('returns no violation when workflow file cannot be read', () => {
-    (readFileSync as jest.Mock).mockImplementation(() => { throw new Error('ENOENT'); });
+    (readFileSync as Mock).mockImplementation(() => { throw new Error('ENOENT'); });
     const violations = rule.validate(ctx('/project/supabase/functions/my-function/index.ts'));
     expect(violations).toHaveLength(0);
   });

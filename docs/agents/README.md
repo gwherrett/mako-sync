@@ -103,11 +103,11 @@ Validates coding best practices and architectural patterns:
 ## Installation
 
 ```bash
-# Install dependencies
+# Install root dependencies (includes ts-node and husky)
 npm install
 
-# Install additional dev dependencies
-npm install --save-dev ts-node husky jest ts-jest @types/jest
+# Install the agents' own dependencies (Vitest, TypeScript parser)
+cd agents && npm install
 ```
 
 ## Usage
