@@ -56,7 +56,7 @@ const ResetPassword = () => {
     // Validate password strength
     const passwordValidation = passwordSchema.safeParse(password);
     if (!passwordValidation.success) {
-      errors.password = passwordValidation.error.errors[0].message;
+      errors.password = passwordValidation.error.issues[0].message;
     }
 
     // Validate password confirmation

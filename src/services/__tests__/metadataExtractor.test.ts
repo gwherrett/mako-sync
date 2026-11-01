@@ -293,6 +293,53 @@ describe('metadataExtractor', () => {
       expect(result.bpm).toBeNull();
     });
 
+    // GHSA-mrhx-c7xc-m3w5: zod < 4.6.6 could exhaust memory on oversized
+    // constrained collections. featured_artists is capped at 50 by the schema.
+    // Single-letter names keep the artist string under its own 500-char limit.
+    const artistWithFeatures = (count: number) =>
+      'Primary' + ' feat X'.repeat(count);
+    type ParsedMetadata = Awaited<ReturnType<typeof parseBlob>>;
+
+    it('rejects more than 50 featured artists and falls back to empty metadata', async () => {
+      const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
+      vi.mocked(parseBlob).mockResolvedValue({
+        common: { title: 'Track', artist: artistWithFeatures(51) },
+        format: {},
+        native: {},
+      } as unknown as ParsedMetadata);
+
+      const file = new File(['test'], 'crowded.mp3', { type: 'audio/mpeg' });
+      Object.defineProperty(file, 'lastModified', { value: Date.now() });
+
+      const result = await extractMetadata(file);
+
+      expect(result.title).toBeNull();
+      expect(result.artist).toBeNull();
+      expect(result.featured_artists).toEqual([]);
+      expect(result.file_path).toBe('crowded.mp3');
+      // The rejection comes from the featured_artists cap, not another field
+      const failure = consoleError.mock.calls.find(([msg]) => String(msg).includes('Failed to extract metadata'));
+      expect(String(failure?.[1])).toContain('featured_artists');
+      expect(String(failure?.[1])).not.toContain('artist:');
+      consoleError.mockRestore();
+    });
+
+    it('accepts exactly 50 featured artists', async () => {
+      vi.mocked(parseBlob).mockResolvedValue({
+        common: { title: 'Track', artist: artistWithFeatures(50) },
+        format: {},
+        native: {},
+      } as unknown as ParsedMetadata);
+
+      const file = new File(['test'], 'full.mp3', { type: 'audio/mpeg' });
+      Object.defineProperty(file, 'lastModified', { value: Date.now() });
+
+      const result = await extractMetadata(file);
+
+      expect(result.title).toBe('Track');
+      expect(result.featured_artists).toHaveLength(50);
+    });
+
     it('accepts valid BPM values', async () => {
       const mockMetadata = {
         common: { title: 'Test', artist: 'Artist' },

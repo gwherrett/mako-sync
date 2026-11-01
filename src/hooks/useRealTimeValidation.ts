@@ -9,9 +9,22 @@ interface ValidationField {
 }
 
 interface UseRealTimeValidationProps {
-  schemas: Record<string, z.ZodSchema>;
+  schemas: Record<string, z.ZodType>;
   debounceMs?: number;
 }
+
+/** Returns the first validation message for `value`, or null when it passes. */
+export const getFieldError = (schema: z.ZodType, value: string): string | null => {
+  try {
+    schema.parse(value);
+    return null;
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return error.issues[0]?.message || 'Invalid value';
+    }
+    return 'Invalid value';
+  }
+};
 
 export const useRealTimeValidation = ({ 
   schemas, 
@@ -41,18 +54,8 @@ export const useRealTimeValidation = ({
     const schema = schemas[fieldName];
     if (!schema) return { error: null, valid: false };
 
-    try {
-      schema.parse(value);
-      return { error: null, valid: true };
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        return {
-          error: error.errors[0]?.message || 'Invalid value',
-          valid: false
-        };
-      }
-      return { error: 'Invalid value', valid: false };
-    }
+    const error = getFieldError(schema, value);
+    return { error, valid: error === null };
   }, [schemas]);
 
   const updateField = useCallback((fieldName: string, value: string, immediate = false) => {
@@ -85,14 +88,12 @@ export const useRealTimeValidation = ({
     let isValid = true;
 
     Object.entries(fields).forEach(([fieldName, field]) => {
-      if (field.touched) {
-        try {
-          schemas[fieldName]?.parse(field.value);
-        } catch (error) {
-          if (error instanceof z.ZodError) {
-            errors[fieldName] = error.errors[0]?.message || 'Invalid value';
-            isValid = false;
-          }
+      const schema = schemas[fieldName];
+      if (field.touched && schema) {
+        const error = getFieldError(schema, field.value);
+        if (error) {
+          errors[fieldName] = error;
+          isValid = false;
         }
       }
     });
