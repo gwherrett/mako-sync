@@ -11,6 +11,26 @@ export interface UseAuthRedirectOptions {
   userRole?: 'admin' | 'user' | null;
 }
 
+// Placeholder origin used only to resolve a candidate path; never navigated to.
+const RETURN_TO_BASE = 'http://return-to.invalid';
+
+/**
+ * Returns `value` as a same-origin, app-relative path, or `fallback` if it isn't one.
+ * Rejects protocol-relative ("//host"), backslash ("/\host", "\host") and scheme
+ * ("https:", "javascript:") values, which would send the user off the app after login.
+ */
+export const getSafeReturnTo = (value: unknown, fallback: string): string => {
+  if (typeof value !== 'string' || !value.startsWith('/')) return fallback;
+  try {
+    // The URL parser strips tabs/newlines and treats "\" as "/", the same way the browser would
+    const url = new URL(value, RETURN_TO_BASE);
+    if (url.origin !== RETURN_TO_BASE) return fallback;
+    return `${url.pathname}${url.search}${url.hash}`;
+  } catch {
+    return fallback;
+  }
+};
+
 export const useAuthRedirect = ({
   user,
   loading,
@@ -23,8 +43,11 @@ export const useAuthRedirect = ({
   const location = useLocation();
 
   const redirectToLogin = useCallback(() => {
-    // Store the attempted URL for redirect after login
-    const returnTo = location.pathname !== loginPath ? location.pathname : redirectTo;
+    // Store the attempted URL for redirect after login. The pathname comes from the
+    // address bar, so a link like https://app//evil.com yields "//evil.com"
+    const returnTo = location.pathname !== loginPath
+      ? getSafeReturnTo(location.pathname, redirectTo)
+      : redirectTo;
     navigate(loginPath, { 
       state: { returnTo },
       replace: true 
@@ -32,8 +55,12 @@ export const useAuthRedirect = ({
   }, [navigate, location.pathname, loginPath, redirectTo]);
 
   const redirectToDestination = useCallback(() => {
-    // Check if there's a return URL from login
-    const returnTo = (location.state as any)?.returnTo || redirectTo;
+    // Check if there's a return URL from login. Validate again here: history state
+    // can be set by any code that navigates to the login page
+    const returnTo = getSafeReturnTo(
+      (location.state as { returnTo?: unknown } | null)?.returnTo,
+      redirectTo
+    );
     navigate(returnTo, { replace: true });
   }, [navigate, location.state, redirectTo]);
 
@@ -76,7 +103,7 @@ export const useAuthRedirect = ({
       console.log('✅ REDIRECT DEBUG: User authenticated on login page, redirecting to app', {
         userId: user.id,
         from: loginPath,
-        returnTo: (location.state as any)?.returnTo || redirectTo
+        returnTo: getSafeReturnTo((location.state as { returnTo?: unknown } | null)?.returnTo, redirectTo)
       });
       redirectToDestination();
       return;
