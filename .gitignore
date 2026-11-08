@@ -39,3 +39,7 @@ sync-grouping.mjs
 # Eval review working files
 # eval-review.csv
 .mcp.json
+
+# Claude Code personal settings (per-user permission allowlist).
+# The shared .claude/settings.json stays tracked.
+.claude/settings.local.json
