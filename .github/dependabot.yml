@@ -3,6 +3,10 @@
 # Minor and patch bumps are grouped into one PR per ecosystem. Major bumps
 # match no group, so each one arrives as its own PR and can be reviewed and
 # tested on its own.
+#
+# MAK-183: majors that can't merge as Dependabot raises them used to fill all
+# 5 default PR slots and block the minor/patch group. The limit is raised and
+# those majors are ignored here; they are done by hand instead.
 version: 2
 updates:
   - package-ecosystem: npm
@@ -11,6 +15,24 @@ updates:
       - "/agents"
     schedule:
       interval: weekly
+    open-pull-requests-limit: 10
+    ignore:
+      # React, react-dom and their types must move together (MAK-184).
+      # Dependabot bumps them separately, so take majors by hand.
+      - dependency-name: "react"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "react-dom"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "@types/react"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "@types/react-dom"
+        update-types: ["version-update:semver-major"]
+      # typescript-eslint 8.x supports TS <6.1.0 (MAK-185).
+      - dependency-name: "typescript"
+        versions: [">=6.1.0"]
+      # Match engines.node 24.x (MAK-187).
+      - dependency-name: "@types/node"
+        versions: [">=25.0.0"]
     groups:
       npm-minor-patch:
         applies-to: version-updates
