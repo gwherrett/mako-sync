@@ -93,10 +93,10 @@ One new migration, `supabase/migrations/<timestamp>_extend_track_matches_for_man
 
 `match_method` stays free text; convention `'tier1_exact' | 'tier2_core' | 'tier3_fuzzy' | 'manual'`.
 
-#### Phase 2 — Engine fix
+#### Phase 2 — Engine fix ([MAK-177](https://linear.app/mako-sync/issue/MAK-177))
 Fix `trackMatchingEngine.ts` so Tier 1 and Tier 2 (non-2b) branches of `matchTrack()` attach `matchedLocalTrack` (via a reverse lookup map alongside the existing `exactSet`/`coreSet`, built once in `buildLocalIndex`). Outcomes (match/tier) are unchanged, so this is safe against the eval suite's `falsePositives === 0` assertion — add/extend a unit test asserting `matchedLocalTrack` is present at every tier.
 
-#### Phase 3 — Service layer
+#### Phase 3 — Service layer ([MAK-178](https://linear.app/mako-sync/issue/MAK-178) `getMatchCandidates`, [MAK-179](https://linear.app/mako-sync/issue/MAK-179) `ManualMatchService`)
 - **`src/services/trackMatching.service.ts`**: add `getMatchCandidates(userId, filters)` — fetches genre-filtered Spotify tracks + artist-overlap-scoped local tracks, calls the shared engine's `findMissingTracksPure()` (fixing today's duplicated inline tier logic), returns full `MatchResult[]` (matched + unmatched). Keep `findMissingTracks()` working as today by delegating: `getMatchCandidates(...).filter(r => !r.matched)` — zero changes required in `MissingTracksAnalyzer.tsx` during the transition.
 - **New `src/services/manualMatch.service.ts`**:
   - `getCandidatesForReview(userId, filters)` — runs `getMatchCandidates`, merges in existing `track_matches` rows for those Spotify track ids so already-decided pairs aren't re-shown.
@@ -124,6 +124,8 @@ Fix `trackMatchingEngine.ts` so Tier 1 and Tier 2 (non-2b) branches of `matchTra
 ---
 
 ## Part 2 — Review Matches UI
+
+**Linear:** [MAK-180](https://linear.app/mako-sync/issue/MAK-180) review queue, [MAK-181](https://linear.app/mako-sync/issue/MAK-181) Confirmed Missing + tab swap, [MAK-182](https://linear.app/mako-sync/issue/MAK-182) remove the old analyzer. To keep production working at each merge, [MAK-180](https://linear.app/mako-sync/issue/MAK-180) first adds the review queue above the existing analyzer; [MAK-181](https://linear.app/mako-sync/issue/MAK-181) then replaces the tab. Each issue has a step-by-step "Human review" checklist for when it's In Review.
 
 ### Current State (verified)
 
