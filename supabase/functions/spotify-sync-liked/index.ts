@@ -3,10 +3,14 @@
  import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.100.0"
 
-import type { SpotifyConnection } from './types.ts'
+import type { SpotifyConnection, SpotifyTrack } from './types.ts'
 import { getValidAccessToken, refreshSpotifyToken, validateVaultSecrets } from './spotify-auth.ts'
 import { extractUniqueArtistIds, processSongsData } from './data-processing.ts'
 import { getArtistGenresWithCache } from './artist-genres.ts'
+import { applyManualGenres, loadManualGenreMap } from './manual-genres.ts'
+
+const getErrorMessage = (error: unknown): string =>
+  error instanceof Error ? error.message : String(error)
 
 const CHUNK_SIZE = 500 // Process 500 tracks at a time
 
@@ -15,7 +19,7 @@ const CHUNK_SIZE = 500 // Process 500 tracks at a time
 const BUDGET_MS = 120_000
 // Kept back after a chunk's artist lookup to write it (manual-genre lookup, upsert, progress update)
 const CHUNK_WRITE_RESERVE_MS = 10_000
-// Needed after the last chunk for the deletion pass, genre verification and completion update
+// Needed after the last chunk for the deletion pass and completion update
 const POST_SYNC_RESERVE_MS = 15_000
 
 const corsHeaders = {
@@ -120,9 +124,9 @@ serve(async (req) => {
           }),
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         )
-      } catch (error: any) {
+      } catch (error) {
         return new Response(
-          JSON.stringify({ error: error.message }),
+          JSON.stringify({ error: getErrorMessage(error) }),
           { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         )
       }
@@ -155,11 +159,11 @@ serve(async (req) => {
           }),
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         )
-      } catch (error: any) {
+      } catch (error) {
         return new Response(
           JSON.stringify({
             success: false,
-            error: error.message,
+            error: getErrorMessage(error),
             health_check_failed: true
           }),
           { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -182,11 +186,11 @@ serve(async (req) => {
           }),
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         )
-      } catch (error: any) {
+      } catch (error) {
         return new Response(
           JSON.stringify({
             success: false,
-            error: error.message,
+            error: getErrorMessage(error),
             vault_validation_failed: true
           }),
           { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -209,11 +213,11 @@ serve(async (req) => {
           }),
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         )
-      } catch (error: any) {
+      } catch (error) {
         return new Response(
           JSON.stringify({
             success: false,
-            error: error.message,
+            error: getErrorMessage(error),
             token_rotation_failed: true
           }),
           { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -226,16 +230,16 @@ serve(async (req) => {
     try {
       accessToken = await getValidAccessToken(connection as SpotifyConnection, supabaseAdmin, user.id)
       console.log('Access token obtained successfully')
-    } catch (error: any) {
+    } catch (error) {
       console.error('Failed to get valid access token:', error)
-      if (error.message.includes('refresh token is invalid')) {
+      if (getErrorMessage(error).includes('refresh token is invalid')) {
         // Clear the invalid connection
         await supabaseAdmin
           .from('spotify_connections')
           .delete()
           .eq('user_id', user.id)
         
-        throw new Error('Your Spotify connection has expired. Please disconnect and reconnect your Spotify account to get fresh tokens.')
+        throw new Error('Your Spotify connection has expired. Please disconnect and reconnect your Spotify account to get fresh tokens.', { cause: error })
       }
       throw error
     }
@@ -255,7 +259,6 @@ serve(async (req) => {
     let totalTracks: number | null = null
     let lastSyncTime: string | null = null
     let isFullSync = forceFullSync
-    let manualGenreMap = new Map<string, string>() // Declare at function scope
 
     // Genre health-check counters — detect silent removal of artist.genres from Spotify API
     let healthArtistTotal = 0
@@ -271,18 +274,6 @@ serve(async (req) => {
       startOffset = existingSync.last_offset
       totalTracks = existingSync.total_tracks
       isFullSync = existingSync.is_full_sync ?? false
-      
-      // PHASE 2: Load cached genres from database when resuming
-      if (existingSync.cached_genres) {
-        const cachedGenresObj = existingSync.cached_genres as Record<string, string>
-        manualGenreMap = new Map(Object.entries(cachedGenresObj))
-        console.log(`✅ RESUME: Loaded ${manualGenreMap.size} cached genre assignments from database`)
-        // PHASE 1: Log sample IDs for verification
-        const sampleIds = Array.from(manualGenreMap.keys()).slice(0, 3)
-        console.log(`📋 Sample cached spotify_ids:`, sampleIds)
-      } else {
-        console.log(`⚠️  RESUME: No cached genres found in database (cached_genres is empty)`)
-      }
     } else {
       // Check for last track added_at timestamp to determine if incremental is possible
       if (!forceFullSync) {
@@ -325,71 +316,6 @@ serve(async (req) => {
       syncId = newSync.sync_id
       console.log(`🆕 Starting new sync with ID: ${syncId}`)
 
-      // Cache manually assigned genres up front (for full sync). Upserts overwrite super_genre
-      // with the auto-mapped value, so this map restores manual overrides (NFR-9).
-      if (isFullSync) {
-        console.log('💾 PHASE 1: Caching manually assigned genres before full sync...')
-        
-        // Fetch ALL manually overridden genres with pagination (Supabase default limit is 1000)
-        let allManualGenres: {spotify_id: string, super_genre: string}[] = []
-        let offset = 0
-        const PAGE_SIZE = 1000
-
-        while (true) {
-          const { data: page, error: pageError } = await supabaseAdmin
-            .from('spotify_liked')
-            .select('spotify_id, super_genre')
-            .eq('user_id', user.id)
-            .eq('super_genre_manual_override', true)
-            .range(offset, offset + PAGE_SIZE - 1)
-            .order('spotify_id')
-          
-          if (pageError) {
-            console.error('❌ Failed to cache genres:', pageError)
-            throw new Error(`Failed to cache existing genres: ${pageError.message}`)
-          }
-          
-          if (!page || page.length === 0) break
-          
-          allManualGenres = allManualGenres.concat(page)
-          console.log(`📄 Fetched page at offset ${offset}: ${page.length} genres (total: ${allManualGenres.length})`)
-          
-          offset += PAGE_SIZE
-          if (page.length < PAGE_SIZE) break // Last page
-        }
-        
-        if (allManualGenres.length > 0) {
-          allManualGenres.forEach(track => {
-            if (track.super_genre) {
-              manualGenreMap.set(track.spotify_id, track.super_genre)
-            }
-          })
-          console.log(`✅ PHASE 1: Successfully cached ${manualGenreMap.size} genre assignments (across ${Math.ceil(allManualGenres.length / PAGE_SIZE)} pages)`)
-          
-          // PHASE 1: Log sample data for verification
-          const sampleTracks = allManualGenres.slice(0, 3)
-          console.log(`📋 PHASE 1: Sample cached tracks:`)
-          sampleTracks.forEach((track, idx) => {
-            console.log(`   ${idx + 1}. spotify_id: ${track.spotify_id} -> super_genre: ${track.super_genre}`)
-          })
-          
-          // PHASE 2: Save cached genres to database for resume support
-          const cachedGenresObj = Object.fromEntries(manualGenreMap)
-          const { error: updateError } = await supabaseClient
-            .from('sync_progress')
-            .update({ cached_genres: cachedGenresObj })
-            .eq('sync_id', syncId)
-          
-          if (updateError) {
-            console.error('⚠️  PHASE 2: Failed to save cached genres to database:', updateError)
-          } else {
-            console.log(`✅ PHASE 2: Saved ${manualGenreMap.size} cached genres to database for resume support`)
-          }
-        } else {
-          console.log('⚠️  PHASE 1: No existing genres found to cache (all tracks have null super_genre)')
-        }
-      }
-
       // Full sync does NOT clear existing songs: the upsert on (user_id, spotify_id) updates rows
       // in place so spotify_liked.id stays stable (track_matches cascades on delete). Unliked
       // tracks are removed by the deletion pass at the end of the sync.
@@ -412,7 +338,7 @@ serve(async (req) => {
     // Fetch tracks in chunks
     let currentOffset = startOffset
     let hasMore = true
-    let allChunkTracks: any[] = []
+    let allChunkTracks: SpotifyTrack[] = []
     let newTracksCount = 0
     let olderTracksCount = 0 // Count tracks older than last sync to determine when to stop
     // Offset up to which every fetched track has been upserted. Pauses save this, not currentOffset,
@@ -507,7 +433,7 @@ serve(async (req) => {
         // Log first 3 tracks for debugging
         if (data.items.length > 0) {
           console.log(`\nFirst 3 tracks from Spotify:`)
-          data.items.slice(0, 3).forEach((item: any, idx: number) => {
+          data.items.slice(0, 3).forEach((item: SpotifyTrack, idx: number) => {
             const trackAddedAt = new Date(item.added_at)
             const isNewer = trackAddedAt > lastSyncDate
             console.log(`  ${idx + 1}. "${item.track.name}" by ${item.track.artists[0].name}`)
@@ -519,7 +445,7 @@ serve(async (req) => {
         
         // Filter for tracks newer than our last synced track
         // Note: Using > (not >=) to avoid duplicate of the last track
-        newItems = data.items.filter((item: any) => {
+        newItems = data.items.filter((item: SpotifyTrack) => {
           const addedAt = new Date(item.added_at)
           const isNewer = addedAt > lastSyncDate
           
@@ -600,54 +526,12 @@ serve(async (req) => {
         const songsToInsert = processSongsData(allChunkTracks, user.id, syncId, artistGenreMap, new Map(), genreMapping)
         newTracksCount += songsToInsert.length
 
-        // For incremental sync, fetch existing tracks with manual genre overrides from DB
-        // For full sync, use the map cached at sync start
-        if (!isFullSync) {
-          const spotifyIds = songsToInsert.map(s => s.spotify_id)
-          const { data: existingTracks } = await supabaseClient
-            .from('spotify_liked')
-            .select('spotify_id, super_genre')
-            .eq('user_id', user.id)
-            .in('spotify_id', spotifyIds)
-            .eq('super_genre_manual_override', true)
-          
-          // Add to manual genre map
-          if (existingTracks) {
-            existingTracks.forEach(track => {
-              if (track.super_genre) {
-                manualGenreMap.set(track.spotify_id, track.super_genre)
-              }
-            })
-          }
-        }
-        
-        // Use the cached/fetched manual genre map to preserve super_genre assignments
-        const songsToUpsert = songsToInsert.map(song => {
-          if (manualGenreMap.has(song.spotify_id)) {
-            // Use the cached manual genre assignment instead of the auto-mapped one
-            return {
-              ...song,
-              super_genre: manualGenreMap.get(song.spotify_id),
-              super_genre_manual_override: true
-            }
-          }
-          return song
-        })
-        
-        // PHASE 1: Enhanced logging for genre restoration
-        const restoredCount = songsToUpsert.filter(s => manualGenreMap.has(s.spotify_id)).length
-        if (restoredCount > 0) {
-          console.log(`✅ PHASE 1: Restored ${restoredCount} cached genre assignments in this batch`)
-          // Log sample restorations
-          const restoredSamples = songsToUpsert
-            .filter(s => manualGenreMap.has(s.spotify_id))
-            .slice(0, 3)
-          console.log(`📋 PHASE 1: Sample restored tracks:`)
-          restoredSamples.forEach((track, idx) => {
-            console.log(`   ${idx + 1}. "${track.title}" by ${track.artist} -> ${track.super_genre}`)
-          })
-        } else if (manualGenreMap.size > 0) {
-          console.log(`⚠️  PHASE 1: Cache has ${manualGenreMap.size} genres, but 0 restored in this batch`)
+        // Keep manual genre overrides (NFR-9): processSongsData sets the auto-mapped super_genre,
+        // and the upsert would overwrite an override without this lookup.
+        const manualGenreMap = await loadManualGenreMap(supabaseClient, user.id, songsToInsert.map(s => s.spotify_id))
+        const songsToUpsert = applyManualGenres(songsToInsert, manualGenreMap)
+        if (manualGenreMap.size > 0) {
+          console.log(`🔒 Kept ${manualGenreMap.size} manual genre overrides in this batch`)
         }
 
         const { error: insertError } = await supabaseAdmin
@@ -745,32 +629,9 @@ serve(async (req) => {
       // Process songs data
       const songsToInsert = processSongsData(allChunkTracks, user.id, syncId, artistGenreMap, new Map(), genreMapping)
 
-      // For incremental sync, fetch existing tracks with manual genre overrides from DB
-      if (!isFullSync) {
-        const spotifyIds = songsToInsert.map(s => s.spotify_id)
-        const { data: existingTracks } = await supabaseClient
-          .from('spotify_liked')
-          .select('spotify_id, super_genre')
-          .eq('user_id', user.id)
-          .in('spotify_id', spotifyIds)
-          .eq('super_genre_manual_override', true)
-        
-        if (existingTracks) {
-          existingTracks.forEach(track => {
-            if (track.super_genre) {
-              manualGenreMap.set(track.spotify_id, track.super_genre)
-            }
-          })
-        }
-      }
-      
-      // Preserve manual genre assignments
-      const songsToUpsert = songsToInsert.map(song => {
-        if (manualGenreMap.has(song.spotify_id)) {
-          return { ...song, super_genre: manualGenreMap.get(song.spotify_id), super_genre_manual_override: true }
-        }
-        return song
-      })
+      // Keep manual genre overrides (NFR-9) — see the chunk loop above
+      const manualGenreMap = await loadManualGenreMap(supabaseClient, user.id, songsToInsert.map(s => s.spotify_id))
+      const songsToUpsert = applyManualGenres(songsToInsert, manualGenreMap)
 
       // Insert/upsert the final batch
       const { error: insertError } = await supabaseAdmin
@@ -798,7 +659,7 @@ serve(async (req) => {
         .eq('sync_id', syncId)
     }
 
-    // Every chunk is written. If the deletion pass and verification might not fit, pause: the resumed
+    // Every chunk is written. If the deletion pass might not fit, pause: the resumed
     // run starts at the end of the library, finds no more pages and goes straight to them.
     if (isFullSync && Date.now() >= deadlineAt - POST_SYNC_RESERVE_MS) {
       console.log(`⏱️ Not enough time left for the deletion pass — exiting for resume from ${lastPersistedOffset}`)
@@ -855,59 +716,6 @@ serve(async (req) => {
       }
     } else {
       console.log(`⏭️  Skipping deletion detection (incremental sync - only checks new tracks)`)
-    }
-
-    // PHASE 1: Post-sync verification - check if genres were properly restored
-    let verificationWarnings: string[] = []
-    if (isFullSync && manualGenreMap.size > 0) {
-      console.log(`\n🔍 PHASE 1: POST-SYNC VERIFICATION`)
-      console.log(`Expected ${manualGenreMap.size} tracks to have genres restored`)
-      
-      // Query tracks in batches (PostgREST has a limit on IN clause size)
-      const spotifyIdsToCheck = Array.from(manualGenreMap.keys())
-      const BATCH_SIZE = 100
-      let allVerifyTracks: any[] = []
-      
-      for (let i = 0; i < spotifyIdsToCheck.length; i += BATCH_SIZE) {
-        const batch = spotifyIdsToCheck.slice(i, i + BATCH_SIZE)
-        const { data: batchTracks, error: batchError } = await supabaseClient
-          .from('spotify_liked')
-          .select('spotify_id, super_genre, title, artist')
-          .eq('user_id', user.id)
-          .in('spotify_id', batch)
-        
-        if (batchError) {
-          console.error(`⚠️  Verification batch ${i / BATCH_SIZE + 1} failed:`, batchError)
-        } else if (batchTracks) {
-          allVerifyTracks = allVerifyTracks.concat(batchTracks)
-        }
-      }
-      
-      const foundSpotifyIds = new Set(allVerifyTracks.map(t => t.spotify_id))
-      const notFoundCount = spotifyIdsToCheck.length - allVerifyTracks.length
-      
-      if (notFoundCount > 0) {
-        console.log(`⚠️  ${notFoundCount} cached tracks not found in Spotify (likely unliked)`)
-      }
-      
-      const missingGenres = allVerifyTracks.filter(t => !t.super_genre)
-      const hasGenres = allVerifyTracks.filter(t => t.super_genre)
-      
-      console.log(`✅ Verification: ${hasGenres.length}/${allVerifyTracks.length} genres successfully restored`)
-      
-      if (missingGenres.length > 0) {
-        console.error(`❌ VERIFICATION FAILED: ${missingGenres.length} tracks lost their genre assignments!`)
-        console.log(`Missing genre tracks (first 5):`)
-        missingGenres.slice(0, 5).forEach((track, idx) => {
-          const expectedGenre = manualGenreMap.get(track.spotify_id)
-          console.log(`   ${idx + 1}. "${track.title}" by ${track.artist}`)
-          console.log(`      spotify_id: ${track.spotify_id}`)
-          console.log(`      Expected: ${expectedGenre}, Got: null`)
-        })
-        verificationWarnings.push(`${missingGenres.length} tracks lost genre assignments`)
-      } else {
-        console.log(`🎉 All found tracks have their genres restored!`)
-      }
     }
 
     // Log cache efficiency summary
@@ -967,8 +775,6 @@ serve(async (req) => {
         sync_type: syncType,
         sync_id: syncId,
         duplicates_removed: duplicatesRemoved,
-        genres_cached: manualGenreMap.size,
-        verification_warnings: verificationWarnings.length > 0 ? verificationWarnings : undefined,
         genre_health_warning: genreHealthWarning,
         genre_cache_stats: {
           cache_hits: totalCacheHits,
