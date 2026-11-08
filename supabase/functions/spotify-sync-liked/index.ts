@@ -3,11 +3,14 @@
  import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.100.0"
 
-import type { SpotifyConnection } from './types.ts'
+import type { SpotifyConnection, SpotifyTrack } from './types.ts'
 import { getValidAccessToken, refreshSpotifyToken, validateVaultSecrets } from './spotify-auth.ts'
 import { extractUniqueArtistIds, processSongsData } from './data-processing.ts'
 import { getArtistGenresWithCache } from './artist-genres.ts'
 import { applyManualGenres, loadManualGenreMap } from './manual-genres.ts'
+
+const getErrorMessage = (error: unknown): string =>
+  error instanceof Error ? error.message : String(error)
 
 const CHUNK_SIZE = 500 // Process 500 tracks at a time
 
@@ -121,9 +124,9 @@ serve(async (req) => {
           }),
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         )
-      } catch (error: any) {
+      } catch (error) {
         return new Response(
-          JSON.stringify({ error: error.message }),
+          JSON.stringify({ error: getErrorMessage(error) }),
           { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         )
       }
@@ -156,11 +159,11 @@ serve(async (req) => {
           }),
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         )
-      } catch (error: any) {
+      } catch (error) {
         return new Response(
           JSON.stringify({
             success: false,
-            error: error.message,
+            error: getErrorMessage(error),
             health_check_failed: true
           }),
           { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -183,11 +186,11 @@ serve(async (req) => {
           }),
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         )
-      } catch (error: any) {
+      } catch (error) {
         return new Response(
           JSON.stringify({
             success: false,
-            error: error.message,
+            error: getErrorMessage(error),
             vault_validation_failed: true
           }),
           { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -210,11 +213,11 @@ serve(async (req) => {
           }),
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         )
-      } catch (error: any) {
+      } catch (error) {
         return new Response(
           JSON.stringify({
             success: false,
-            error: error.message,
+            error: getErrorMessage(error),
             token_rotation_failed: true
           }),
           { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -227,16 +230,16 @@ serve(async (req) => {
     try {
       accessToken = await getValidAccessToken(connection as SpotifyConnection, supabaseAdmin, user.id)
       console.log('Access token obtained successfully')
-    } catch (error: any) {
+    } catch (error) {
       console.error('Failed to get valid access token:', error)
-      if (error.message.includes('refresh token is invalid')) {
+      if (getErrorMessage(error).includes('refresh token is invalid')) {
         // Clear the invalid connection
         await supabaseAdmin
           .from('spotify_connections')
           .delete()
           .eq('user_id', user.id)
         
-        throw new Error('Your Spotify connection has expired. Please disconnect and reconnect your Spotify account to get fresh tokens.')
+        throw new Error('Your Spotify connection has expired. Please disconnect and reconnect your Spotify account to get fresh tokens.', { cause: error })
       }
       throw error
     }
@@ -335,7 +338,7 @@ serve(async (req) => {
     // Fetch tracks in chunks
     let currentOffset = startOffset
     let hasMore = true
-    let allChunkTracks: any[] = []
+    let allChunkTracks: SpotifyTrack[] = []
     let newTracksCount = 0
     let olderTracksCount = 0 // Count tracks older than last sync to determine when to stop
     // Offset up to which every fetched track has been upserted. Pauses save this, not currentOffset,
@@ -430,7 +433,7 @@ serve(async (req) => {
         // Log first 3 tracks for debugging
         if (data.items.length > 0) {
           console.log(`\nFirst 3 tracks from Spotify:`)
-          data.items.slice(0, 3).forEach((item: any, idx: number) => {
+          data.items.slice(0, 3).forEach((item: SpotifyTrack, idx: number) => {
             const trackAddedAt = new Date(item.added_at)
             const isNewer = trackAddedAt > lastSyncDate
             console.log(`  ${idx + 1}. "${item.track.name}" by ${item.track.artists[0].name}`)
@@ -442,7 +445,7 @@ serve(async (req) => {
         
         // Filter for tracks newer than our last synced track
         // Note: Using > (not >=) to avoid duplicate of the last track
-        newItems = data.items.filter((item: any) => {
+        newItems = data.items.filter((item: SpotifyTrack) => {
           const addedAt = new Date(item.added_at)
           const isNewer = addedAt > lastSyncDate
           
