@@ -19,21 +19,22 @@ jobs:
       - name: Setup Supabase CLI
         uses: supabase/setup-cli@v3
         with:
-          version: latest
+          # Pinned: "latest" jumped to 3.0.0, which prompts before production deploys
+          version: 3.0.0
 
       - name: Deploy Edge Functions
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
         run: |
           supabase link --project-ref bzzstdpfmyqttnzhgaoa
-          supabase functions deploy spotify-auth
-          supabase functions deploy spotify-sync-liked
-          supabase functions deploy spotify-unlike-tracks
-          supabase functions deploy genre-mapping
-          supabase functions deploy ai-track-genre-suggest
-          supabase functions deploy discogs-auth
-          supabase functions deploy discogs-search
-          supabase functions deploy discogs-add-to-collection
-          supabase functions deploy discogs-pull-sync
-          supabase functions deploy vinyl-image-identify
-          supabase functions deploy discogs-genre-mapping
+          supabase functions deploy spotify-auth --yes
+          supabase functions deploy spotify-sync-liked --yes
+          supabase functions deploy spotify-unlike-tracks --yes
+          supabase functions deploy genre-mapping --yes
+          supabase functions deploy ai-track-genre-suggest --yes
+          supabase functions deploy discogs-auth --yes
+          supabase functions deploy discogs-search --yes
+          supabase functions deploy discogs-add-to-collection --yes
+          supabase functions deploy discogs-pull-sync --yes
+          supabase functions deploy vinyl-image-identify --yes
+          supabase functions deploy discogs-genre-mapping --yes
