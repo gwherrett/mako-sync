@@ -53,7 +53,7 @@ export const SUPER_GENRES: SuperGenre[] = [
   'World'
 ];
 
-// Hardcoded "dance music" grouping for cross-filtering Spotify liked vs local files.
+// Hardcoded "SuperDJ" grouping for cross-filtering Spotify liked vs local files.
 // See MAK-150. Not derived from genre-mapping data — a fixed editorial set.
 export const DANCE_SUPER_GENRES: SuperGenre[] = [
   'Bass',
@@ -67,14 +67,17 @@ export const DANCE_SUPER_GENRES: SuperGenre[] = [
   'Urban',
 ];
 
-// Sentinel value for the "Dance (all)" option in SuperGenre filter dropdowns.
+// Sentinel value for the "SuperDJ" option in SuperGenre filter dropdowns.
 export const DANCE_ALL_VALUE = '__dance_all__';
 
+// Display label for the DANCE_ALL_VALUE option.
+export const SUPERDJ_LABEL = 'SuperDJ';
+
 export const getSuperGenreFilterLabel = (value: string): string =>
-  value === DANCE_ALL_VALUE ? 'Dance (all)' : value;
+  value === DANCE_ALL_VALUE ? SUPERDJ_LABEL : value;
 
 // Applies a SuperGenre filter value to a Supabase query builder, expanding the
-// "Dance (all)" sentinel into an `.in()` match against DANCE_SUPER_GENRES.
+// "SuperDJ" sentinel into an `.in()` match against DANCE_SUPER_GENRES.
 export const applySuperGenreFilter = (query: any, value?: string | null): any => {
   if (!value || value === 'all') return query;
   if (value === DANCE_ALL_VALUE) return query.in('super_genre', DANCE_SUPER_GENRES);

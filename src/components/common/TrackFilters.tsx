@@ -4,7 +4,7 @@ import { Search, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectSeparator, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { DANCE_ALL_VALUE } from '@/types/genreMapping';
+import { DANCE_ALL_VALUE, SUPERDJ_LABEL } from '@/types/genreMapping';
 
 // Base filter configuration
 export interface FilterConfig {
@@ -150,7 +150,7 @@ export const TrackFilters: React.FC<TrackFiltersProps> = ({
                   <SelectItem value="all">{config.superGenreLabel || "All Supergenres"}</SelectItem>
                   <SelectItem value="no-super-genre">Unmapped</SelectItem>
                   <SelectSeparator />
-                  <SelectItem value={DANCE_ALL_VALUE}>Dance (all)</SelectItem>
+                  <SelectItem value={DANCE_ALL_VALUE}>{SUPERDJ_LABEL}</SelectItem>
                   <SelectSeparator />
                   {options.superGenres.map((superGenre) => (
                     <SelectItem key={superGenre} value={superGenre}>

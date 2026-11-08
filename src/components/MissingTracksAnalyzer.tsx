@@ -16,7 +16,7 @@ import { useSlskdSync } from '@/hooks/useSlskdSync';
 import { SlskdSyncProgress } from '@/components/SlskdSyncProgress';
 import { EditSpotifyTrackGenreDialog } from '@/components/EditSpotifyTrackGenreDialog';
 import type { SpotifyTrackForGenreEdit } from '@/components/EditSpotifyTrackGenreDialog';
-import { DANCE_ALL_VALUE, applySuperGenreFilter, getSuperGenreFilterLabel, type SuperGenre } from '@/types/genreMapping';
+import { DANCE_ALL_VALUE, SUPERDJ_LABEL, applySuperGenreFilter, getSuperGenreFilterLabel, type SuperGenre } from '@/types/genreMapping';
 import type { SlskdTrackToSync } from '@/types/slskd';
 
 type MissingSource = 'spotify' | 'vinyl' | 'both';
@@ -483,7 +483,7 @@ const MissingTracksAnalyzer: React.FC<MissingTracksAnalyzerProps> = ({
                 <SelectContent>
                   <SelectItem value="all">All ({superGenres.length})</SelectItem>
                   <SelectSeparator />
-                  <SelectItem value={DANCE_ALL_VALUE}>Dance (all)</SelectItem>
+                  <SelectItem value={DANCE_ALL_VALUE}>{SUPERDJ_LABEL}</SelectItem>
                   <SelectSeparator />
                   {superGenres.map((genre) => (
                     <SelectItem key={genre} value={genre}>
