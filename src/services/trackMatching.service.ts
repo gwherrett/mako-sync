@@ -6,12 +6,69 @@ import {
   extractCoreTitle,
   calculateSimilarity,
   buildLocalIndex,
+  findMissingTracksPure,
   FUZZY_MATCH_THRESHOLD,
   type LocalTrack,
+  type MatchResult,
   type SpotifyTrack,
 } from './trackMatchingEngine';
 import type { PhysicalMediaRecord } from '@/types/discogs';
 import { applySuperGenreFilter } from '@/types/genreMapping';
+
+// Supabase caps every response at 1000 rows, whatever .limit() asks for.
+const PAGE_SIZE = 1000;
+const PAGE_TIMEOUT_MS = 30000;
+
+type PageResult<T> = { data: T[] | null; error: { message: string } | null };
+
+/**
+ * Fetch every row of a query, one PAGE_SIZE page at a time. `fetchPage` builds a fresh,
+ * ordered query for each range, so pages don't overlap or skip rows.
+ */
+async function fetchAllPages<T>(
+  fetchPage: (from: number, to: number) => PromiseLike<PageResult<T>>,
+  label: string
+): Promise<T[]> {
+  const rows: T[] = [];
+  let offset = 0;
+
+  while (true) {
+    const { data, error } = await withTimeout(
+      Promise.resolve(fetchPage(offset, offset + PAGE_SIZE - 1)),
+      PAGE_TIMEOUT_MS,
+      `${label} page timed out`
+    );
+
+    if (error) {
+      throw new Error(`Failed to ${label}: ${error.message}`);
+    }
+    if (!data || data.length === 0) break;
+
+    rows.push(...data);
+    offset += data.length;
+    if (data.length < PAGE_SIZE) break;
+  }
+
+  return rows;
+}
+
+/** The artist key the engine matches on, at every tier. */
+function artistKey(track: { primary_artist: string | null; artist: string | null }): string {
+  return normalizeArtist(track.primary_artist || track.artist);
+}
+
+export interface MatchCandidateFilters {
+  superGenre?: string;
+  genre?: string;
+  artist?: string;
+}
+
+export interface MatchCandidates {
+  /** One result per Spotify track in the filtered subset, matched and unmatched. */
+  results: MatchResult[];
+  /** Local tracks whose artist appears in the filtered Spotify subset. */
+  localTracks: LocalTrack[];
+}
 
 export interface VinylFlatTrack {
   recordId: string;
@@ -38,77 +95,80 @@ const DEBUG_MATCHING = true;
 // Add artist/title substrings to debug specific tracks (case-insensitive)
 const DEBUG_TRACKS: string[] = ['armando', 'disin'];
 
-function shouldDebug(title: string, artist: string): boolean {
+function shouldDebug(title: string | null, artist: string | null): boolean {
   if (!DEBUG_MATCHING || DEBUG_TRACKS.length === 0) return false;
-  const combined = `${title} ${artist}`.toLowerCase();
+  const combined = `${title || ''} ${artist || ''}`.toLowerCase();
   return DEBUG_TRACKS.some(term => combined.includes(term.toLowerCase()));
+}
+
+// Log the engine's verdict for the Spotify tracks named in DEBUG_TRACKS.
+function logDebugResults(results: MatchResult[], localTracks: LocalTrack[]): void {
+  for (const result of results) {
+    const { spotifyTrack } = result;
+    if (!shouldDebug(spotifyTrack.title, spotifyTrack.primary_artist || spotifyTrack.artist)) continue;
+
+    console.log(`🔍 DEBUG: "${spotifyTrack.title}" by "${spotifyTrack.artist}"`);
+    console.log(`     Normalized: "${result.normalizedSpotifyTitle}" / "${result.normalizedSpotifyArtist}"`);
+    if (result.matched) {
+      const similarity = result.similarity !== undefined ? ` (${result.similarity.toFixed(1)}%)` : '';
+      console.log(`  ✅ Tier ${result.tier} match${similarity}: "${result.matchedLocalTrack?.title}" (${result.matchedLocalTrack?.file_path})`);
+      continue;
+    }
+
+    const sameArtist = localTracks.filter(t => artistKey(t) === result.normalizedSpotifyArtist);
+    console.log(`  🚫 MISSING. Local tracks by this artist: ${sameArtist.length}`);
+    sameArtist.slice(0, 5).forEach(t => console.log(`     - "${t.title}"`));
+  }
 }
 
 export class TrackMatchingService {
 
   // Fetch local tracks for user with pagination to handle large collections
   static async fetchLocalTracks(userId: string): Promise<LocalTrack[]> {
-    const PAGE_SIZE = 1000;
-    const allTracks: LocalTrack[] = [];
-    let offset = 0;
-    let hasMore = true;
-
-    while (hasMore) {
-      const { data, error } = await withTimeout(
+    const tracks = await fetchAllPages<LocalTrack>(
+      (from, to) =>
         supabase
           .from('local_mp3s')
           .select('id, title, artist, primary_artist, album, genre, file_path')
           .eq('user_id', userId)
-          .range(offset, offset + PAGE_SIZE - 1)
+          .order('id')
+          .range(from, to)
           .then(r => r),
-        30000,
-        'fetchLocalTracks page timed out'
-      );
+      'fetch local tracks'
+    );
 
-      if (error) {
-        throw new Error(`Failed to fetch local tracks: ${error.message}`);
-      }
-
-      if (data && data.length > 0) {
-        allTracks.push(...data);
-        offset += data.length;
-        hasMore = data.length === PAGE_SIZE;
-      } else {
-        hasMore = false;
-      }
-    }
-
-    console.log(`📀 Fetched ${allTracks.length} local tracks for matching`);
-    return allTracks;
+    console.log(`📀 Fetched ${tracks.length} local tracks for matching`);
+    return tracks;
   }
 
-  // Fetch Spotify tracks for user with optional cascading filters
+  // Fetch Spotify tracks for user with optional cascading filters, with pagination
   static async fetchSpotifyTracks(
     userId: string,
     superGenreFilter?: string,
     genreFilter?: string,
     artistFilter?: string
   ): Promise<SpotifyTrack[]> {
-    let query = supabase
-      .from('spotify_liked')
-      .select('id, title, artist, primary_artist, album, genre, super_genre, super_genre_manual_override')
-      .eq('user_id', userId)
-      .limit(50000); // Override default 1000 limit to handle large collections
+    const buildQuery = () => {
+      let query = supabase
+        .from('spotify_liked')
+        .select('id, title, artist, primary_artist, album, genre, super_genre, super_genre_manual_override')
+        .eq('user_id', userId);
 
-    // Apply cascading filters
-    query = applySuperGenreFilter(query, superGenreFilter);
-    if (genreFilter && genreFilter !== 'all') {
-      query = query.eq('genre', genreFilter as any);
-    }
-    if (artistFilter && artistFilter !== 'all') {
-      query = query.eq('artist', artistFilter as any);
-    }
+      // Apply cascading filters
+      query = applySuperGenreFilter(query, superGenreFilter);
+      if (genreFilter && genreFilter !== 'all') {
+        query = query.eq('genre', genreFilter);
+      }
+      if (artistFilter && artistFilter !== 'all') {
+        query = query.eq('artist', artistFilter);
+      }
+      return query;
+    };
 
-    const { data, error } = await query;
-
-    if (error) {
-      throw new Error(`Failed to fetch Spotify tracks: ${error.message}`);
-    }
+    const tracks = await fetchAllPages<SpotifyTrack>(
+      (from, to) => buildQuery().order('id').range(from, to).then(r => r),
+      'fetch Spotify tracks'
+    );
 
     // Build filter description for logging
     const filterParts = [];
@@ -116,149 +176,66 @@ export class TrackMatchingService {
     if (genreFilter && genreFilter !== 'all') filterParts.push(`genre: ${genreFilter}`);
     if (artistFilter && artistFilter !== 'all') filterParts.push(`artist: ${artistFilter}`);
     const filterText = filterParts.length > 0 ? ` (${filterParts.join(', ')})` : '';
-    console.log(`🎵 Fetched ${data?.length || 0} Spotify tracks for matching${filterText}`);
-    return data || [];
+    console.log(`🎵 Fetched ${tracks.length} Spotify tracks for matching${filterText}`);
+    return tracks;
+  }
+
+  /**
+   * Match a filtered subset of Spotify tracks against the user's local files with the
+   * shared engine. Returns every result, matched and unmatched.
+   *
+   * Local tracks are scoped by artist overlap with the Spotify subset (Decision 2 in
+   * docs/plans/manual-match-review.md). The engine only matches same-artist pairs at every
+   * tier, so the scoping drops no match.
+   */
+  static async getMatchCandidates(
+    userId: string,
+    filters: MatchCandidateFilters = {}
+  ): Promise<MatchCandidates> {
+    const [allLocalTracks, spotifyTracks] = await Promise.all([
+      this.fetchLocalTracks(userId),
+      this.fetchSpotifyTracks(userId, filters.superGenre, filters.genre, filters.artist),
+    ]);
+
+    const spotifyArtists = new Set(spotifyTracks.map(artistKey));
+    const localTracks = allLocalTracks.filter(track => spotifyArtists.has(artistKey(track)));
+
+    const results = findMissingTracksPure(spotifyTracks, localTracks);
+
+    const tierCounts = { 1: 0, 2: 0, 3: 0 };
+    let missing = 0;
+    for (const result of results) {
+      if (result.tier) tierCounts[result.tier]++;
+      else missing++;
+    }
+    console.log(
+      `🎯 Matched ${results.length} Spotify tracks against ${localTracks.length} of ${allLocalTracks.length} local tracks: ` +
+      `tier 1: ${tierCounts[1]}, tier 2: ${tierCounts[2]}, tier 3: ${tierCounts[3]}, missing: ${missing}`
+    );
+    if (DEBUG_MATCHING) logDebugResults(results, localTracks);
+
+    return { results, localTracks };
   }
 
   // Find missing tracks (Spotify tracks not in local collection)
-  // Uses three-tier matching: exact → core title → fuzzy
   static async findMissingTracks(
     userId: string,
     superGenreFilter?: string,
     genreFilter?: string,
     artistFilter?: string
   ): Promise<MissingTrack[]> {
-    const [localTracks, spotifyTracks] = await Promise.all([
-      this.fetchLocalTracks(userId),
-      this.fetchSpotifyTracks(userId, superGenreFilter, genreFilter, artistFilter)
-    ]);
+    const { results } = await this.getMatchCandidates(userId, {
+      superGenre: superGenreFilter,
+      genre: genreFilter,
+      artist: artistFilter,
+    });
 
-    const missingTracks: MissingTrack[] = [];
-
-    // Build lookup structures using the engine
-    const localIndex = buildLocalIndex(localTracks);
-
-    // Debug: Log local tracks matching debug criteria
-    if (DEBUG_MATCHING) {
-      const debugRawLocalTracks = localTracks.filter(t => {
-        const combined = `${t.title || ''} ${t.artist || ''} ${t.primary_artist || ''}`.toLowerCase();
-        return DEBUG_TRACKS.some(term => combined.includes(term.toLowerCase()));
-      });
-      if (debugRawLocalTracks.length > 0) {
-        console.log('🔍 DEBUG: Raw local tracks from DB matching debug criteria:');
-        debugRawLocalTracks.forEach(t => {
-          console.log(`  📀 Title: "${t.title}"`);
-          console.log(`     Artist field: "${t.artist}"`);
-          console.log(`     Primary_artist field: "${t.primary_artist}"`);
-          console.log(`     File: "${t.file_path}"`);
-        });
-      } else {
-        console.log('🔍 DEBUG: No local tracks found in DB matching debug criteria');
-        console.log(`   Searched for: ${DEBUG_TRACKS.join(', ')}`);
-        console.log(`   Total local tracks in DB: ${localTracks.length}`);
-      }
-
-      const debugLocalTracks = localIndex.normalized.filter(t =>
-        shouldDebug(t.track.title || '', (t.track.primary_artist || t.track.artist) || '')
-      );
-      if (debugLocalTracks.length > 0) {
-        console.log('🔍 DEBUG: Normalized local tracks matching debug criteria:');
-        debugLocalTracks.forEach(t => {
-          console.log(`  📀 Original: "${t.track.title}" by "${t.track.primary_artist || t.track.artist}"`);
-          console.log(`     Normalized title: "${t.title}"`);
-          console.log(`     Core title: "${t.coreTitle}"`);
-          console.log(`     Normalized artist: "${t.artist}"`);
-        });
-      }
-    }
-
-    for (const spotifyTrack of spotifyTracks) {
-      const spotifyTitle = normalize(spotifyTrack.title);
-      const spotifyCoreTitle = extractCoreTitle(spotifyTrack.title);
-      const spotifyArtist = normalizeArtist(spotifyTrack.primary_artist || spotifyTrack.artist);
-
-      const debug = shouldDebug(spotifyTrack.title, spotifyTrack.primary_artist || spotifyTrack.artist);
-
-      if (debug) {
-        console.log('🔍 DEBUG: Processing Spotify track:');
-        console.log(`  🎵 Original: "${spotifyTrack.title}" by "${spotifyTrack.artist}"`);
-        console.log(`     Primary artist: "${spotifyTrack.primary_artist}"`);
-        console.log(`     Normalized title: "${spotifyTitle}"`);
-        console.log(`     Core title: "${spotifyCoreTitle}"`);
-        console.log(`     Normalized artist: "${spotifyArtist}"`);
-      }
-
-      // Tier 1: Exact match on full title + artist
-      const exactKey = `${spotifyTitle}_${spotifyArtist}`;
-      if (localIndex.exactSet.has(exactKey)) {
-        if (debug) console.log(`  ✅ Tier 1 MATCH (exact): key="${exactKey}"`);
-        continue;
-      }
-      if (debug) console.log(`  ❌ Tier 1 no match: key="${exactKey}"`);
-
-      // Tier 2: Match on core title (without mix/version) + artist
-      const coreKey = `${spotifyCoreTitle}_${spotifyArtist}`;
-      if (localIndex.coreSet.has(coreKey)) {
-        if (debug) console.log(`  ✅ Tier 2 MATCH (core): key="${coreKey}"`);
-        continue;
-      }
-      if (debug) console.log(`  ❌ Tier 2 no match: key="${coreKey}"`);
-
-      // Tier 3: Fuzzy matching
-      let fuzzyMatch = false;
-      let bestFuzzyMatch: { local: typeof localIndex.normalized[0]; titleSim: number; coreSim: number } | null = null;
-
-      for (const local of localIndex.normalized) {
-        if (local.artist !== spotifyArtist) continue;
-
-        const titleSimilarity = calculateSimilarity(local.title, spotifyTitle);
-        const coreSimilarity = calculateSimilarity(local.coreTitle, spotifyCoreTitle);
-
-        if (debug && (titleSimilarity > 50 || coreSimilarity > 50)) {
-          console.log(`  🔎 Fuzzy candidate: "${local.track.title}"`);
-          console.log(`     Title similarity: ${titleSimilarity.toFixed(1)}%, Core similarity: ${coreSimilarity.toFixed(1)}%`);
-        }
-
-        if (titleSimilarity >= FUZZY_MATCH_THRESHOLD || coreSimilarity >= FUZZY_MATCH_THRESHOLD) {
-          fuzzyMatch = true;
-          bestFuzzyMatch = { local, titleSim: titleSimilarity, coreSim: coreSimilarity };
-          break;
-        }
-      }
-
-      if (fuzzyMatch && bestFuzzyMatch) {
-        if (debug) {
-          console.log(`  ✅ Tier 3 MATCH (fuzzy): "${bestFuzzyMatch.local.track.title}"`);
-          console.log(`     Similarity: title=${bestFuzzyMatch.titleSim.toFixed(1)}%, core=${bestFuzzyMatch.coreSim.toFixed(1)}%`);
-        }
-        continue;
-      }
-
-      if (debug) {
-        console.log(`  ❌ Tier 3 no fuzzy match found`);
-        const artistMatches = localIndex.normalized.filter(l => l.artist === spotifyArtist);
-        if (artistMatches.length === 0) {
-          console.log(`  ⚠️  No local tracks found for artist "${spotifyArtist}"`);
-        } else {
-          console.log(`  📋 Local tracks by this artist (${artistMatches.length}):`);
-          artistMatches.slice(0, 5).forEach(l => {
-            console.log(`     - "${l.track.title}" (normalized: "${l.title}")`);
-          });
-          if (artistMatches.length > 5) {
-            console.log(`     ... and ${artistMatches.length - 5} more`);
-          }
-        }
-        console.log(`  🚫 MISSING: Track will be added to missing list`);
-      }
-
-      // No match found at any tier
-      missingTracks.push({
-        spotifyTrack,
-        reason: 'No matching local track found'
-      });
-    }
-
-    return missingTracks;
+    return results
+      .filter(result => !result.matched)
+      .map(result => ({
+        spotifyTrack: result.spotifyTrack,
+        reason: 'No matching local track found',
+      }));
   }
 
   // Cross-reference a vinyl record's Discogs tracklist against the user's local files.
