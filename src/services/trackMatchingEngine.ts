@@ -47,6 +47,10 @@ export interface MatchResult {
 export interface LocalIndex {
   exactSet: Set<string>;
   coreSet: Set<string>;
+  /** Same keys as exactSet, mapped to the local track that produced the key. */
+  exactMap: Map<string, LocalTrack>;
+  /** Same keys as coreSet, mapped to the local track that produced the key. */
+  coreMap: Map<string, LocalTrack>;
   normalized: Array<{
     track: LocalTrack;
     title: string;
@@ -90,10 +94,10 @@ export function normalize(str: string | null): string {
 export function extractCoreTitle(title: string | null): string {
   if (!title) return '';
   // Strip URL junk before version extraction so it doesn't pollute the core
-  let cleaned = title.replace(/\bwww\.\S+/gi, '').trim();
+  const cleaned = title.replace(/\bwww\.\S+/gi, '').trim();
   const { core } = normalizationService.extractVersionInfo(cleaned);
   // Also strip trailing "Original Mix" / "Extended Mix" that may remain unparenthesized
-  let coreClean = core.replace(/\s+original\s+mix\s*$/i, '').replace(/\s+extended\s+mix\s*$/i, '').trim();
+  const coreClean = core.replace(/\s+original\s+mix\s*$/i, '').replace(/\s+extended\s+mix\s*$/i, '').trim();
   let coreNormalized = normalize(coreClean);
   // Strip "radio edit" and remaster variants that appear without delimiters.
   // Delimited forms (parentheses/brackets/hyphen) are already handled by extractVersionInfo.
@@ -204,7 +208,19 @@ export function buildLocalIndex(localTracks: LocalTrack[]): LocalIndex {
     };
   });
 
-  return { exactSet, coreSet, normalized };
+  // The normalized fields build the same keys as exactSet and coreSet. When two local files
+  // share a key, the first one in input order wins, so the same input always yields the same
+  // matchedLocalTrack.
+  const exactMap = new Map<string, LocalTrack>();
+  const coreMap = new Map<string, LocalTrack>();
+  for (const local of normalized) {
+    const exactKey = `${local.title}_${local.artist}`;
+    const coreKey = `${local.coreTitle}_${local.artist}`;
+    if (!exactMap.has(exactKey)) exactMap.set(exactKey, local.track);
+    if (!coreMap.has(coreKey)) coreMap.set(coreKey, local.track);
+  }
+
+  return { exactSet, coreSet, exactMap, coreMap, normalized };
 }
 
 /**
@@ -227,14 +243,16 @@ export function matchTrack(
 
   // Tier 1: Exact match on full title + artist
   const exactKey = `${spotifyTitle}_${spotifyArtist}`;
-  if (localIndex.exactSet.has(exactKey)) {
-    return { ...baseResult, matched: true, tier: 1 };
+  const exactMatch = localIndex.exactMap.get(exactKey);
+  if (exactMatch) {
+    return { ...baseResult, matched: true, tier: 1, matchedLocalTrack: exactMatch };
   }
 
   // Tier 2: Core title match (without mix/version) + artist
   const coreKey = `${spotifyCoreTitle}_${spotifyArtist}`;
-  if (localIndex.coreSet.has(coreKey)) {
-    return { ...baseResult, matched: true, tier: 2 };
+  const coreMatch = localIndex.coreMap.get(coreKey);
+  if (coreMatch) {
+    return { ...baseResult, matched: true, tier: 2, matchedLocalTrack: coreMatch };
   }
 
   // Tier 2b: Cross-compare — Spotify full title vs local core title (or vice versa).

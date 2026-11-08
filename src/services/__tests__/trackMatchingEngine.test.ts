@@ -251,12 +251,25 @@ describe('trackMatchingEngine – calculateSimilarity()', () => {
 // ─── buildLocalIndex ──────────────────────────────────────────────────────────
 
 describe('trackMatchingEngine – buildLocalIndex()', () => {
-  it('returns exactSet, coreSet, and normalized array', () => {
+  it('returns exactSet, coreSet, exactMap, coreMap, and normalized array', () => {
     const tracks = [makeLocal({ id: '1', title: 'Blue Monday', artist: 'New Order' })];
     const index = buildLocalIndex(tracks);
     expect(index.exactSet).toBeInstanceOf(Set);
     expect(index.coreSet).toBeInstanceOf(Set);
+    expect(index.exactMap).toBeInstanceOf(Map);
+    expect(index.coreMap).toBeInstanceOf(Map);
     expect(index.normalized).toHaveLength(1);
+  });
+
+  it('exactMap and coreMap have the same keys as exactSet and coreSet', () => {
+    const tracks = [
+      makeLocal({ id: '1', title: 'Blue Monday (Radio Edit)', artist: 'New Order' }),
+      makeLocal({ id: '2', title: 'New Order - Ceremony', artist: 'New Order' }),
+      makeLocal({ id: '3', title: 'Track', artist: 'Artist feat. Other', primary_artist: 'Artist' }),
+    ];
+    const index = buildLocalIndex(tracks);
+    expect([...index.exactMap.keys()].sort()).toEqual([...index.exactSet].sort());
+    expect([...index.coreMap.keys()].sort()).toEqual([...index.coreSet].sort());
   });
 
   it('exactSet contains normalized title_artist key', () => {
@@ -339,6 +352,16 @@ describe('trackMatchingEngine – matchTrack() tier 1 (exact)', () => {
     expect(result.normalizedSpotifyTitle).toBe('blue monday');
     expect(result.normalizedSpotifyArtist).toBe('new order');
   });
+
+  it('attaches the matched local file (tier 1)', () => {
+    const decoy = makeLocal({ id: 'decoy', title: 'Ceremony', artist: 'New Order' });
+    const target = makeLocal({ id: 'target', title: 'Blue Monday', artist: 'New Order' });
+    const spotify = makeSpotify({ id: 'sp1', title: 'Blue Monday', artist: 'New Order' });
+    const index = buildLocalIndex([decoy, target]);
+    const result = matchTrack(spotify, index);
+    expect(result.tier).toBe(1);
+    expect(result.matchedLocalTrack?.id).toBe('target');
+  });
 });
 
 describe('trackMatchingEngine – matchTrack() tier 2 (core title)', () => {
@@ -377,6 +400,40 @@ describe('trackMatchingEngine – matchTrack() tier 2 (core title)', () => {
     expect(result.matched).toBe(true);
     expect(result.tier).toBeLessThanOrEqual(2);
   });
+
+  it('attaches the matched local file (tier 2)', () => {
+    const decoy = makeLocal({ id: 'decoy', title: 'Ceremony', artist: 'New Order' });
+    const target = makeLocal({ id: 'target', title: 'Blue Monday (Radio Edit)', artist: 'New Order' });
+    const spotify = makeSpotify({ id: 'sp1', title: 'Blue Monday', artist: 'New Order' });
+    const index = buildLocalIndex([decoy, target]);
+    const result = matchTrack(spotify, index);
+    expect(result.tier).toBe(2);
+    expect(result.matchedLocalTrack?.id).toBe('target');
+  });
+});
+
+describe('trackMatchingEngine – matchTrack() tier 2b (cross-compare)', () => {
+  it('attaches the matched local file (tier 2b)', () => {
+    // From eval-320: the local file has an extra "(Extended Mix)", so neither the full
+    // titles nor the core titles agree, but Spotify's full title equals the local core title.
+    const decoy = makeLocal({ id: 'decoy', title: 'Lady', artist: 'Themba' });
+    const target = makeLocal({
+      id: 'target',
+      title: "Zombie (THEMBA's Herd Mix) (Extended Mix)",
+      artist: 'Themba',
+    });
+    const spotify = makeSpotify({ id: 'sp1', title: "Zombie (THEMBA's Herd Mix)", artist: 'Themba' });
+    const index = buildLocalIndex([decoy, target]);
+
+    // Confirm Tier 1 and Tier 2 miss, so the match below comes from the 2b loop.
+    const artist = normalizeArtist(spotify.artist);
+    expect(index.exactMap.has(`${normalize(spotify.title)}_${artist}`)).toBe(false);
+    expect(index.coreMap.has(`${extractCoreTitle(spotify.title)}_${artist}`)).toBe(false);
+
+    const result = matchTrack(spotify, index);
+    expect(result.tier).toBe(2);
+    expect(result.matchedLocalTrack?.id).toBe('target');
+  });
 });
 
 describe('trackMatchingEngine – matchTrack() tier 3 (fuzzy)', () => {
@@ -398,6 +455,46 @@ describe('trackMatchingEngine – matchTrack() tier 3 (fuzzy)', () => {
     const index = buildLocalIndex([local]);
     const result = matchTrack(spotify, index);
     expect(result.matched).toBe(false);
+  });
+
+  it('attaches the matched local file (tier 3)', () => {
+    const decoy = makeLocal({ id: 'decoy', title: 'Video Games', artist: 'Lana Del Rey' });
+    const target = makeLocal({ id: 'target', title: 'Summertime Sadnees', artist: 'Lana Del Rey' });
+    const spotify = makeSpotify({ id: 'sp1', title: 'Summertime Sadness', artist: 'Lana Del Rey' });
+    const index = buildLocalIndex([decoy, target]);
+    const result = matchTrack(spotify, index);
+    expect(result.tier).toBe(3);
+    expect(result.matchedLocalTrack?.id).toBe('target');
+  });
+});
+
+describe('trackMatchingEngine – matchTrack() duplicate keys', () => {
+  it('picks the first local file in input order when two files share a key', () => {
+    const fileA = makeLocal({ id: 'a', title: 'Blue Monday', artist: 'New Order' });
+    const fileB = makeLocal({ id: 'b', title: 'Blue Monday', artist: 'New Order' });
+    const spotify = makeSpotify({ id: 'sp1', title: 'Blue Monday', artist: 'New Order' });
+
+    const resultAB = matchTrack(spotify, buildLocalIndex([fileA, fileB]));
+    expect(resultAB.tier).toBe(1);
+    expect(resultAB.matchedLocalTrack?.id).toBe('a');
+
+    const resultBA = matchTrack(spotify, buildLocalIndex([fileB, fileA]));
+    expect(resultBA.tier).toBe(1);
+    expect(resultBA.matchedLocalTrack?.id).toBe('b');
+  });
+
+  it('picks the first local file in input order when two versions share a core key', () => {
+    const radioEdit = makeLocal({ id: 'radio', title: 'Blue Monday (Radio Edit)', artist: 'New Order' });
+    const extended = makeLocal({ id: 'extended', title: 'Blue Monday (Extended Mix)', artist: 'New Order' });
+    const spotify = makeSpotify({ id: 'sp1', title: 'Blue Monday', artist: 'New Order' });
+
+    const result = matchTrack(spotify, buildLocalIndex([radioEdit, extended]));
+    expect(result.tier).toBe(2);
+    expect(result.matchedLocalTrack?.id).toBe('radio');
+
+    const reversed = matchTrack(spotify, buildLocalIndex([extended, radioEdit]));
+    expect(reversed.tier).toBe(2);
+    expect(reversed.matchedLocalTrack?.id).toBe('extended');
   });
 });
 
