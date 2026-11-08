@@ -149,12 +149,12 @@ Track without super_genre
 
 ### **4.3 Manual Genre Persistence**
 
-User-assigned `super_genre` values must survive sync operations:
+User-assigned `super_genre` values must survive sync operations (NFR-9). Neither sync type deletes `spotify_liked` rows before upserting, so overrides stay in the table for the whole sync. The upsert still writes an auto-mapped `super_genre` on every row, so for each batch, full and incremental alike:
 
-1. **Before sync:** Cache manually assigned values
-2. **During sync:** Store cache in `sync_progress.cached_genres` JSONB column
-3. **On resume:** Load cached genres from database (not memory)
-4. **After upsert:** Reapply cached values using service role client
+1. **Before upsert:** Look up the batch's rows where `super_genre_manual_override = true` (`manual-genres.ts`, `loadManualGenreMap`)
+2. **Upsert:** Replace the auto-mapped `super_genre` with the manual value and keep the override flag (`applyManualGenres`)
+
+The lookup reads the live rows, so a genre edited between a pause and a resume is kept. If the lookup fails, the sync stops rather than overwrite overrides.
 
 ---
 
@@ -350,9 +350,8 @@ Sync operations must be resumable after interruption:
 
 1. Track progress in `sync_progress` table
 2. Store `last_offset` for pagination resume. It only advances after a chunk is upserted. A pause saves the offset of the last upserted chunk, not the fetch position, so tracks still in the chunk buffer are re-fetched on resume instead of skipped
-3. Cache manual genre assignments in `cached_genres` JSONB
-4. On resume: load state from database, continue from `last_offset`
-5. Never keep state that must span the whole sync in memory, because each resume is a new invocation. Full sync stamps every upserted `spotify_liked` row with `last_seen_sync_id = sync_id`. At the end it deletes the user's rows that don't carry the stamp (tracks unliked on Spotify)
+3. On resume: load state from database, continue from `last_offset`
+4. Never keep state that must span the whole sync in memory, because each resume is a new invocation. Full sync stamps every upserted `spotify_liked` row with `last_seen_sync_id = sync_id`. At the end it deletes the user's rows that don't carry the stamp (tracks unliked on Spotify)
 
 ### **8.3 Final Flush Pattern**
 
