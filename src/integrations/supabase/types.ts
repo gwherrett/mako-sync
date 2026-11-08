@@ -449,30 +449,42 @@ export type Database = {
       }
       track_matches: {
         Row: {
+          failure_category: string | null
           id: string
           is_confirmed: boolean | null
           match_confidence: number | null
           match_method: string | null
           matched_at: string | null
-          mp3_id: string
+          mp3_id: string | null
+          notes: string | null
+          reviewed_at: string | null
+          source: string
           spotify_track_id: string
         }
         Insert: {
+          failure_category?: string | null
           id?: string
           is_confirmed?: boolean | null
           match_confidence?: number | null
           match_method?: string | null
           matched_at?: string | null
-          mp3_id: string
+          mp3_id?: string | null
+          notes?: string | null
+          reviewed_at?: string | null
+          source?: string
           spotify_track_id: string
         }
         Update: {
+          failure_category?: string | null
           id?: string
           is_confirmed?: boolean | null
           match_confidence?: number | null
           match_method?: string | null
           matched_at?: string | null
-          mp3_id?: string
+          mp3_id?: string | null
+          notes?: string | null
+          reviewed_at?: string | null
+          source?: string
           spotify_track_id?: string
         }
         Relationships: [

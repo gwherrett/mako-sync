@@ -1,6 +1,6 @@
 # Manual Match Review: Architecture + UI Plan
 
-**Status:** In progress. Phase 0 ([MAK-151](https://linear.app/mako-sync/issue/MAK-151)) and Phase 0.5 ([MAK-152](https://linear.app/mako-sync/issue/MAK-152), closed 2026-10-18) are done. Phase 1 ([MAK-153](https://linear.app/mako-sync/issue/MAK-153)) is unblocked and next.
+**Status:** In progress. Phase 0 ([MAK-151](https://linear.app/mako-sync/issue/MAK-151)) and Phase 0.5 ([MAK-152](https://linear.app/mako-sync/issue/MAK-152), closed 2026-10-18) are done. Phase 1 ([MAK-153](https://linear.app/mako-sync/issue/MAK-153)) was applied to production on 2026-11-08 and passed its acceptance checks. Phase 2 ([MAK-177](https://linear.app/mako-sync/issue/MAK-177)) is next.
 **Linear project:** [Manual Match Review](https://linear.app/mako-sync/project/manual-match-review-67092b2d3c1b)
 
 ---
@@ -72,16 +72,16 @@ The live `track_matches` table was inspected directly in Supabase on 2026-10-13,
 **Rejected: Option B,** keying `track_matches` on `(user_id, spotify_id)` with no FK to `spotify_liked`. Decisions would survive any resync, but unliking would no longer clean up rows on its own, every join would go through the natural key, and Phase 1 would become a bigger rewrite of the table.
 
 #### Phase 1 — Schema migration ([MAK-153](https://linear.app/mako-sync/issue/MAK-153))
-One new migration, `supabase/migrations/<timestamp>_extend_track_matches_for_manual_review.sql`. The key columns and FKs stay as they are, per the Phase 0.5 decision.
+One new migration, `supabase/migrations/20261108000000_extend_track_matches_for_manual_review.sql`. The key columns and FKs stay as they are, per the Phase 0.5 decision.
 - `ALTER COLUMN mp3_id DROP NOT NULL` — allows a row to mean "confirmed: no local match exists" (`mp3_id = NULL`, `is_confirmed = true`).
 - `ALTER COLUMN is_confirmed DROP DEFAULT` — the live default is `false`. Under the tri-state semantics below, an insert that leaves the column out would otherwise be saved as a rejection.
 - `ALTER COLUMN match_method DROP DEFAULT` — the live default `'auto'` isn't one of the planned values. The service must always set it.
 - `ADD COLUMN reviewed_at timestamptz NULL` — when a human acted (`matched_at` stays "row created at").
 - `ADD COLUMN failure_category text NULL` — reuse the same vocabulary as `FailureCategory` in `src/services/__tests__/fixtures/eval-types.ts` (keeps a future eval-pipeline merge cheap).
 - `ADD COLUMN notes text NULL`.
-- `ADD COLUMN source text NOT NULL DEFAULT 'engine'` — `'engine' | 'human'`.
+- `ADD COLUMN source text NOT NULL DEFAULT 'engine'` — `'engine' | 'human'`, enforced by `CHECK` constraint `track_matches_source_check`.
 - Partial unique index on `(spotify_track_id) WHERE is_confirmed = true` — at most one confirmed outcome per Spotify track.
-- Partial unique index on `(spotify_track_id, mp3_id) WHERE mp3_id IS NOT NULL` — prevents duplicate candidate rows across repeated review sessions. (The predicate matches every row today because `mp3_id` is NOT NULL. It only starts to filter once the `DROP NOT NULL` above runs.)
+- Unique constraint `track_matches_spotify_track_id_mp3_id_key` on `(spotify_track_id, mp3_id)` — prevents duplicate candidate rows across repeated review sessions. This was first planned as a partial index `WHERE mp3_id IS NOT NULL`. A plain constraint behaves the same, because NULLs are distinct by default, so rows with `mp3_id = NULL` never conflict. Unlike a partial index, it can be the target of a supabase-js `upsert(..., { onConflict: 'spotify_track_id,mp3_id' })`, which Phase 3's `confirmMatch` and `bulkAutoConfirmTier1` rely on. PostgREST's `ON CONFLICT` has no `WHERE` clause, so it can't match a partial index.
 - Index on `(mp3_id)` — Postgres doesn't index FK columns automatically, and every `local_mp3s` delete cascades into this table.
 - Replace the INSERT RLS `WITH CHECK` (which currently requires both the Spotify track and the MP3 to belong to the user, so it rejects `mp3_id IS NULL`) with: the Spotify track belongs to `auth.uid()` AND (`mp3_id IS NULL` OR the MP3 belongs to `auth.uid()`).
 - Add a `WITH CHECK` to the UPDATE policy with the same expression. Today the UPDATE policy has none, so Postgres reuses its `USING` expression ("Spotify track **or** MP3 belongs to the user"). That lets an update point `mp3_id` at an MP3 owned by another user.
@@ -110,7 +110,7 @@ Fix `trackMatchingEngine.ts` so Tier 1 and Tier 2 (non-2b) branches of `matchTra
 ### Risks / Notes Carried Forward (not addressed in this change)
 - `super_genre_manual_override` propagation in `supabase/functions/spotify-sync-liked/index.ts`: a concurrent sync could shift the genre-filtered subset mid-review session. Unrelated pre-existing issue, flagged for awareness only.
 - **Re-tagged files orphan confirmed matches ([MAK-164](https://linear.app/mako-sync/issue/MAK-164), Low, not a blocker).** `local_mp3s.hash` is a SHA-256 of the whole file, and the scanner upserts on `hash`. Any tag write changes the hash, whether it's the app's SuperGenre writer or a genre edit in MediaMonkey. The next scan then inserts a new row and leaves the old one, so a confirmed match keeps pointing at the old row, and deleting that row later would cascade away the decision. A check on 2026-10-18 found 4 such leftover pairs (3 MP3, 1 FLAC), and the stale rows were deleted. Re-pointing matches by `file_path` won't work: it stores only the filename, and 12 other same-name pairs turned out to be different files. MAK-164 lists the options; hashing only the audio is the likely fix. Until it lands, a re-tagged file that already has a confirmed match needs re-reviewing after the next scan.
-- `SuperGenre` TS union vs. DB enum drift (`Soul-Jazz` missing from the TS union; `Reggae/Dancehall` vs `Reggae-Dancehall` duplicate) — pre-existing, worth cleaning up before it's load-bearing for genre-filtered UI, but not part of this change.
+- ~~`SuperGenre` TS union vs. DB enum drift~~ **Resolved, no action needed.** A check of the live database on 2026-11-08 found that the `super_genre` enum has the same 25 values as the TS union. There is no `Soul-Jazz`, and `Reggae-Dancehall` is the only spelling: there is no `Reggae/Dancehall` in the enum, `spotify_liked`, `local_mp3s` or either genre map table.
 - **Eval infrastructure refactor is explicitly out of scope and deferred to its own later phased project**, to start only after this implementation is complete. The offline `eval-cases.json`/CSV pipeline (used once, and stale relative to how eval tooling has evolved since) stays untouched here — this plan does not redesign, unify, or migrate it. The `failure_category` column added to `track_matches` (Phase 1) is kept loosely vocabulary-compatible only so that future project has the option to draw on real review data; no merge mechanism is being built now.
 
 ### Verification (Part 1)
