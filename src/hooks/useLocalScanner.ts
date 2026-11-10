@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import type { User } from '@supabase/supabase-js';
+import { errorFields } from '@/utils/errorUtils';
 import { scanDirectoryForLocalFiles } from '@/services/fileScanner';
 import { extractMetadataBatch } from '@/services/metadataExtractor';
 import { withTimeout } from '@/utils/promiseUtils';
@@ -16,7 +18,7 @@ export const useLocalScanner = (onScanComplete?: () => void) => {
   const [isScanning, setIsScanning] = useState(false);
   const [scanProgress, setScanProgress] = useState({ current: 0, total: 0 });
   const { toast } = useToast();
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<User | null>(null);
 
   // Get user on mount
   React.useEffect(() => {
@@ -232,11 +234,11 @@ export const useLocalScanner = (onScanComplete?: () => void) => {
         onScanComplete();
       }
 
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('❌ Scan error:', error);
       toast({
         title: "Scan Failed",
-        description: error.message || "Failed to scan local files.",
+        description: errorFields(error).message || "Failed to scan local files.",
         variant: "destructive",
       });
     } finally {

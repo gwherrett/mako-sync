@@ -67,7 +67,7 @@ serve(async (req) => {
         
         // Show which genres exist (not counts) - strongly emphasize consistency
         const existingGenres = new Set<string>();
-        libraryContext.sameArtistTracks.forEach((track: any) => {
+        libraryContext.sameArtistTracks.forEach((track: { super_genre?: string | null }) => {
           if (track.super_genre) {
             existingGenres.add(track.super_genre);
           }
@@ -134,7 +134,7 @@ You must respond with a JSON object in this exact format:
 
     let userPrompt = '';
     if (isArtistMode) {
-      const tracksList = sampleTracks.slice(0, 10).map((t: any) => `  - "${t.title}"${t.album ? ` (${t.album})` : ''}${t.year ? ` [${t.year}]` : ''}`).join('\n');
+      const tracksList = sampleTracks.slice(0, 10).map((t: { title: string; album?: string | null; year?: number | null }) => `  - "${t.title}"${t.album ? ` (${t.album})` : ''}${t.year ? ` [${t.year}]` : ''}`).join('\n');
       userPrompt = `Artist: ${artist}
 Sample tracks (${sampleTracks.length} of ${trackCount} total):
 ${tracksList}${contextMessage}

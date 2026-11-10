@@ -1,6 +1,6 @@
-import { AuthError } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { ErrorClassification, ErrorContext } from './errorHandling.service';
+import { errorFields } from '@/utils/errorUtils';
 
 export interface LogEntry {
   id: string;
@@ -20,8 +20,11 @@ export interface LogEntry {
   sessionId?: string;
   fingerprint: string; // For deduplication
   tags: string[];
-  metadata: Record<string, any>;
+  metadata: Record<string, unknown>;
 }
+
+/** A LogEntry as saved in localStorage, where the timestamp is an ISO string. */
+type StoredLogEntry = Omit<LogEntry, 'timestamp'> & { timestamp: string };
 
 export interface LoggingConfig {
   enableConsoleLogging: boolean;
@@ -93,16 +96,17 @@ export class ErrorLoggingService {
    * Log an error with comprehensive context
    */
   static logError(
-    error: Error | AuthError | any,
+    error: unknown,
     context: Partial<ErrorContext> = {},
     classification?: ErrorClassification
   ): void {
-    this.log('error', 'error', error.message, {
+    const { name, message, stack, code } = errorFields(error);
+    this.log('error', 'error', message, {
       error: {
-        name: error.name || 'Error',
-        message: error.message,
-        stack: error.stack,
-        code: error.code
+        name: name || 'Error',
+        message,
+        stack,
+        code
       },
       context: this.enrichContext(context),
       classification
@@ -116,7 +120,7 @@ export class ErrorLoggingService {
     event: string,
     level: LogEntry['level'] = 'info',
     context: Partial<ErrorContext> = {},
-    metadata: Record<string, any> = {}
+    metadata: Record<string, unknown> = {}
   ): void {
     this.log(level, 'auth', event, {
       context: this.enrichContext(context),
@@ -134,7 +138,7 @@ export class ErrorLoggingService {
     event: string,
     level: LogEntry['level'] = 'info',
     context: Partial<ErrorContext> = {},
-    metadata: Record<string, any> = {}
+    metadata: Record<string, unknown> = {}
   ): void {
     this.log(level, 'spotify', event, {
       context: this.enrichContext(context),
@@ -347,7 +351,7 @@ export class ErrorLoggingService {
     try {
       const stored = localStorage.getItem(this.STORAGE_KEY);
       if (stored) {
-        this.logBuffer = JSON.parse(stored).map((entry: any) => ({
+        this.logBuffer = JSON.parse(stored).map((entry: StoredLogEntry) => ({
           ...entry,
           timestamp: new Date(entry.timestamp)
         }));

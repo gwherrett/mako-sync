@@ -11,6 +11,8 @@ import { useToast } from '@/hooks/use-toast';
 import { TrackMatchingService } from '@/services/trackMatching.service';
 import { DuplicateDetectionService } from '@/services/duplicateDetection.service';
 import { supabase } from '@/integrations/supabase/client';
+import type { User } from '@supabase/supabase-js';
+import { errorFields, getErrorMessage } from '@/utils/errorUtils';
 import { useSlskdConfig } from '@/hooks/useSlskdConfig';
 import { useSlskdSync } from '@/hooks/useSlskdSync';
 import { SlskdSyncProgress } from '@/components/SlskdSyncProgress';
@@ -61,7 +63,7 @@ const MissingTracksAnalyzer: React.FC<MissingTracksAnalyzerProps> = ({
   const [missingTracks, setMissingTracks] = useState<MissingTrack[]>([]);
   const [artistGroups, setArtistGroups] = useState<ArtistGroup[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<User | null>(null);
   const { toast } = useToast();
 
   // slskd integration state
@@ -88,8 +90,8 @@ const MissingTracksAnalyzer: React.FC<MissingTracksAnalyzerProps> = ({
         .filter(group => group.tracks.length > 0)
       );
       toast({ title: 'Unliked', description: `"${track.spotifyTrack.title}" removed from your Spotify library.` });
-    } catch (err: any) {
-      toast({ title: 'Failed to unlike', description: err.message, variant: 'destructive' });
+    } catch (err: unknown) {
+      toast({ title: 'Failed to unlike', description: getErrorMessage(err), variant: 'destructive' });
     } finally {
       setUnlikingTrackId(null);
     }
@@ -364,11 +366,11 @@ const MissingTracksAnalyzer: React.FC<MissingTracksAnalyzerProps> = ({
       });
 
       console.log(`✅ Analysis complete: ${missing.length} missing tracks found`);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('❌ Analysis error:', error);
       toast({
         title: "Analysis Failed",
-        description: error.message || "Failed to analyze missing tracks.",
+        description: errorFields(error).message || "Failed to analyze missing tracks.",
         variant: "destructive",
       });
     } finally {

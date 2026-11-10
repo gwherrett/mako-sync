@@ -1,4 +1,5 @@
 import { fetchWithTokenRetry } from './spotify-auth.ts'
+import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.100.0"
 
 const CONCURRENCY_CAP = 5
 // Pause between concurrency windows to stay under Spotify's per-app rate limit —
@@ -127,7 +128,7 @@ export async function fetchArtistGenres(accessToken: string, artistIds: string[]
   return { genreMap, complete: !stoppedByDeadline }
 }
 
-export async function getCachedArtistGenres(artistIds: string[], supabaseClient: any): Promise<Map<string, string[]>> {
+export async function getCachedArtistGenres(artistIds: string[], supabaseClient: SupabaseClient): Promise<Map<string, string[]>> {
   const cutoff = new Date()
   cutoff.setDate(cutoff.getDate() - CACHE_TTL_DAYS)
 
@@ -143,7 +144,7 @@ export async function getCachedArtistGenres(artistIds: string[], supabaseClient:
   }
 
   const genreMap = new Map<string, string[]>()
-  data?.forEach((row: any) => {
+  data?.forEach((row: { spotify_artist_id: string; genres: string[] | null }) => {
     genreMap.set(row.spotify_artist_id, row.genres || [])
   })
 
@@ -151,7 +152,7 @@ export async function getCachedArtistGenres(artistIds: string[], supabaseClient:
   return genreMap
 }
 
-export async function cacheArtistGenres(genreMap: Map<string, string[]>, supabaseClient: any): Promise<void> {
+export async function cacheArtistGenres(genreMap: Map<string, string[]>, supabaseClient: SupabaseClient): Promise<void> {
   if (genreMap.size === 0) return
   
   const cacheEntries = Array.from(genreMap.entries()).map(([artistId, genres]) => ({
@@ -182,7 +183,7 @@ export interface ArtistGenreResult {
   complete: boolean
 }
 
-export async function getArtistGenresWithCache(accessToken: string, artistIds: string[], supabaseClient: any, tokenRefresher?: () => Promise<string>, deadlineAt?: number): Promise<ArtistGenreResult> {
+export async function getArtistGenresWithCache(accessToken: string, artistIds: string[], supabaseClient: SupabaseClient, tokenRefresher?: () => Promise<string>, deadlineAt?: number): Promise<ArtistGenreResult> {
   // Remove duplicates
   const uniqueArtistIds = [...new Set(artistIds)]
 

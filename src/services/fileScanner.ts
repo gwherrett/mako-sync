@@ -42,7 +42,8 @@ export const scanDirectoryForLocalFiles = async (options?: ScanOptions): Promise
   console.log('📂 About to show directory picker');
   
   // Let user select a directory
-  const dirHandle = await (window as any).showDirectoryPicker({
+  // Checked above that the picker exists. Typed in src/types/slskd.ts.
+  const dirHandle = await window.showDirectoryPicker!({
     mode: 'read'
   });
 
@@ -52,10 +53,10 @@ export const scanDirectoryForLocalFiles = async (options?: ScanOptions): Promise
   let lastLoggedCount = 0;
 
   // Recursively collect local music files
-  const collectLocalFiles = async (dirHandle: any, path = '') => {
+  const collectLocalFiles = async (dirHandle: FileSystemDirectoryHandle, path = '') => {
     for await (const entry of dirHandle.values()) {
       if (entry.kind === 'file' && isSupportedAudioFile(entry.name)) {
-        const file = await entry.getFile();
+        const file = await (entry as FileSystemFileHandle).getFile();
         localFiles.push(file);
 
         // Log progress every 100 files to reduce console noise
@@ -69,7 +70,7 @@ export const scanDirectoryForLocalFiles = async (options?: ScanOptions): Promise
           options.onProgress(localFiles.length, localFiles.length);
         }
       } else if (entry.kind === 'directory') {
-        await collectLocalFiles(entry, `${path}/${entry.name}`);
+        await collectLocalFiles(entry as FileSystemDirectoryHandle, `${path}/${entry.name}`);
       }
     }
   };

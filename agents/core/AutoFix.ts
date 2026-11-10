@@ -107,12 +107,13 @@ export async function applyFix(fix: CodeFix): Promise<ApplyResult> {
           lines[lineIndex] = line.replace(change.oldText, change.newText);
           break;
 
-        case 'insert':
+        case 'insert': {
           // Insert new text at position
           const before = line.substring(0, change.start.column - 1);
           const after = line.substring(change.start.column - 1);
           lines[lineIndex] = before + change.newText + after;
           break;
+        }
 
         case 'delete':
           // Delete text from line

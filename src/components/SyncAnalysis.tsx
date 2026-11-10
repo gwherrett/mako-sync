@@ -5,6 +5,7 @@ import MissingTracksAnalyzer from '@/components/MissingTracksAnalyzer';
 import { DownloadProcessingSection } from '@/components/DownloadProcessingSection';
 import { TrackMatchingService } from '@/services/trackMatching.service';
 import { supabase } from '@/integrations/supabase/client';
+import type { User } from '@supabase/supabase-js';
 
 interface SyncAnalysisProps {
   sharedSearchQuery?: string;
@@ -12,7 +13,7 @@ interface SyncAnalysisProps {
 }
 
 const SyncAnalysis = ({ sharedSearchQuery = '', sharedSuperGenre = '' }: SyncAnalysisProps) => {
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<User | null>(null);
   const [superGenres, setSuperGenres] = useState<string[]>([]);
   const [selectedGenre, setSelectedGenre] = useState<string>('all');
 

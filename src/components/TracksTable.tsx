@@ -24,6 +24,9 @@ import {
   PaginationPrevious,
 } from '@/components/ui/pagination';
 import { supabase } from '@/integrations/supabase/client';
+import type { Tables } from '@/integrations/supabase/types';
+import type { RealtimePostgresUpdatePayload } from '@supabase/supabase-js';
+import { getErrorMessage } from '@/utils/errorUtils';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/NewAuthContext';
 import { useUnifiedSpotifyAuth } from '@/hooks/useUnifiedSpotifyAuth';
@@ -31,7 +34,7 @@ import { IframeBanner } from '@/components/common/IframeBanner';
 import { openInNewTab } from '@/utils/linkUtils';
 import { DuplicateDetectionService } from '@/services/duplicateDetection.service';
 import { useGenreMappingOverrides } from '@/hooks/useGenreMappingOverrides';
-import { withQueryTimeout } from '@/utils/supabaseQuery';
+import { withQueryTimeout, type FilterableQuery } from '@/utils/supabaseQuery';
 import { applySuperGenreFilter } from '@/types/genreMapping';
 
 interface SpotifyTrack {
@@ -137,7 +140,7 @@ const TracksTable = ({ onTrackSelect, selectedTrack, sharedSearchQuery = '', sha
           table: 'sync_progress',
           filter: `user_id=eq.${user.id}`
         },
-        (payload: any) => {
+        (payload: RealtimePostgresUpdatePayload<Tables<'sync_progress'>>) => {
           // Refresh tracks when sync completes
           if (payload.new?.status === 'completed') {
             fetchTracks();
@@ -160,25 +163,28 @@ const TracksTable = ({ onTrackSelect, selectedTrack, sharedSearchQuery = '', sha
     setLoading(true);
     
     // Build filter function for reuse (uses effective filters that combine shared + local)
-    const applyFilters = (query: any) => {
+    // The builder is viewed through FilterableQuery: checking it against the interface as a
+    // generic constraint makes TypeScript give up (TS2589). The caller gets its own type back.
+    const applyFilters = <Q,>(query: Q): Q => {
+      let q = query as unknown as FilterableQuery;
       if (effectiveSearchQuery.trim()) {
-        query = query.or(`title.ilike.%${effectiveSearchQuery}%,artist.ilike.%${effectiveSearchQuery}%`);
+        q = q.or(`title.ilike.%${effectiveSearchQuery}%,artist.ilike.%${effectiveSearchQuery}%`);
       }
-      if (selectedGenre) query = query.eq('genre', selectedGenre);
-      if (noGenre) query = query.is('genre', null);
-      if (noSuperGenre) query = query.is('super_genre', null);
-      else query = applySuperGenreFilter(query, effectiveSuperGenre);
-      if (selectedArtist) query = query.eq('artist', selectedArtist);
+      if (selectedGenre) q = q.eq('genre', selectedGenre);
+      if (noGenre) q = q.is('genre', null);
+      if (noSuperGenre) q = q.is('super_genre', null);
+      else q = applySuperGenreFilter(q, effectiveSuperGenre);
+      if (selectedArtist) q = q.eq('artist', selectedArtist);
       if (dateFilter === 'week') {
         const weekAgo = new Date();
         weekAgo.setDate(weekAgo.getDate() - 7);
-        query = query.gte('added_at', weekAgo.toISOString());
+        q = q.gte('added_at', weekAgo.toISOString());
       } else if (dateFilter === 'month') {
         const monthAgo = new Date();
         monthAgo.setMonth(monthAgo.getMonth() - 1);
-        query = query.gte('added_at', monthAgo.toISOString());
+        q = q.gte('added_at', monthAgo.toISOString());
       }
-      return query;
+      return q as unknown as Q;
     };
 
     // Count query with timeout
@@ -374,8 +380,8 @@ const TracksTable = ({ onTrackSelect, selectedTrack, sharedSearchQuery = '', sha
       await DuplicateDetectionService.unlikeTrack(track.spotify_id, user.id);
       setTracks(prev => prev.filter(t => t.id !== track.id));
       toast({ title: 'Unliked', description: `"${track.title}" removed from your Spotify library.` });
-    } catch (err: any) {
-      toast({ title: 'Failed to unlike', description: err.message, variant: 'destructive' });
+    } catch (err: unknown) {
+      toast({ title: 'Failed to unlike', description: getErrorMessage(err), variant: 'destructive' });
     } finally {
       setUnlikingTrackId(null);
     }

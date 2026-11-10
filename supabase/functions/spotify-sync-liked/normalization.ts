@@ -219,7 +219,7 @@ function parseArtists(artist: string | null): { primary: string; featured: strin
   if (!artist) return { primary: '', featured: [] };
 
   // Standardize featuring notation first
-  let normalized = standardizeFeatures(artist);
+  const normalized = standardizeFeatures(artist);
 
   // Split on "feat"
   const parts = normalized.split(/\s+feat\s+/i);

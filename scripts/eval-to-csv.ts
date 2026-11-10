@@ -15,6 +15,7 @@
 
 import * as fs from 'fs';
 import * as path from 'path';
+import type { EvalFixtureFile } from '../src/services/__tests__/fixtures/eval-types';
 
 const DEFAULT_INPUT = 'src/services/__tests__/fixtures/eval-cases.json';
 const DEFAULT_OUTPUT = 'eval-review.csv';
@@ -52,8 +53,8 @@ function parseArgs(): { input: string; output: string } {
 
 function main() {
   const { input, output } = parseArgs();
-  const fixture = JSON.parse(fs.readFileSync(path.resolve(input), 'utf-8'));
-  const cases: Array<Record<string, any>> = fixture.cases;
+  const fixture: EvalFixtureFile = JSON.parse(fs.readFileSync(path.resolve(input), 'utf-8'));
+  const cases = fixture.cases;
 
   const HEADER = [
     'id',
@@ -88,8 +89,8 @@ function main() {
   const outputPath = path.resolve(output);
   fs.writeFileSync(outputPath, rows.join('\n') + '\n');
 
-  const falseNeg = cases.filter((c: any) => c.verdict === 'false-negative').length;
-  const trueMissing = cases.filter((c: any) => c.verdict === 'true-missing').length;
+  const falseNeg = cases.filter(c => c.verdict === 'false-negative').length;
+  const trueMissing = cases.filter(c => c.verdict === 'true-missing').length;
 
   console.log(`Wrote ${cases.length} rows to ${output}`);
   console.log(`  ${falseNeg} false-negative (need review)`);

@@ -6,7 +6,7 @@ import { UserService, UserProfile } from '@/services/user.service';
 import { SessionService } from '@/services/session.service';
 import { AuthRetryService } from '@/services/authRetry.service';
 import { AuthStateRecoveryService } from '@/services/authStateRecovery.service';
-import { ErrorHandlingService } from '@/services/errorHandling.service';
+import { ErrorHandlingService, type ErrorHandlingResult } from '@/services/errorHandling.service';
 import { ErrorLoggingService } from '@/services/errorLogging.service';
 import { sessionCache } from '@/services/sessionCache.service';
 import { startupSessionValidator } from '@/services/startupSessionValidator.service';
@@ -60,7 +60,7 @@ export interface AuthContextType {
   clearError: () => void;
 
   // Enhanced error info
-  lastErrorContext: any;
+  lastErrorContext: ErrorHandlingResult | null;
   errorRecoveryAvailable: boolean;
 }
 
@@ -116,7 +116,7 @@ export const NewAuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const sessionRef = useRef<Session | null>(null);
   const profileRef = useRef<UserProfile | null>(null);
   const roleRef = useRef<'admin' | 'user' | null>(null);
-  const [lastErrorContext, setLastErrorContext] = useState<any>(null);
+  const [lastErrorContext, setLastErrorContext] = useState<ErrorHandlingResult | null>(null);
   const [errorRecoveryAvailable, setErrorRecoveryAvailable] = useState(false);
 
   // Initialize enhanced error handling services

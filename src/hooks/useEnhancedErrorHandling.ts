@@ -63,7 +63,7 @@ export const useEnhancedErrorHandling = (
   const [lastRetryTime, setLastRetryTime] = useState<Date | null>(null);
 
   // Refs for operation tracking
-  const lastOperationRef = useRef<(() => Promise<any>) | null>(null);
+  const lastOperationRef = useRef<(() => Promise<unknown>) | null>(null);
   const lastContextRef = useRef<Partial<ErrorContext> | null>(null);
 
   // Clear error state (defined early to avoid hoisting issues)

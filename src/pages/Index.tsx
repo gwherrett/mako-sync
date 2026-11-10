@@ -12,6 +12,7 @@ import { DownloadProcessingSection } from '@/components/DownloadProcessingSectio
 import { VinylTab } from '@/components/vinyl/VinylTab';
 import { TrackMatchingService } from '@/services/trackMatching.service';
 import { supabase } from '@/integrations/supabase/client';
+import type { User } from '@supabase/supabase-js';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/contexts/NewAuthContext';
@@ -73,7 +74,7 @@ const Index = () => {
   // State for MissingTracksAnalyzer
   const [superGenres, setSuperGenres] = useState<string[]>([]);
   const [selectedGenre, setSelectedGenre] = useState<string>('all');
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<User | null>(null);
 
   // Tab badge counts
   const { initialDataReady, dataFetchEnabled } = useAuth();

@@ -17,7 +17,7 @@ const VERBOSE_LOGGING = false;
 /**
  * Extracts year from various value formats
  */
-const extractYearFromValue = (value: any): number | null => {
+const extractYearFromValue = (value: unknown): number | null => {
   if (typeof value === 'number' && value > 1800 && value < 2100) {
     return value;
   }

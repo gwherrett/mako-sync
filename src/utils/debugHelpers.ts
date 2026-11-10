@@ -1,5 +1,13 @@
 // Debug utilities for authentication and Spotify issues
 import { supabase } from '@/integrations/supabase/client';
+import { getErrorMessage } from '@/utils/errorUtils';
+
+declare global {
+  interface Window {
+    /** Console access for debugging. */
+    DebugHelpers?: typeof DebugHelpers;
+  }
+}
 
 export class DebugHelpers {
   /**
@@ -53,11 +61,11 @@ export class DebugHelpers {
         error: globalError?.message
       };
 
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('🔴 LOGOUT DEBUG: Exception during logout test:', error);
       return {
         success: false,
-        error: error.message
+        error: getErrorMessage(error)
       };
     }
   }
@@ -96,7 +104,7 @@ export class DebugHelpers {
         success: !error,
         error: error?.message
       });
-    } catch (dbError: any) {
+    } catch (dbError: unknown) {
       console.error('🔵 SPOTIFY DEBUG: Database connection failed:', dbError);
     }
 
@@ -144,11 +152,11 @@ export class DebugHelpers {
         error: response.error?.message
       };
 
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('🔧 EDGE FUNCTION DEBUG: Exception:', error);
       return {
         success: false,
-        error: error.message
+        error: getErrorMessage(error)
       };
     }
   }
@@ -203,4 +211,4 @@ export class DebugHelpers {
 }
 
 // Make available globally for console debugging
-(window as any).DebugHelpers = DebugHelpers;
+window.DebugHelpers = DebugHelpers;

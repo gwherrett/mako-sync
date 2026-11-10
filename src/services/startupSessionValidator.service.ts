@@ -1,5 +1,6 @@
 import { supabase } from '@/integrations/supabase/client';
 import { withTimeout } from '@/utils/promiseUtils';
+import { errorFields, getErrorMessage } from '@/utils/errorUtils';
 
 /**
  * Startup Session Validator
@@ -84,7 +85,7 @@ class StartupSessionValidatorService {
           'Overall startup validation timeout'
         );
         return result;
-      } catch (error: any) {
+      } catch (error: unknown) {
         console.log('⚠️ STARTUP VALIDATOR: Global timeout hit, clearing stale tokens');
 
         // CRITICAL FIX: Check if externally validated BEFORE clearing
@@ -167,7 +168,7 @@ class StartupSessionValidatorService {
 
         session = raceResult.data.data.session;
         sessionError = raceResult.data.error;
-      } catch (timeoutError: any) {
+      } catch (timeoutError: unknown) {
         // Clean up any stale resolver that wasn't removed before the throw
         if (externalResolve) {
           const idx = this.externalValidationResolvers.indexOf(externalResolve);
@@ -260,7 +261,7 @@ class StartupSessionValidatorService {
 
         return { isValid: true, wasCleared: false, reason: 'Valid session' };
 
-      } catch (validationError: any) {
+      } catch (validationError: unknown) {
         const validationTime = Date.now() - startTime;
         const isTimeoutOrNetwork = this.isTimeoutOrNetworkError(validationError);
 
@@ -270,14 +271,14 @@ class StartupSessionValidatorService {
         }
 
         console.log(`❌ STARTUP VALIDATOR: Validation failed after ${validationTime}ms`, {
-          error: validationError.message
+          error: errorFields(validationError).message
         });
         await this.clearStaleTokens('Validation error');
         return { isValid: false, wasCleared: true, reason: 'Validation error' };
       }
 
-    } catch (error: any) {
-      console.error('❌ STARTUP VALIDATOR: Critical error during validation:', error.message);
+    } catch (error: unknown) {
+      console.error('❌ STARTUP VALIDATOR: Critical error during validation:', getErrorMessage(error));
       // On critical errors, clear tokens to be safe
       await this.clearStaleTokens('Critical error');
       return { isValid: false, wasCleared: true, reason: 'Critical error' };
@@ -354,29 +355,31 @@ class StartupSessionValidatorService {
   /**
    * Check if error is a network-related error
    */
-  private isNetworkError(error: any): boolean {
-    const message = error?.message?.toLowerCase() || '';
+  private isNetworkError(error: unknown): boolean {
+    const { name } = errorFields(error);
+    const message = errorFields(error).message?.toLowerCase() || '';
     return (
       message.includes('network') ||
       message.includes('fetch') ||
       message.includes('failed to fetch') ||
       message.includes('connection') ||
-      error?.name === 'NetworkError'
+      name === 'NetworkError'
     );
   }
 
   /**
    * Check if error is timeout or network related
    */
-  private isTimeoutOrNetworkError(error: any): boolean {
-    const message = error?.message?.toLowerCase() || '';
+  private isTimeoutOrNetworkError(error: unknown): boolean {
+    const { name } = errorFields(error);
+    const message = errorFields(error).message?.toLowerCase() || '';
     return (
       message.includes('timeout') ||
       message.includes('network') ||
       message.includes('fetch') ||
       message.includes('aborted') ||
-      error?.name === 'AbortError' ||
-      error?.name === 'NetworkError'
+      name === 'AbortError' ||
+      name === 'NetworkError'
     );
   }
 

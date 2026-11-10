@@ -72,19 +72,20 @@ class Logger {
     if (!this.shouldLog(level, category)) return;
 
     const formattedMessage = this.formatMessage(category, message);
+    const args = data ? [formattedMessage, data] : [formattedMessage];
 
     switch (level) {
       case 'debug':
-        data ? console.debug(formattedMessage, data) : console.debug(formattedMessage);
+        console.debug(...args);
         break;
       case 'info':
-        data ? console.log(formattedMessage, data) : console.log(formattedMessage);
+        console.log(...args);
         break;
       case 'warn':
-        data ? console.warn(formattedMessage, data) : console.warn(formattedMessage);
+        console.warn(...args);
         break;
       case 'error':
-        data ? console.error(formattedMessage, data) : console.error(formattedMessage);
+        console.error(...args);
         break;
     }
   }

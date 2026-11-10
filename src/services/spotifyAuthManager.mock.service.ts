@@ -18,7 +18,7 @@ export interface SpotifyAuthState {
 export interface SpotifyOperationResult {
   success: boolean;
   error?: string;
-  data?: any;
+  data?: unknown;
 }
 
 type StateSubscriber = (state: SpotifyAuthState) => void;

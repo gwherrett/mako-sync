@@ -38,7 +38,7 @@ import { supabase } from '@/integrations/supabase/client';
 import type { Database } from '@/integrations/supabase/types';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/NewAuthContext';
-import { withQueryTimeout } from '@/utils/supabaseQuery';
+import { withQueryTimeout, type FilterableQuery } from '@/utils/supabaseQuery';
 
 interface LocalTrack {
   id: string;
@@ -265,27 +265,30 @@ const LocalTracksTable = ({ onTrackSelect, selectedTrack, refreshTrigger, isActi
     setLoading(true);
 
     // Build filter function for reuse
-    const applyFilters = (query: any) => {
+    // The builder is viewed through FilterableQuery: checking it against the interface as a
+    // generic constraint makes TypeScript give up (TS2589). The caller gets its own type back.
+    const applyFilters = <Q,>(query: Q): Q => {
+      let q = query as unknown as FilterableQuery;
       if (searchQuery.trim()) {
-        query = query.or(`title.ilike.%${searchQuery}%,artist.ilike.%${searchQuery}%,album.ilike.%${searchQuery}%,file_path.ilike.%${searchQuery}%`);
+        q = q.or(`title.ilike.%${searchQuery}%,artist.ilike.%${searchQuery}%,album.ilike.%${searchQuery}%,file_path.ilike.%${searchQuery}%`);
       }
-      if (yearFrom) query = query.gte('year', parseInt(yearFrom));
-      if (yearTo) query = query.lte('year', parseInt(yearTo));
-      query = applySuperGenreFilter(query, selectedSuperGenre);
-      if (selectedArtist) query = query.eq('artist', selectedArtist);
-      if (selectedAlbum) query = query.eq('album', selectedAlbum);
-      if (selectedGenre) query = query.eq('genre', selectedGenre);
-      if (bitrateFilter === 'low') query = query.lt('bitrate', 192);
-      else if (bitrateFilter === 'medium') query = query.gte('bitrate', 192).lt('bitrate', 320);
-      else if (bitrateFilter === 'high') query = query.gte('bitrate', 320);
-      if (formatFilter) query = query.ilike('audio_format', formatFilter);
-      if (missingMetadata === 'title') query = query.is('title', null);
-      else if (missingMetadata === 'artist') query = query.is('artist', null);
-      else if (missingMetadata === 'album') query = query.is('album', null);
-      else if (missingMetadata === 'year') query = query.is('year', null);
-      else if (missingMetadata === 'genre') query = query.is('genre', null);
-      else if (missingMetadata === 'any') query = query.or('title.is.null,artist.is.null,album.is.null,year.is.null,genre.is.null');
-      return query;
+      if (yearFrom) q = q.gte('year', parseInt(yearFrom));
+      if (yearTo) q = q.lte('year', parseInt(yearTo));
+      q = applySuperGenreFilter(q, selectedSuperGenre);
+      if (selectedArtist) q = q.eq('artist', selectedArtist);
+      if (selectedAlbum) q = q.eq('album', selectedAlbum);
+      if (selectedGenre) q = q.eq('genre', selectedGenre);
+      if (bitrateFilter === 'low') q = q.lt('bitrate', 192);
+      else if (bitrateFilter === 'medium') q = q.gte('bitrate', 192).lt('bitrate', 320);
+      else if (bitrateFilter === 'high') q = q.gte('bitrate', 320);
+      if (formatFilter) q = q.ilike('audio_format', formatFilter);
+      if (missingMetadata === 'title') q = q.is('title', null);
+      else if (missingMetadata === 'artist') q = q.is('artist', null);
+      else if (missingMetadata === 'album') q = q.is('album', null);
+      else if (missingMetadata === 'year') q = q.is('year', null);
+      else if (missingMetadata === 'genre') q = q.is('genre', null);
+      else if (missingMetadata === 'any') q = q.or('title.is.null,artist.is.null,album.is.null,year.is.null,genre.is.null');
+      return q as unknown as Q;
     };
 
     // Count query with timeout
@@ -373,9 +376,9 @@ const LocalTracksTable = ({ onTrackSelect, selectedTrack, refreshTrigger, isActi
       });
       
       // Extract the genre strings from the returned objects
-      const uniqueGenres = (genresResult.data || []).map((row: any) => row.genre).filter(Boolean).sort();
-      const uniqueArtists = (artistsResult.data || []).map((row: any) => row.artist).filter(Boolean).sort();
-      const uniqueAlbums = (albumsResult.data || []).map((row: any) => row.album).filter(Boolean).sort();
+      const uniqueGenres = (genresResult.data || []).map(row => row.genre).filter(Boolean).sort();
+      const uniqueArtists = (artistsResult.data || []).map(row => row.artist).filter(Boolean).sort();
+      const uniqueAlbums = (albumsResult.data || []).map(row => row.album).filter(Boolean).sort();
 
       console.log('🗂️ Filter options loaded:', {
         artists: uniqueArtists.length,

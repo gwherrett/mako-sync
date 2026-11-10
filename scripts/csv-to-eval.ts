@@ -78,6 +78,20 @@ function parseCsv(content: string): Array<Record<string, string>> {
 
 // ---- Main ----
 
+/**
+ * The eval case fields this script reads and edits. Values from the CSV are written as they
+ * are (an unknown category is applied with a warning), so they are typed loosely. Every other
+ * field passes through untouched.
+ */
+interface EditableCase {
+  id: string;
+  verdict: string;
+  failureCategory: string | null;
+  notes: string | null;
+  expectedLocalMatch: unknown;
+  [field: string]: unknown;
+}
+
 const VALID_VERDICTS = new Set(['true-missing', 'false-negative']);
 
 const VALID_CATEGORIES = new Set([
@@ -117,7 +131,7 @@ function main() {
 
   // Load original JSON
   const fixture = JSON.parse(fs.readFileSync(path.resolve(json), 'utf-8'));
-  const casesById = new Map<string, any>();
+  const casesById = new Map<string, EditableCase>();
   for (const c of fixture.cases) {
     casesById.set(c.id, c);
   }

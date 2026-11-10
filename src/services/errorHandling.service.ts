@@ -1,5 +1,6 @@
 import { AuthError } from '@supabase/supabase-js';
 import { useToast } from '@/hooks/use-toast';
+import { errorFields } from '@/utils/errorUtils';
 
 export interface ErrorContext {
   operation: string;
@@ -9,7 +10,7 @@ export interface ErrorContext {
   timestamp: Date;
   userAgent?: string;
   url?: string;
-  additionalData?: Record<string, any>;
+  additionalData?: Record<string, unknown>;
 }
 
 export interface ErrorClassification {
@@ -56,9 +57,12 @@ export class ErrorHandlingService {
   /**
    * Comprehensive error classification system
    */
-  static classifyError(error: Error | AuthError | any): ErrorClassification {
-    const message = error?.message?.toLowerCase() || '';
-    const code = error?.code || error?.status || '';
+  static classifyError(error: unknown): ErrorClassification {
+    const fields = errorFields(error);
+    const message = fields.message?.toLowerCase() || '';
+    const code = fields.code || fields.status || '';
+    // Relational checks coerce the code to a number, so a numeric string like '503' counts.
+    const numericCode = Number(code);
 
     // Auth-related errors
     if (this.isAuthError(error) || message.includes('auth') || message.includes('session')) {
@@ -94,7 +98,7 @@ export class ErrorHandlingService {
     }
 
     // Validation errors
-    if (message.includes('validation') || message.includes('invalid') || code >= 400 && code < 500) {
+    if (message.includes('validation') || message.includes('invalid') || numericCode >= 400 && numericCode < 500) {
       return {
         category: 'validation',
         severity: 'low',
@@ -116,7 +120,7 @@ export class ErrorHandlingService {
     }
 
     // System errors
-    if (message.includes('system') || message.includes('internal') || code >= 500) {
+    if (message.includes('system') || message.includes('internal') || numericCode >= 500) {
       return {
         category: 'system',
         severity: 'high',
@@ -139,8 +143,8 @@ export class ErrorHandlingService {
   /**
    * Generate user-friendly error messages with actionable guidance
    */
-  static generateUserMessage(error: Error | AuthError | any, classification: ErrorClassification): string {
-    const message = error?.message?.toLowerCase() || '';
+  static generateUserMessage(error: unknown, classification: ErrorClassification): string {
+    const message = errorFields(error).message?.toLowerCase() || '';
 
     // Auth error messages
     if (classification.category === 'auth') {
@@ -180,7 +184,7 @@ export class ErrorHandlingService {
    * Handle error with comprehensive processing
    */
   static handleError(
-    error: Error | AuthError | any,
+    error: unknown,
     context: Partial<ErrorContext> = {}
   ): ErrorHandlingResult {
     const classification = this.classifyError(error);
@@ -220,12 +224,12 @@ export class ErrorHandlingService {
     config: Partial<RetryConfig> = {}
   ): Promise<T> {
     const retryConfig = { ...this.DEFAULT_RETRY_CONFIG, ...config };
-    let lastError: Error | null = null;
+    let lastError: unknown = null;
 
     for (let attempt = 0; attempt <= retryConfig.maxRetries; attempt++) {
       try {
         return await operation();
-      } catch (error: any) {
+      } catch (error: unknown) {
         lastError = error;
         const classification = this.classifyError(error);
 
@@ -240,13 +244,13 @@ export class ErrorHandlingService {
           retryConfig.maxDelay
         );
 
-        console.log(`Attempt ${attempt + 1} failed, retrying in ${delay}ms...`, error.message);
+        console.log(`Attempt ${attempt + 1} failed, retrying in ${delay}ms...`, errorFields(error).message);
         await this.sleep(delay);
       }
     }
 
     // All retries failed, handle the error
-    const result = this.handleError(lastError!, context);
+    const result = this.handleError(lastError, context);
     throw new Error(result.userMessage);
   }
 
@@ -254,17 +258,13 @@ export class ErrorHandlingService {
    * Enhanced error logging with structured data
    */
   private static logError(
-    error: Error | AuthError | any,
+    error: unknown,
     classification: ErrorClassification,
     context: ErrorContext
   ): void {
+    const { message, stack, code, name } = errorFields(error);
     const logData = {
-      error: {
-        message: error.message,
-        stack: error.stack,
-        code: error.code,
-        name: error.name
-      },
+      error: { message, stack, code, name },
       classification,
       context,
       timestamp: new Date().toISOString(),
@@ -294,17 +294,19 @@ export class ErrorHandlingService {
   /**
    * Utility methods for error classification
    */
-  private static isAuthError(error: any): boolean {
-    return error instanceof AuthError || 
-           error?.name === 'AuthError' ||
-           error?.code?.startsWith('auth_');
+  private static isAuthError(error: unknown): boolean {
+    const { name, code } = errorFields(error);
+    return error instanceof AuthError ||
+           name === 'AuthError' ||
+           (typeof code === 'string' && code.startsWith('auth_'));
   }
 
-  private static isNetworkError(error: any): boolean {
-    return error?.name === 'NetworkError' ||
-           error?.code === 'NETWORK_ERROR' ||
-           error?.message?.includes('fetch') ||
-           error?.message?.includes('network');
+  private static isNetworkError(error: unknown): boolean {
+    const { name, code, message } = errorFields(error);
+    return name === 'NetworkError' ||
+           code === 'NETWORK_ERROR' ||
+           !!message?.includes('fetch') ||
+           !!message?.includes('network');
   }
 
   private static getAuthErrorSeverity(message: string): ErrorClassification['severity'] {
@@ -313,7 +315,7 @@ export class ErrorHandlingService {
     return 'low';
   }
 
-  private static getSpotifyErrorSeverity(message: string, code: any): ErrorClassification['severity'] {
+  private static getSpotifyErrorSeverity(message: string, code: string | number): ErrorClassification['severity'] {
     if (message.includes('invalid_grant') || code === 401) return 'high';
     if (message.includes('rate_limit') || code === 429) return 'medium';
     return 'low';
@@ -329,9 +331,9 @@ export class ErrorHandlingService {
     return !nonRetryableErrors.some(error => message.includes(error));
   }
 
-  private static isRetryableSpotifyError(message: string, code: any): boolean {
+  private static isRetryableSpotifyError(message: string, code: string | number): boolean {
     if (code === 429 || message.includes('rate_limit')) return true;
-    if (code >= 500) return true;
+    if (Number(code) >= 500) return true;
     if (message.includes('temporary') || message.includes('unavailable')) return true;
     return false;
   }
@@ -408,12 +410,12 @@ export class ErrorHandlingService {
   /**
    * Utility methods
    */
-  private static shouldRetryError(error: any): boolean {
+  private static shouldRetryError(error: unknown): boolean {
     const classification = this.classifyError(error);
     return classification.isRetryable;
   }
 
-  private static calculateRetryDelay(error: any, attempt: number): number {
+  private static calculateRetryDelay(error: unknown, attempt: number): number {
     const config = this.DEFAULT_RETRY_CONFIG;
     return Math.min(
       config.baseDelay * Math.pow(config.backoffMultiplier, attempt),
