@@ -25,7 +25,7 @@ type PageResult<T> = { data: T[] | null; error: { message: string } | null };
  * Fetch every row of a query, one PAGE_SIZE page at a time. `fetchPage` builds a fresh,
  * ordered query for each range, so pages don't overlap or skip rows.
  */
-async function fetchAllPages<T>(
+export async function fetchAllPages<T>(
   fetchPage: (from: number, to: number) => PromiseLike<PageResult<T>>,
   label: string
 ): Promise<T[]> {
