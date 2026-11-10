@@ -15,6 +15,7 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { supabase } from '@/integrations/supabase/client';
+import { errorFields } from '@/utils/errorUtils';
 import { useToast } from '@/hooks/use-toast';
 
 interface FileUploadScannerProps {
@@ -60,11 +61,11 @@ const FileUploadScanner = ({ onScanComplete, onScanningChange }: FileUploadScann
       if (onScanComplete) {
         onScanComplete();
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Delete error:', error);
       toast({
         title: "Error",
-        description: error.message || "Failed to delete local files",
+        description: errorFields(error).message || "Failed to delete local files",
         variant: "destructive",
       });
     } finally {

@@ -1,8 +1,9 @@
 import { AuthError } from '@supabase/supabase-js';
 import { AuthService, SignUpData, SignInData } from './auth.service';
 import { SessionService } from './session.service';
-import { UserService } from './user.service';
+import { UserService, type UpdateProfileData } from './user.service';
 import { ErrorHandlingService, ErrorContext, RetryConfig } from './errorHandling.service';
+import { getErrorMessage } from '@/utils/errorUtils';
 
 export interface AuthRetryConfig extends RetryConfig {
   enableCircuitBreaker: boolean;
@@ -10,7 +11,10 @@ export interface AuthRetryConfig extends RetryConfig {
   circuitBreakerTimeout: number;
 }
 
-export interface AuthOperationResult<T = any> {
+/** The result of retrying `Fn`, carrying the value `Fn` resolves to. */
+type RetryResultOf<Fn extends (...args: never[]) => Promise<unknown>> = AuthOperationResult<Awaited<ReturnType<Fn>>>;
+
+export interface AuthOperationResult<T = unknown> {
   success: boolean;
   data?: T;
   error?: AuthError | Error;
@@ -53,7 +57,7 @@ export class AuthRetryService {
   static async signUpWithRetry(
     data: SignUpData,
     config: Partial<AuthRetryConfig> = {}
-  ): Promise<AuthOperationResult> {
+  ): Promise<RetryResultOf<typeof AuthService.signUp>> {
     const context: Partial<ErrorContext> = {
       operation: 'signUp',
       component: 'AuthRetryService',
@@ -74,7 +78,7 @@ export class AuthRetryService {
   static async signInWithRetry(
     data: SignInData,
     config: Partial<AuthRetryConfig> = {}
-  ): Promise<AuthOperationResult> {
+  ): Promise<RetryResultOf<typeof AuthService.signIn>> {
     const context: Partial<ErrorContext> = {
       operation: 'signIn',
       component: 'AuthRetryService',
@@ -94,7 +98,7 @@ export class AuthRetryService {
    */
   static async refreshSessionWithRetry(
     config: Partial<AuthRetryConfig> = {}
-  ): Promise<AuthOperationResult> {
+  ): Promise<RetryResultOf<typeof SessionService.refreshSession>> {
     const context: Partial<ErrorContext> = {
       operation: 'refreshSession',
       component: 'AuthRetryService'
@@ -114,7 +118,7 @@ export class AuthRetryService {
   static async resetPasswordWithRetry(
     email: string,
     config: Partial<AuthRetryConfig> = {}
-  ): Promise<AuthOperationResult> {
+  ): Promise<RetryResultOf<typeof AuthService.resetPassword>> {
     const context: Partial<ErrorContext> = {
       operation: 'resetPassword',
       component: 'AuthRetryService',
@@ -135,7 +139,7 @@ export class AuthRetryService {
   static async updatePasswordWithRetry(
     password: string,
     config: Partial<AuthRetryConfig> = {}
-  ): Promise<AuthOperationResult> {
+  ): Promise<RetryResultOf<typeof AuthService.updatePassword>> {
     const context: Partial<ErrorContext> = {
       operation: 'updatePassword',
       component: 'AuthRetryService'
@@ -154,9 +158,9 @@ export class AuthRetryService {
    */
   static async updateProfileWithRetry(
     userId: string,
-    updates: any,
+    updates: UpdateProfileData,
     config: Partial<AuthRetryConfig> = {}
-  ): Promise<AuthOperationResult> {
+  ): Promise<RetryResultOf<typeof UserService.updateProfile>> {
     const context: Partial<ErrorContext> = {
       operation: 'updateProfile',
       component: 'AuthRetryService',
@@ -215,9 +219,9 @@ export class AuthRetryService {
           totalTime: Date.now() - startTime
         };
 
-      } catch (error: any) {
-        lastError = error;
-        console.error(`Auth operation ${operationType} attempt ${attempts} failed:`, error.message);
+      } catch (error: unknown) {
+        lastError = error instanceof Error ? error : new Error(getErrorMessage(error));
+        console.error(`Auth operation ${operationType} attempt ${attempts} failed:`, lastError.message);
 
         // Handle the error through our error handling service
         const errorResult = ErrorHandlingService.handleError(error, {

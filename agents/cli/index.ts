@@ -14,6 +14,7 @@ import { architectAgent } from '../agents/ArchitectAgent';
 import { FileScanner } from './fileScanner';
 import { ViolationFormatter } from './formatters';
 import { enableTiming, ruleTiming } from '../core/Agent';
+import type { ValidationResult } from '../core/types';
 
 interface CLIOptions {
   projectRoot?: string;
@@ -117,7 +118,7 @@ class MakoAgentsCLI {
     console.log('');
   }
 
-  private printResults(result: any): void {
+  private printResults(result: ValidationResult): void {
     const format = this.options.format || 'detailed';
 
     if (result.violations.length === 0) {
@@ -128,7 +129,7 @@ class MakoAgentsCLI {
 
     // Print violations
     if (format === 'detailed') {
-      result.violations.forEach((violation: any, index: number) => {
+      result.violations.forEach((violation, index) => {
         console.log(ViolationFormatter.formatViolation(violation, index + 1));
       });
     }
@@ -153,7 +154,7 @@ function parseArgs(): CLIOptions {
     if (arg === '--root' || arg === '-r') {
       options.projectRoot = args[++i];
     } else if (arg === '--format' || arg === '-f') {
-      options.format = args[++i] as any;
+      options.format = args[++i] as CLIOptions['format'];
     } else if (arg === '--files') {
       options.files = args[++i].split(',');
     } else if (arg === '--agents' || arg === '-a') {

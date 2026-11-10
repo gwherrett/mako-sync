@@ -30,7 +30,7 @@ function createESLintRule(ruleId: string): Rule.RuleModule {
 
     create(context: Rule.RuleContext) {
       return {
-        Program(node: any) {
+        Program(node) {
           // ESLint 10 removed getSourceCode()/getFilename(); the properties exist since 8.40
           const sourceCode = context.sourceCode;
           const filename = context.filename;

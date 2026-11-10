@@ -2,7 +2,25 @@
  * Supabase query utilities with timeout protection
  */
 
+import type { SupabaseClient } from '@supabase/supabase-js';
+import { errorFields, getErrorMessage } from '@/utils/errorUtils';
+
 const DEFAULT_TIMEOUT_MS = 15000; // 15 seconds
+
+/**
+ * The filter methods the table components chain onto a Supabase query builder. Each returns
+ * the builder itself, so a filter helper can take and return any table's query.
+ */
+export interface FilterableQuery {
+  eq(column: string, value: unknown): this;
+  in(column: string, values: readonly unknown[]): this;
+  is(column: string, value: null): this;
+  gte(column: string, value: unknown): this;
+  lte(column: string, value: unknown): this;
+  lt(column: string, value: unknown): this;
+  ilike(column: string, pattern: string): this;
+  or(filters: string): this;
+}
 
 export interface QueryResult<T> {
   data: T | null;
@@ -21,7 +39,7 @@ export const withQueryTimeout = async <T>(
 ): Promise<QueryResult<T>> => {
   const controller = new AbortController();
   const startTime = Date.now();
-  
+
   const timeoutId = setTimeout(() => {
     console.warn(`⏱️ TIMEOUT: ${context} exceeded ${timeoutMs}ms, aborting...`);
     controller.abort();
@@ -34,14 +52,19 @@ export const withQueryTimeout = async <T>(
     const duration = Date.now() - startTime;
     console.log(`✅ QUERY COMPLETE: ${context} (${duration}ms)`);
     return { data: result, error: null, timedOut: false, durationMs: duration };
-  } catch (error: any) {
+  } catch (error: unknown) {
     const duration = Date.now() - startTime;
-    if (error.name === 'AbortError') {
+    if (errorFields(error).name === 'AbortError') {
       console.error(`⏱️ QUERY TIMEOUT: ${context} aborted after ${duration}ms`);
       return { data: null, error: new Error(`Query timed out after ${timeoutMs}ms`), timedOut: true, durationMs: duration };
     }
     console.error(`❌ QUERY ERROR: ${context} failed after ${duration}ms:`, error);
-    return { data: null, error, timedOut: false, durationMs: duration };
+    return {
+      data: null,
+      error: error instanceof Error ? error : new Error(getErrorMessage(error)),
+      timedOut: false,
+      durationMs: duration,
+    };
   } finally {
     clearTimeout(timeoutId);
   }
@@ -71,11 +94,11 @@ export const executeWithTimeout = async <T>(
  * Test basic Supabase connectivity with a minimal query
  */
 export const testSupabaseConnectivity = async (
-  supabase: any,
+  supabase: Pick<SupabaseClient, 'from'>,
   timeoutMs: number = 5000
 ): Promise<{ connected: boolean; latencyMs: number; error?: string }> => {
   const startTime = Date.now();
-  
+
   try {
     const result = await withQueryTimeout(
       async (signal) => {
@@ -85,7 +108,7 @@ export const testSupabaseConnectivity = async (
           .select('id')
           .limit(1)
           .abortSignal(signal);
-        
+
         if (error && error.code !== 'PGRST116') { // Ignore "no rows" error
           throw error;
         }
@@ -94,16 +117,16 @@ export const testSupabaseConnectivity = async (
       timeoutMs,
       'connectivity-test'
     );
-    
+
     return {
       connected: true,
       latencyMs: Date.now() - startTime
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
     return {
       connected: false,
       latencyMs: Date.now() - startTime,
-      error: error.message
+      error: getErrorMessage(error)
     };
   }
 };

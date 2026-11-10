@@ -7,8 +7,11 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
+/** The caught value as an Error, so its message, name and stack can be read. */
+const asError = (error: unknown): Error => (error instanceof Error ? error : new Error(String(error)))
+
 // Enhanced logging for unified system integration
-const logWithContext = (level: 'info' | 'warn' | 'error', message: string, context?: any) => {
+const logWithContext = (level: 'info' | 'warn' | 'error', message: string, context?: Record<string, unknown>) => {
   const timestamp = new Date().toISOString();
   const logEntry = {
     timestamp,
@@ -353,11 +356,11 @@ serve(async (req) => {
       } finally {
         connection.release()
       }
-    } catch (vaultError: any) {
+    } catch (vaultError: unknown) {
       logWithContext('error', 'Failed to store tokens in vault', {
         userId: user.id,
-        error: vaultError.message,
-        stack: vaultError.stack
+        error: asError(vaultError).message,
+        stack: asError(vaultError).stack
       });
       await pool.end()
       return new Response(
@@ -365,7 +368,7 @@ serve(async (req) => {
           error: 'Failed to securely store tokens. Please try again.',
           code: 'VAULT_STORAGE_FAILED',
           timestamp: new Date().toISOString(),
-          debug: vaultError.message
+          debug: asError(vaultError).message
         }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
@@ -456,11 +459,11 @@ serve(async (req) => {
         } finally {
           cleanupConnection.release()
         }
-      } catch (cleanupError: any) {
+      } catch (cleanupError: unknown) {
         // Log but don't fail - old secrets will be orphaned but connection is valid
         logWithContext('warn', 'Failed to clean up old vault secrets (non-fatal)', {
           userId: user.id,
-          error: cleanupError.message
+          error: asError(cleanupError).message
         });
       }
     }
@@ -469,10 +472,10 @@ serve(async (req) => {
     // teardown error must not produce a 500 for the user.
     try {
       await pool.end()
-    } catch (poolEndError: any) {
+    } catch (poolEndError: unknown) {
       logWithContext('warn', 'pool.end() failed during teardown (non-fatal — connection already succeeded)', {
         userId: user.id,
-        error: poolEndError.message
+        error: asError(poolEndError).message
       });
     }
 
@@ -489,11 +492,12 @@ serve(async (req) => {
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
 
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const err = asError(error)
     logWithContext('error', 'Spotify auth failed with unexpected error', {
-      error: error.message,
-      stack: error.stack,
-      name: error.name
+      error: err.message,
+      stack: err.stack,
+      name: err.name
     });
     return new Response(
       JSON.stringify({

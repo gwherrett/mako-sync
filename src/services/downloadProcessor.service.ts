@@ -195,7 +195,7 @@ async function processFile(
   relativePath?: string,
   fileHandle?: FileSystemFileHandle
 ): Promise<ProcessedFile> {
-  const path = relativePath || (file as any).webkitRelativePath || file.name;
+  const path = relativePath || file.webkitRelativePath || file.name;
 
   try {
     const metadata = await extractFileMetadata(file);
@@ -585,7 +585,7 @@ export async function writeTagsInPlace(
     for (const res of batchResults) {
       if (res.result === 'written') success++;
       else if (res.result === 'skipped') skipped++;
-      else if (res.result === 'error') errors.push({ filename: res.filename, error: (res as any).error });
+      else if (res.result === 'error') errors.push({ filename: res.filename, error: res.error });
     }
   }
 

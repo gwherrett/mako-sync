@@ -14,6 +14,8 @@
  * 7. Debug/Cleanup: Various auth/token/session/supabase keys
  */
 
+import { getErrorMessage } from '@/utils/errorUtils';
+
 export interface StorageKey {
   key: string | RegExp;
   type: 'localStorage' | 'sessionStorage';
@@ -73,7 +75,7 @@ export class StorageManagerService {
       category: 'auth',
       description: 'Supabase auth tokens (pattern)',
       persistent: false
-    } as any,
+    },
     
     // Spotify Authentication
     {
@@ -249,8 +251,8 @@ export class StorageManagerService {
    * Clean storage based on options
    */
   static async cleanStorage(options: StorageCleanupOptions = {}): Promise<{
-    cleaned: StorageKey[];
-    preserved: StorageKey[];
+    cleaned: ResolvedStorageKey[];
+    preserved: ResolvedStorageKey[];
     errors: string[];
   }> {
     console.log('🧹 STORAGE CLEANUP: Starting cleanup with options:', options);
@@ -306,8 +308,8 @@ export class StorageManagerService {
           
           cleaned.push(storageKey);
           console.log(`🧹 CLEANED: ${storageKey.type}.${storageKey.key} (${storageKey.category})`);
-        } catch (error: any) {
-          const errorMsg = `Failed to clean ${storageKey.key}: ${error.message}`;
+        } catch (error: unknown) {
+          const errorMsg = `Failed to clean ${storageKey.key}: ${getErrorMessage(error)}`;
           errors.push(errorMsg);
           console.error('❌ CLEANUP ERROR:', errorMsg);
         }
@@ -326,9 +328,9 @@ export class StorageManagerService {
       });
 
       return { cleaned, preserved, errors };
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('❌ STORAGE CLEANUP: Critical error:', error);
-      errors.push(`Critical cleanup error: ${error.message}`);
+      errors.push(`Critical cleanup error: ${getErrorMessage(error)}`);
       return { cleaned, preserved, errors };
     }
   }

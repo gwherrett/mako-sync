@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { sessionCache } from '@/services/sessionCache.service';
 import { logger } from '@/utils/logger';
 import { withTimeout } from '@/utils/promiseUtils';
+import { errorFields, getErrorMessage } from '@/utils/errorUtils';
 import type { SpotifyConnection } from '@/types/spotify';
 
 /**
@@ -10,16 +11,19 @@ import type { SpotifyConnection } from '@/types/spotify';
  * The default message is always "Edge Function returned a non-2xx status code" which
  * hides the actual error body. This reads the response body to surface the real reason.
  */
-async function extractFunctionError(error: any): Promise<string> {
+async function extractFunctionError(error: unknown): Promise<string> {
+  const { message } = errorFields(error);
   try {
-    if (error?.context?.json) {
-      const body = await error.context.json();
-      return body?.error || body?.message || error.message;
+    // FunctionsHttpError keeps the function's Response in `context`.
+    const context = (error as { context?: { json?: () => Promise<unknown> } } | null)?.context;
+    if (context?.json) {
+      const body = (await context.json()) as { error?: string; message?: string } | null;
+      return body?.error || body?.message || message;
     }
   } catch {
     // body was not JSON or already consumed
   }
-  return error?.message ?? 'Unknown error';
+  return message ?? 'Unknown error';
 }
 
 /**
@@ -67,7 +71,7 @@ export function hasSpotifyScope(connection: SpotifyConnection | null, scope: str
   return !!connection?.scope?.split(' ').includes(scope);
 }
 
-export interface SpotifyOperationResult<T = any> {
+export interface SpotifyOperationResult<T = unknown> {
   success: boolean;
   data?: T;
   error?: string;
@@ -78,16 +82,22 @@ export interface SpotifyOperationResult<T = any> {
   };
 }
 
+/** The parts of the spotify-sync-liked response the client reads after a finished sync. */
+export interface SyncLikedSongsData {
+  genre_health_warning?: string;
+  [field: string]: unknown;
+}
+
 export class SpotifyAuthManager {
   private static instance: SpotifyAuthManager | null = null;
   private state: SpotifyAuthState;
   private config: SpotifyAuthConfig;
   private listeners: Set<(state: SpotifyAuthState) => void> = new Set();
-  private healthMonitor: any = null;
-  private checkPromise: Promise<SpotifyOperationResult> | null = null;
+  private healthMonitor: { initialized: boolean; stopMonitoring: () => void } | null = null;
+  private checkPromise: Promise<SpotifyOperationResult<SpotifyConnection>> | null = null;
 
   private syncInProgress: boolean = false;
-  private syncPromise: Promise<SpotifyOperationResult> | null = null;
+  private syncPromise: Promise<SpotifyOperationResult<SyncLikedSongsData>> | null = null;
 
   private static readonly CONNECTION_CHECK_COOLDOWN = 5000;
 
@@ -207,7 +217,7 @@ export class SpotifyAuthManager {
       logger.spotify('Starting connection query');
       const connectionStartTime = Date.now();
 
-      let queryResult: { data: any; error: any };
+      let queryResult: { data: SpotifyConnection | null; error: { message: string } | null };
       try {
         queryResult = await withTimeout(
           Promise.resolve(
@@ -222,9 +232,10 @@ export class SpotifyAuthManager {
         );
         const elapsed = Date.now() - connectionStartTime;
         logger.spotify(`Connection query completed in ${elapsed}ms`);
-      } catch (err: any) {
+      } catch (err: unknown) {
         const elapsed = Date.now() - connectionStartTime;
-        const isTimeout = err?.message === 'Connection query timeout';
+        const errMessage = errorFields(err).message;
+        const isTimeout = errMessage === 'Connection query timeout';
 
         if (isTimeout) {
           logger.spotify(`Connection query timeout after ${elapsed}ms`, undefined, 'warn');
@@ -239,12 +250,12 @@ export class SpotifyAuthManager {
           this.updateState({
             isConnected: false,
             connection: null,
-            error: `Database error: ${err?.message}`,
+            error: `Database error: ${errMessage}`,
             isLoading: false,
             healthStatus: 'error',
           });
         }
-        return { success: false, error: err?.message };
+        return { success: false, error: errMessage };
       }
 
       const { data: connection, error: connectionError } = queryResult;
@@ -332,8 +343,8 @@ export class SpotifyAuthManager {
           metadata: { duration }
         };
       }
-    } catch (error: any) {
-      const errorMessage = error.message || 'Connection check failed';
+    } catch (error: unknown) {
+      const errorMessage = errorFields(error).message || 'Connection check failed';
       const duration = Date.now() - startTime;
 
       logger.spotify(`Connection check failed after ${duration}ms`, {
@@ -407,11 +418,11 @@ export class SpotifyAuthManager {
       window.location.href = authUrl.toString();
 
       return { success: true };
-    } catch (error: any) {
-      const errorMessage = `Spotify auth failed: ${error.message}`;
+    } catch (error: unknown) {
+      const errorMessage = `Spotify auth failed: ${getErrorMessage(error)}`;
       this.updateState({ error: errorMessage });
 
-      logger.spotify('Connect error', { error: error.message }, 'error');
+      logger.spotify('Connect error', { error: getErrorMessage(error) }, 'error');
 
       return { success: false, error: errorMessage };
     }
@@ -452,10 +463,10 @@ export class SpotifyAuthManager {
 
       logger.spotify('Successfully disconnected');
       return { success: true };
-    } catch (error: any) {
-      const errorMessage = `Disconnect failed: ${error.message}`;
+    } catch (error: unknown) {
+      const errorMessage = `Disconnect failed: ${getErrorMessage(error)}`;
 
-      logger.spotify('Disconnect error', { error: error.message }, 'error');
+      logger.spotify('Disconnect error', { error: getErrorMessage(error) }, 'error');
 
       this.updateState({ error: errorMessage });
 
@@ -496,10 +507,10 @@ export class SpotifyAuthManager {
       }
 
       return result;
-    } catch (error: any) {
-      const errorMessage = `Token refresh failed: ${error.message}`;
+    } catch (error: unknown) {
+      const errorMessage = `Token refresh failed: ${getErrorMessage(error)}`;
 
-      logger.spotify('Token refresh error', { error: error.message }, 'error');
+      logger.spotify('Token refresh error', { error: getErrorMessage(error) }, 'error');
 
       this.updateState({ error: errorMessage });
 
@@ -507,7 +518,7 @@ export class SpotifyAuthManager {
     }
   }
 
-  async syncLikedSongs(forceFullSync: boolean = false): Promise<SpotifyOperationResult> {
+  async syncLikedSongs(forceFullSync: boolean = false): Promise<SpotifyOperationResult<SyncLikedSongsData>> {
     if (this.syncInProgress) {
       logger.spotify('Sync already in progress, returning existing promise');
       return this.syncPromise || { success: false, error: 'Sync already in progress' };
@@ -532,7 +543,7 @@ export class SpotifyAuthManager {
   // persistently wrong — stop rather than spend up to MAX_RESUME_ATTEMPTS × 150s retrying.
   private static readonly MAX_CONSECUTIVE_TIMEOUTS = 2;
 
-  private async performSync(forceFullSync: boolean, resumeAttempt: number = 0, consecutiveTimeouts: number = 0): Promise<SpotifyOperationResult> {
+  private async performSync(forceFullSync: boolean, resumeAttempt: number = 0, consecutiveTimeouts: number = 0): Promise<SpotifyOperationResult<SyncLikedSongsData>> {
     const startedAt = Date.now();
     try {
       const { session } = await sessionCache.getSession(false, 'spotify-sync');
@@ -584,10 +595,10 @@ export class SpotifyAuthManager {
           duration: Date.now() - startedAt
         }
       };
-    } catch (error: any) {
-      const errorMessage = `Sync failed: ${error.message}`;
+    } catch (error: unknown) {
+      const errorMessage = `Sync failed: ${getErrorMessage(error)}`;
 
-      logger.spotify('Sync error', { error: error.message }, 'error');
+      logger.spotify('Sync error', { error: getErrorMessage(error) }, 'error');
 
       return { success: false, error: errorMessage };
     }
@@ -624,11 +635,11 @@ export class SpotifyAuthManager {
 
       logger.spotify('Health check passed');
       return { success: true, data: response.data };
-    } catch (error: any) {
+    } catch (error: unknown) {
       this.updateState({ healthStatus: 'error' });
 
-      const errorMessage = `Health check failed: ${error.message}`;
-      logger.spotify('Health check error', { error: error.message }, 'error');
+      const errorMessage = `Health check failed: ${getErrorMessage(error)}`;
+      logger.spotify('Health check error', { error: getErrorMessage(error) }, 'error');
 
       return { success: false, error: errorMessage };
     }
@@ -653,11 +664,11 @@ export class SpotifyAuthManager {
         data: { isValid },
         error: isValid ? undefined : 'Security issues detected'
       };
-    } catch (error: any) {
+    } catch (error: unknown) {
       this.updateState({ healthStatus: 'error' });
 
-      const errorMessage = `Security validation failed: ${error.message}`;
-      logger.spotify('Security validation error', { error: error.message }, 'error');
+      const errorMessage = `Security validation failed: ${getErrorMessage(error)}`;
+      logger.spotify('Security validation error', { error: getErrorMessage(error) }, 'error');
 
       return { success: false, error: errorMessage };
     }

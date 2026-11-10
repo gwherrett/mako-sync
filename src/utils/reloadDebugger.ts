@@ -5,13 +5,45 @@
  * Captures state before/after reload and provides detailed analytics.
  */
 
+declare global {
+  interface Window {
+    /** Console access for debugging. */
+    ReloadDebugger?: typeof ReloadDebuggerService;
+  }
+}
+
 interface ReloadDebugEntry {
   timestamp: number;
   event: string;
   phase: 'pre-reload' | 'post-reload' | 'startup' | 'runtime';
-  data: any;
-  localStorage: Record<string, any>;
-  sessionStorage: Record<string, any>;
+  data: Record<string, unknown>;
+  localStorage: Record<string, unknown>;
+  sessionStorage: Record<string, unknown>;
+}
+
+/** What getSupabaseState finds in the stored Supabase auth token. */
+type SupabaseStateSummary =
+  | { hasSession: boolean; expiresAt: string | null; isExpired: boolean | null; userId?: string; userEmail?: string }
+  | { noTokenFound: true }
+  | { error: string };
+
+/** Auth keys before and after a reload. `error` is set when either snapshot is missing. */
+interface AuthStateChanges {
+  error?: string;
+  preReload?: { authKeysCount: number; authKeys: string[] };
+  postReload?: { authKeysCount: number; authKeys: string[] };
+  changes?: { keysRemoved: string[]; keysAdded: string[]; tokensCleared: boolean };
+}
+
+/** The reload report. Only `error` is set when there is no active session. */
+interface ReloadReport {
+  error?: string;
+  session?: { id: string; reloadCount: number; startTime: string; lastReloadTime: string | null; duration: number };
+  timeline?: Array<{ time: string; event: string; phase: ReloadDebugEntry['phase']; relativeTime: number }>;
+  preReloadState?: ReloadDebugEntry;
+  postReloadState?: ReloadDebugEntry;
+  authStateChanges?: AuthStateChanges;
+  potentialIssues?: string[];
 }
 
 interface ReloadSession {
@@ -140,7 +172,7 @@ class ReloadDebuggerService {
   /**
    * Log a debug event
    */
-  static logEvent(event: string, phase: ReloadDebugEntry['phase'], data: any = {}): void {
+  static logEvent(event: string, phase: ReloadDebugEntry['phase'], data: Record<string, unknown> = {}): void {
     if (!this.currentSession) {
       console.warn('🔄 RELOAD DEBUGGER: No active session');
       return;
@@ -168,8 +200,8 @@ class ReloadDebuggerService {
     timestamp: number;
     localStorage: { hasAuthTokens: boolean; authKeys: string[] };
     sessionStorage: { hasAuthTokens: boolean; authKeys: string[] };
-    supabaseState: any;
-    performance: { timeOrigin: number; timing: any; navigation: any };
+    supabaseState: SupabaseStateSummary;
+    performance: { timeOrigin: number; timing: unknown; navigation: unknown };
   } {
     const snapshot = {
       label,
@@ -185,7 +217,7 @@ class ReloadDebuggerService {
       supabaseState: this.getSupabaseState(),
       performance: {
         timeOrigin: performance.timeOrigin,
-        timing: (performance as any).timing?.toJSON?.() || {},
+        timing: performance.timing?.toJSON?.() || {},
         navigation: performance.getEntriesByType('navigation')[0] || {}
       }
     };
@@ -198,8 +230,8 @@ class ReloadDebuggerService {
   /**
    * Capture localStorage state
    */
-  private static captureLocalStorage(): Record<string, any> {
-    const result: Record<string, any> = {};
+  private static captureLocalStorage(): Record<string, unknown> {
+    const result: Record<string, unknown> = {};
 
     try {
       for (let i = 0; i < localStorage.length; i++) {
@@ -220,8 +252,8 @@ class ReloadDebuggerService {
   /**
    * Capture sessionStorage state
    */
-  private static captureSessionStorage(): Record<string, any> {
-    const result: Record<string, any> = {};
+  private static captureSessionStorage(): Record<string, unknown> {
+    const result: Record<string, unknown> = {};
 
     try {
       for (let i = 0; i < sessionStorage.length; i++) {
@@ -275,7 +307,7 @@ class ReloadDebuggerService {
   /**
    * Get Supabase state (if available)
    */
-  private static getSupabaseState(): any {
+  private static getSupabaseState(): SupabaseStateSummary {
     try {
       // Try to get session from localStorage
       const authKeys = this.getAuthKeysFromStorage('localStorage');
@@ -304,7 +336,7 @@ class ReloadDebuggerService {
   /**
    * Safe JSON parse
    */
-  private static safeJsonParse(value: string | null): any {
+  private static safeJsonParse(value: string | null): unknown {
     if (!value) return null;
 
     try {
@@ -317,7 +349,7 @@ class ReloadDebuggerService {
   /**
    * Get detailed reload report
    */
-  static getReport(): any {
+  static getReport(): ReloadReport {
     if (!this.currentSession) {
       return { error: 'No active session' };
     }
@@ -350,7 +382,7 @@ class ReloadDebuggerService {
   /**
    * Analyze auth state changes across reload
    */
-  private static analyzeAuthStateChanges(entries: ReloadDebugEntry[]): any {
+  private static analyzeAuthStateChanges(entries: ReloadDebugEntry[]): AuthStateChanges {
     const preReload = entries.filter(e => e.phase === 'pre-reload').slice(-1)[0];
     const postReload = entries.filter(e => e.phase === 'post-reload')[0];
 
@@ -397,7 +429,7 @@ class ReloadDebuggerService {
     // Check for timeouts
     const timeoutEvents = entries.filter(e =>
       e.event.includes('timeout') ||
-      e.data?.error?.includes('timeout')
+      (typeof e.data?.error === 'string' && e.data.error.includes('timeout'))
     );
     if (timeoutEvents.length > 0) {
       issues.push(`WARNING: ${timeoutEvents.length} timeout event(s) detected`);
@@ -448,7 +480,7 @@ class ReloadDebuggerService {
 }
 
 // Global access for debugging
-(window as any).ReloadDebugger = ReloadDebuggerService;
+window.ReloadDebugger = ReloadDebuggerService;
 
 export default ReloadDebuggerService;
 export { ReloadDebuggerService };

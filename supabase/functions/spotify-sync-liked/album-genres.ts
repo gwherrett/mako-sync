@@ -1,4 +1,6 @@
+import type { SpotifyTrack } from './types.ts'
 import { fetchWithTokenRetry } from './spotify-auth.ts'
+import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.100.0"
 
 const CONCURRENCY_CAP = 5
 
@@ -62,7 +64,7 @@ export async function fetchAlbumGenres(accessToken: string, albumIds: string[], 
   return genreMap
 }
 
-export async function getCachedAlbumGenres(albumIds: string[], supabaseClient: any): Promise<Map<string, string[]>> {
+export async function getCachedAlbumGenres(albumIds: string[], supabaseClient: SupabaseClient): Promise<Map<string, string[]>> {
   const { data, error } = await supabaseClient
     .from('album_genres')
     .select('spotify_album_id, genres')
@@ -74,7 +76,7 @@ export async function getCachedAlbumGenres(albumIds: string[], supabaseClient: a
   }
 
   const genreMap = new Map<string, string[]>()
-  data?.forEach((row: any) => {
+  data?.forEach((row: { spotify_album_id: string; genres: string[] | null }) => {
     genreMap.set(row.spotify_album_id, row.genres || [])
   })
 
@@ -82,7 +84,7 @@ export async function getCachedAlbumGenres(albumIds: string[], supabaseClient: a
   return genreMap
 }
 
-export async function cacheAlbumGenres(genreMap: Map<string, string[]>, supabaseClient: any): Promise<void> {
+export async function cacheAlbumGenres(genreMap: Map<string, string[]>, supabaseClient: SupabaseClient): Promise<void> {
   if (genreMap.size === 0) return
 
   // Don't cache if all entries are empty — Spotify album.genres is almost always empty
@@ -113,7 +115,7 @@ export async function cacheAlbumGenres(genreMap: Map<string, string[]>, supabase
   }
 }
 
-export async function getAlbumGenresWithCache(accessToken: string, albumIds: string[], supabaseClient: any, tokenRefresher?: () => Promise<string>): Promise<Map<string, string[]>> {
+export async function getAlbumGenresWithCache(accessToken: string, albumIds: string[], supabaseClient: SupabaseClient, tokenRefresher?: () => Promise<string>): Promise<Map<string, string[]>> {
   // Remove duplicates
   const uniqueAlbumIds = [...new Set(albumIds)]
 
@@ -145,7 +147,7 @@ export async function getAlbumGenresWithCache(accessToken: string, albumIds: str
   return allGenres
 }
 
-export function extractUniqueAlbumIds(allTracks: any[]): string[] {
+export function extractUniqueAlbumIds(allTracks: SpotifyTrack[]): string[] {
   const albumIds = new Set<string>()
 
   allTracks.forEach(item => {

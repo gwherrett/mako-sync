@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
+import { errorFields, getErrorMessage } from '@/utils/errorUtils';
 import { useToast } from '@/hooks/use-toast';
 import { SpotifyAuthManager } from '@/services/spotifyAuthManager.service';
 import { useAuth } from '@/contexts/NewAuthContext';
@@ -87,10 +88,10 @@ export const UnifiedSpotifyCallback: React.FC = () => {
       const authManager = SpotifyAuthManager.getInstance();
       await authManager.connectSpotify();
       // This will redirect to Spotify, so no need to handle anything else
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Failed to start fresh OAuth flow:', error);
       setCallbackFailed(true);
-      setFailureReason(`Failed to restart connection: ${error.message}`);
+      setFailureReason(`Failed to restart connection: ${getErrorMessage(error)}`);
       setIsProcessing(false);
     }
   };
@@ -409,11 +410,12 @@ export const UnifiedSpotifyCallback: React.FC = () => {
             statusText: preflightResponse.statusText,
             headers: Object.fromEntries(preflightResponse.headers.entries())
           });
-        } catch (preflightError: any) {
+        } catch (preflightError: unknown) {
+          const { message, name } = errorFields(preflightError);
           console.error('❌ PRE-FLIGHT: OPTIONS failed:', {
-            message: preflightError.message,
-            name: preflightError.name,
-            type: preflightError.name === 'AbortError' ? 'TIMEOUT' : 'NETWORK'
+            message,
+            name,
+            type: name === 'AbortError' ? 'TIMEOUT' : 'NETWORK'
           });
         }
         
@@ -467,29 +469,30 @@ export const UnifiedSpotifyCallback: React.FC = () => {
             
             return { data, error: null };
             
-          } catch (networkError: any) {
+          } catch (networkError: unknown) {
             const elapsed = Date.now() - edgeFunctionStartTime;
-            const errorType = networkError.name === 'AbortError' ? 'NETWORK_TIMEOUT' :
-                             networkError.message?.includes('timeout') ? 'SERVER_TIMEOUT' :
-                             networkError.message?.includes('fetch') || networkError.message?.includes('Failed to fetch') ? 'NETWORK_ERROR' : 'SERVER_ERROR';
-            
+            const { message, name } = errorFields(networkError);
+            const errorType = name === 'AbortError' ? 'NETWORK_TIMEOUT' :
+                             message?.includes('timeout') ? 'SERVER_TIMEOUT' :
+                             message?.includes('fetch') || message?.includes('Failed to fetch') ? 'NETWORK_ERROR' : 'SERVER_ERROR';
+
             console.error('❌ DIRECT FETCH: Network error:', {
-              message: networkError.message,
-              name: networkError.name,
+              message,
+              name,
               type: errorType,
               elapsed,
               step: 5,
               timestamp: new Date().toISOString()
             });
-            
+
             // Enhance error with type information
-            networkError.errorType = errorType;
-            throw networkError;
+            const enhanced = networkError instanceof Error ? networkError : new Error(String(networkError));
+            throw Object.assign(enhanced, { errorType });
           }
         })();
 
         let edgeFunctionTimeoutId: ReturnType<typeof setTimeout>;
-        const edgeFunctionTimeoutPromise = new Promise<any>((_, reject) => {
+        const edgeFunctionTimeoutPromise = new Promise<never>((_, reject) => {
           edgeFunctionTimeoutId = setTimeout(() => {
             const elapsed = Date.now() - edgeFunctionStartTime;
             console.error('❌ DIRECT FETCH: Edge function timeout', {
@@ -499,8 +502,7 @@ export const UnifiedSpotifyCallback: React.FC = () => {
               timestamp: new Date().toISOString()
             });
             const timeoutError = new Error('Edge function timeout - never reached server');
-            (timeoutError as any).errorType = 'NETWORK_TIMEOUT';
-            reject(timeoutError);
+            reject(Object.assign(timeoutError, { errorType: 'NETWORK_TIMEOUT' }));
           }, 45000); // 45s timeout for cold-start edge functions
         });
 
@@ -586,9 +588,12 @@ export const UnifiedSpotifyCallback: React.FC = () => {
         // Navigate back to main page
         setTimeout(() => navigate('/'), 1500);
 
-      } catch (error: any) {
+      } catch (error: unknown) {
         console.error('❌ UNIFIED CALLBACK: Critical error:', error);
-        
+        const { message, name } = errorFields(error);
+        // errorType is attached by the direct-fetch and timeout paths above.
+        const { errorType } = (error ?? {}) as { errorType?: string };
+
         // SESSION DEBUG: Log session state during critical error
         console.log('🔍 SESSION DEBUG (Critical Error): Session state during critical callback error', {
           hasSession: !!sessionRef.current,
@@ -597,16 +602,16 @@ export const UnifiedSpotifyCallback: React.FC = () => {
           userId: sessionRef.current?.user?.id,
           isAuthenticated,
           authLoadingRef: authLoadingRef.current,
-          criticalError: error.message,
-          errorType: error.errorType || 'unknown',
-          errorName: error.name,
+          criticalError: message,
+          errorType: errorType || 'unknown',
+          errorName: name,
           preservedSession: 'Session preservation strategy - avoiding additional session checks that might corrupt auth state',
           timestamp: new Date().toISOString()
         });
         
         // Show retry UI instead of auto-navigating
         setCallbackFailed(true);
-        setFailureReason(`Failed to connect to Spotify: ${error.message}`);
+        setFailureReason(`Failed to connect to Spotify: ${message}`);
         sessionStorage.removeItem(executionFlag);
       } finally {
         setIsProcessing(false);

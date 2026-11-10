@@ -12,8 +12,8 @@ import { authAgent } from '../agents/AuthAgent';
 import { codeAgent } from '../agents/CodeAgent';
 import { architectAgent } from '../agents/ArchitectAgent';
 import { FileScanner } from './fileScanner';
-import { applyFix, generateDiff, validateFix, rollbackFix, ApplyResult } from '../core/AutoFix';
-import { RuleViolation } from '../core/types';
+import { applyFix, generateDiff, validateFix, rollbackFix, ApplyResult, CodeFix } from '../core/AutoFix';
+import { RuleViolation, ValidationContext } from '../core/types';
 import * as fs from 'fs';
 
 interface FixOptions {
@@ -60,7 +60,7 @@ class MakoAgentsFixCLI {
   }
 
   async run(): Promise<number> {
-    console.log('\n🔧 Mako Agents - Auto-Fix Tool\n');
+    console.log('\nðŸ”§ Mako Agents - Auto-Fix Tool\n');
 
     // Scan and validate
     const contexts = await this.scanner.scanDirectory();
@@ -83,7 +83,7 @@ class MakoAgentsFixCLI {
     });
 
     if (fixableViolations.length === 0) {
-      console.log('✅ No fixable violations found!\n');
+      console.log('âœ… No fixable violations found!\n');
       return 0;
     }
 
@@ -98,8 +98,8 @@ class MakoAgentsFixCLI {
     }
   }
 
-  private async runDryMode(violations: RuleViolation[], contexts: any[]): Promise<number> {
-    console.log('🔍 DRY RUN MODE - No changes will be applied\n');
+  private async runDryMode(violations: RuleViolation[], contexts: ValidationContext[]): Promise<number> {
+    console.log('ðŸ” DRY RUN MODE - No changes will be applied\n');
 
     let fixCount = 0;
 
@@ -120,12 +120,12 @@ class MakoAgentsFixCLI {
       fixCount++;
     }
 
-    console.log(`\n✅ Would fix ${fixCount} violation(s) (dry run)\n`);
+    console.log(`\nâœ… Would fix ${fixCount} violation(s) (dry run)\n`);
     return 0;
   }
 
-  private async runAutoMode(violations: RuleViolation[], contexts: any[]): Promise<number> {
-    console.log('⚡ AUTO MODE - Fixing all violations automatically\n');
+  private async runAutoMode(violations: RuleViolation[], contexts: ValidationContext[]): Promise<number> {
+    console.log('âš¡ AUTO MODE - Fixing all violations automatically\n');
 
     const results: ApplyResult[] = [];
 
@@ -143,25 +143,25 @@ class MakoAgentsFixCLI {
       results.push(result);
 
       if (result.success) {
-        console.log(`  ✅ Fixed`);
+        console.log(`  âœ… Fixed`);
       } else {
-        console.log(`  ❌ Failed: ${result.error}`);
+        console.log(`  âŒ Failed: ${result.error}`);
       }
     }
 
     const successCount = results.filter(r => r.success).length;
     const failCount = results.filter(r => !r.success).length;
 
-    console.log(`\n✅ Fixed ${successCount} violation(s)`);
+    console.log(`\nâœ… Fixed ${successCount} violation(s)`);
     if (failCount > 0) {
-      console.log(`❌ Failed to fix ${failCount} violation(s)`);
+      console.log(`âŒ Failed to fix ${failCount} violation(s)`);
     }
 
     return failCount > 0 ? 1 : 0;
   }
 
-  private async runInteractiveMode(violations: RuleViolation[], contexts: any[]): Promise<number> {
-    console.log('🎯 INTERACTIVE MODE - Review each fix before applying\n');
+  private async runInteractiveMode(violations: RuleViolation[], contexts: ValidationContext[]): Promise<number> {
+    console.log('ðŸŽ¯ INTERACTIVE MODE - Review each fix before applying\n');
 
     const results: ApplyResult[] = [];
     let skipped = 0;
@@ -185,7 +185,7 @@ class MakoAgentsFixCLI {
       const answer = await this.askQuestion('\nApply this fix? [y]es, [n]o, [a]ll, [q]uit: ');
 
       if (answer === 'q' || answer === 'quit') {
-        console.log('\n❌ Cancelled by user\n');
+        console.log('\nâŒ Cancelled by user\n');
         break;
       }
 
@@ -195,9 +195,9 @@ class MakoAgentsFixCLI {
         results.push(result);
 
         if (result.success) {
-          console.log('✅ Applied');
+          console.log('âœ… Applied');
         } else {
-          console.log(`❌ Failed: ${result.error}`);
+          console.log(`âŒ Failed: ${result.error}`);
         }
 
         // Apply remaining fixes automatically
@@ -214,9 +214,9 @@ class MakoAgentsFixCLI {
           results.push(r);
 
           if (r.success) {
-            console.log('  ✅ Applied');
+            console.log('  âœ… Applied');
           } else {
-            console.log(`  ❌ Failed: ${r.error}`);
+            console.log(`  âŒ Failed: ${r.error}`);
           }
         }
         break;
@@ -227,12 +227,12 @@ class MakoAgentsFixCLI {
         results.push(result);
 
         if (result.success) {
-          console.log('✅ Applied');
+          console.log('âœ… Applied');
         } else {
-          console.log(`❌ Failed: ${result.error}`);
+          console.log(`âŒ Failed: ${result.error}`);
         }
       } else {
-        console.log('⏭️  Skipped');
+        console.log('â­ï¸  Skipped');
         skipped++;
       }
     }
@@ -240,19 +240,19 @@ class MakoAgentsFixCLI {
     const successCount = results.filter(r => r.success).length;
     const failCount = results.filter(r => !r.success).length;
 
-    console.log(`\n✅ Fixed ${successCount} violation(s)`);
+    console.log(`\nâœ… Fixed ${successCount} violation(s)`);
     if (skipped > 0) {
-      console.log(`⏭️  Skipped ${skipped} violation(s)`);
+      console.log(`â­ï¸  Skipped ${skipped} violation(s)`);
     }
     if (failCount > 0) {
-      console.log(`❌ Failed to fix ${failCount} violation(s)`);
+      console.log(`âŒ Failed to fix ${failCount} violation(s)`);
     }
 
     this.rl.close();
     return failCount > 0 ? 1 : 0;
   }
 
-  private generateFix(violation: RuleViolation, context: any): any {
+  private generateFix(violation: RuleViolation, context: ValidationContext): CodeFix | null {
     const allRules = this.registry.getAllRules();
     const rule = allRules.find(r => r.config.id === violation.ruleId);
 
@@ -332,7 +332,7 @@ if (require.main === module) {
       process.exit(exitCode);
     })
     .catch(error => {
-      console.error('\n❌ Fatal error:', error);
+      console.error('\nâŒ Fatal error:', error);
       process.exit(1);
     });
 }

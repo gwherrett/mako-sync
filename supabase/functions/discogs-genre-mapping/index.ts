@@ -41,7 +41,7 @@ function cleanTerm(raw: string): string {
   return raw
     .trim()
     .normalize('NFC')
-    .replace(/[​-‍﻿]/g, '')
+    .replace(/[\u200B-\u200D\uFEFF]/g, '')
     .replace(/\s+/g, ' ');
 }
 

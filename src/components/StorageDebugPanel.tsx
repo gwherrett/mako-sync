@@ -40,8 +40,8 @@ export const StorageDebugPanel: React.FC<StorageDebugPanelProps> = ({
     dryRun: true
   });
   const [lastCleanup, setLastCleanup] = useState<{
-    cleaned: any[];
-    preserved: any[];
+    cleaned: ResolvedStorageKey[];
+    preserved: ResolvedStorageKey[];
     errors: string[];
   } | null>(null);
 

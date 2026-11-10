@@ -2,6 +2,7 @@ import { supabase } from '@/integrations/supabase/client';
 import type { Session } from '@supabase/supabase-js';
 import { withTimeout } from '@/utils/promiseUtils';
 import { logger } from '@/utils/logger';
+import { errorFields } from '@/utils/errorUtils';
 
 /**
  * Session Cache Service
@@ -10,9 +11,12 @@ import { logger } from '@/utils/logger';
  * by caching the session and deduplicating requests.
  */
 
+/** A session lookup. `error` is whatever Supabase returned or threw, so it is left untyped. */
+type SessionResult = { session: Session | null; error: unknown };
+
 interface CachedSession {
   session: Session | null;
-  error: any;
+  error: unknown;
   timestamp: number;
   isValid: boolean;
 }
@@ -20,13 +24,13 @@ interface CachedSession {
 class SessionCacheService {
   private static instance: SessionCacheService | null = null;
   private cache: CachedSession | null = null;
-  private pendingRequest: Promise<{ session: Session | null; error: any }> | null = null;
+  private pendingRequest: Promise<SessionResult> | null = null;
   private readonly CACHE_DURATION = 30000; // 30 seconds
   private readonly REQUEST_TIMEOUT = 30000; // 30 seconds
 
   // Enhanced request tracking to prevent race conditions
-  private requestContexts: Map<string, Promise<{ session: Session | null; error: any }>> = new Map();
-  private initializationRequest: Promise<{ session: Session | null; error: any }> | null = null;
+  private requestContexts: Map<string, Promise<SessionResult>> = new Map();
+  private initializationRequest: Promise<SessionResult> | null = null;
   private requestSequence = 0;
 
   // CIRCUIT BREAKER: Prevent too many concurrent validations
@@ -82,7 +86,7 @@ class SessionCacheService {
     force: boolean = false,
     context?: string,
     priority: 'initialization' | 'normal' | 'background' = 'normal'
-  ): Promise<{ session: Session | null; error: any }> {
+  ): Promise<SessionResult> {
     const now = Date.now();
     const requestId = ++this.requestSequence;
 
@@ -185,7 +189,7 @@ class SessionCacheService {
   /**
    * Cache session result with validation
    */
-  private cacheResult(result: { session: Session | null; error: any }, timestamp: number, requestId: number): void {
+  private cacheResult(result: SessionResult, timestamp: number, requestId: number): void {
     const isValidSession = result.session &&
                          result.session.user &&
                          result.session.access_token &&
@@ -212,7 +216,7 @@ class SessionCacheService {
   /**
    * Direct session fetch with server validation
    */
-  private async fetchSessionDirect(requestId: number, context: string): Promise<{ session: Session | null; error: any }> {
+  private async fetchSessionDirect(requestId: number, context: string): Promise<SessionResult> {
     try {
       logger.session('Fetching session from Supabase', { requestId, context });
       const { data: { session }, error } = await supabase.auth.getSession();
@@ -280,30 +284,31 @@ class SessionCacheService {
         });
 
         return { session, error: null };
-      } catch (validationError: any) {
+      } catch (validationError: unknown) {
         const validationTime = Date.now() - validationStart;
-        const isTimeoutError = validationError.message?.includes('timeout');
-        const isNetworkError = validationError.message?.includes('network') ||
-                              validationError.message?.includes('fetch') ||
-                              validationError.name === 'AbortError';
+        const { message, name } = errorFields(validationError);
+        const isTimeoutError = message?.includes('timeout');
+        const isNetworkError = message?.includes('network') ||
+                              message?.includes('fetch') ||
+                              name === 'AbortError';
 
         if (isTimeoutError || isNetworkError) {
           logger.session(`Session validation timeout/network error after ${validationTime}ms`, {
-            error: validationError.message,
+            error: message,
             sessionPreserved: true
           }, 'warn');
           return { session, error: null };
         }
 
-        logger.session(`Session validation error after ${validationTime}ms`, { error: validationError.message }, 'error');
+        logger.session(`Session validation error after ${validationTime}ms`, { error: message }, 'error');
         await withTimeout(supabase.auth.signOut({ scope: 'local' }), 5000);
         return { session: null, error: validationError };
       } finally {
         this.concurrentValidations--;
         this.validationInProgress = false;
       }
-    } catch (error: any) {
-      logger.session('Session fetch error', { error: error.message }, 'error');
+    } catch (error: unknown) {
+      logger.session('Session fetch error', { error: errorFields(error).message }, 'error');
       return { session: null, error };
     }
   }
@@ -355,7 +360,7 @@ class SessionCacheService {
   /**
    * Force refresh session
    */
-  async forceRefresh(): Promise<{ session: Session | null; error: any }> {
+  async forceRefresh(): Promise<SessionResult> {
     logger.session('Force refreshing session');
     this.clearCache();
     return this.getSession(true, 'force-refresh');

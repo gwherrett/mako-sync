@@ -76,12 +76,21 @@ export const SUPERDJ_LABEL = 'SuperDJ';
 export const getSuperGenreFilterLabel = (value: string): string =>
   value === DANCE_ALL_VALUE ? SUPERDJ_LABEL : value;
 
+/** The two filter methods applySuperGenreFilter calls on a Supabase query builder. */
+interface SuperGenreFilterable {
+  eq(column: 'super_genre', value: string): this;
+  in(column: 'super_genre', values: readonly string[]): this;
+}
+
 // Applies a SuperGenre filter value to a Supabase query builder, expanding the
 // "SuperDJ" sentinel into an `.in()` match against DANCE_SUPER_GENRES.
-export const applySuperGenreFilter = (query: any, value?: string | null): any => {
+// Q is left unconstrained: checking a Supabase builder against SuperGenreFilterable makes
+// TypeScript give up (TS2589), so the builder is viewed through the interface internally.
+export const applySuperGenreFilter = <Q>(query: Q, value?: string | null): Q => {
   if (!value || value === 'all') return query;
-  if (value === DANCE_ALL_VALUE) return query.in('super_genre', DANCE_SUPER_GENRES);
-  return query.eq('super_genre', value);
+  const filterable = query as unknown as SuperGenreFilterable;
+  if (value === DANCE_ALL_VALUE) return filterable.in('super_genre', DANCE_SUPER_GENRES) as unknown as Q;
+  return filterable.eq('super_genre', value) as unknown as Q;
 };
 
 export interface GenreMapping {

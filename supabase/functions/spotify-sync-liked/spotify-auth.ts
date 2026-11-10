@@ -1,5 +1,6 @@
 import type { SpotifyConnection } from './types.ts'
 import { Pool } from "https://deno.land/x/postgres@v0.17.0/mod.ts"
+import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.100.0"
 
 // Result type for refresh operation - includes new expiry for callers to update their state
 export interface TokenRefreshResult {
@@ -7,7 +8,7 @@ export interface TokenRefreshResult {
   expiresAt: string
 }
 
-export async function refreshSpotifyToken(connection: SpotifyConnection, supabaseAdmin: any, userId: string): Promise<TokenRefreshResult> {
+export async function refreshSpotifyToken(connection: SpotifyConnection, supabaseAdmin: SupabaseClient, userId: string): Promise<TokenRefreshResult> {
   console.log('🎵 SPOTIFY TOKEN refresh starting', { token_type: 'SPOTIFY_API' })
   
   // Get refresh token from vault using Postgres driver
@@ -46,7 +47,7 @@ export async function refreshSpotifyToken(connection: SpotifyConnection, supabas
     } finally {
       connection_pg.release()
     }
-  } catch (vaultError: any) {
+  } catch (vaultError: unknown) {
     await pool.end()
     console.error('Failed to retrieve refresh token from vault:', vaultError)
     throw new Error('Failed to retrieve refresh token from vault - please reconnect Spotify')
@@ -164,8 +165,8 @@ export async function refreshSpotifyToken(connection: SpotifyConnection, supabas
     } finally {
       connection_pg.release()
     }
-  } catch (vaultError: any) {
-    console.error('Failed to update tokens in vault:', vaultError.message)
+  } catch (vaultError: unknown) {
+    console.error('Failed to update tokens in vault:', vaultError instanceof Error ? vaultError.message : vaultError)
     throw new Error('Failed to update tokens in vault - please reconnect Spotify')
   } finally {
     await pool.end()
@@ -246,8 +247,8 @@ export async function validateVaultSecrets(connection: SpotifyConnection): Promi
     } finally {
       connection_pg.release()
     }
-  } catch (error: any) {
-    console.error('Failed to validate vault secrets:', error.message)
+  } catch (error: unknown) {
+    console.error('Failed to validate vault secrets:', error instanceof Error ? error.message : error)
     return {
       valid: false,
       error: 'Failed to validate vault secrets - please try again'
@@ -275,7 +276,7 @@ export async function fetchWithTokenRetry(
   return res
 }
 
-export async function getValidAccessToken(connection: SpotifyConnection, supabaseAdmin: any, userId: string, forceRefresh = false): Promise<string> {
+export async function getValidAccessToken(connection: SpotifyConnection, supabaseAdmin: SupabaseClient, userId: string, forceRefresh = false): Promise<string> {
   if (forceRefresh) {
     console.log('🎵 SPOTIFY TOKEN force-refreshing (bypass expiry check)')
     const refreshResult = await refreshSpotifyToken(connection, supabaseAdmin, userId)
@@ -342,8 +343,8 @@ export async function getValidAccessToken(connection: SpotifyConnection, supabas
     } finally {
       connection_pg.release()
     }
-  } catch (vaultError: any) {
-    console.error('Failed to retrieve access token from vault:', vaultError.message)
+  } catch (vaultError: unknown) {
+    console.error('Failed to retrieve access token from vault:', vaultError instanceof Error ? vaultError.message : vaultError)
     throw new Error('Failed to retrieve access token from vault - please reconnect Spotify')
   } finally {
     await pool.end()

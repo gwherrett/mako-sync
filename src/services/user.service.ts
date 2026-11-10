@@ -30,7 +30,7 @@ export class UserService {
   /**
    * Get user profile by user ID
    */
-  static async getUserProfile(userId: string): Promise<{ profile: UserProfile | null; error: any }> {
+  static async getUserProfile(userId: string): Promise<{ profile: UserProfile | null; error: unknown }> {
     try {
       const { data, error } = await supabase
         .from('profiles')
@@ -54,7 +54,7 @@ export class UserService {
   /**
    * Update user profile
    */
-  static async updateProfile(userId: string, updates: UpdateProfileData): Promise<{ profile: UserProfile | null; error: any }> {
+  static async updateProfile(userId: string, updates: UpdateProfileData): Promise<{ profile: UserProfile | null; error: unknown }> {
     try {
       const { data, error } = await supabase
         .from('profiles')
@@ -79,7 +79,7 @@ export class UserService {
   /**
    * Get user role
    */
-  static async getUserRole(userId: string): Promise<{ role: 'admin' | 'user' | null; error: any }> {
+  static async getUserRole(userId: string): Promise<{ role: 'admin' | 'user' | null; error: unknown }> {
     try {
       const { data, error } = await supabase
         .from('user_roles')
@@ -103,7 +103,7 @@ export class UserService {
   /**
    * Check if user has specific role
    */
-  static async hasRole(userId: string, role: 'admin' | 'user'): Promise<{ hasRole: boolean; error: any }> {
+  static async hasRole(userId: string, role: 'admin' | 'user'): Promise<{ hasRole: boolean; error: unknown }> {
     try {
       const { data, error } = await supabase.rpc('has_role', {
         _user_id: userId,
@@ -126,7 +126,7 @@ export class UserService {
   /**
    * Get all user roles (admin only)
    */
-  static async getAllUserRoles(): Promise<{ roles: UserRole[]; error: any }> {
+  static async getAllUserRoles(): Promise<{ roles: UserRole[]; error: unknown }> {
     try {
       const { data, error } = await supabase
         .from('user_roles')
@@ -151,7 +151,7 @@ export class UserService {
   /**
    * Update user role (admin only)
    */
-  static async updateUserRole(userId: string, role: 'admin' | 'user'): Promise<{ success: boolean; error: any }> {
+  static async updateUserRole(userId: string, role: 'admin' | 'user'): Promise<{ success: boolean; error: unknown }> {
     try {
       const { error } = await supabase
         .from('user_roles')
@@ -174,7 +174,7 @@ export class UserService {
   /**
    * Complete onboarding
    */
-  static async completeOnboarding(userId: string): Promise<{ success: boolean; error: any }> {
+  static async completeOnboarding(userId: string): Promise<{ success: boolean; error: unknown }> {
     try {
       const { error } = await supabase
         .from('profiles')

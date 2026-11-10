@@ -223,7 +223,7 @@ export class NormalizationService {
     if (!artist) return { primary: '', featured: [] };
 
     // Standardize featuring notation first
-    let normalized = this.standardizeFeatures(artist);
+    const normalized = this.standardizeFeatures(artist);
 
     // Split on "feat"
     const parts = normalized.split(/\s+feat\s+/i);

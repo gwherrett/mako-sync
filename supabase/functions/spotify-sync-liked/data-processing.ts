@@ -6,7 +6,7 @@ export function extractUniqueArtistIds(allTracks: SpotifyTrack[]): string[] {
   
   allTracks.forEach(item => {
     if (item.track?.artists) {
-      item.track.artists.forEach((artist: any) => {
+      item.track.artists.forEach(artist => {
         if (artist?.id) {
           artistIds.add(artist.id)
         }
@@ -45,7 +45,7 @@ export function processSongsData(allTracks: SpotifyTrack[], userId: string, sync
     }
     
     const title = item.track.name;
-    const artist = item.track.artists.map((artist: any) => artist.name).join(', ');
+    const artist = item.track.artists.map(artist => artist.name).join(', ');
     const { normalized_title, normalized_artist, core_title, primary_artist, featured_artists, mix } = processMetadata(title, artist);
 
     return {

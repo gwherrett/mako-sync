@@ -3,6 +3,8 @@ import { Loader2, RefreshCw, RotateCcw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useUnifiedSpotifyAuth } from '@/hooks/useUnifiedSpotifyAuth';
 import { supabase } from '@/integrations/supabase/client';
+import type { Tables } from '@/integrations/supabase/types';
+import type { RealtimePostgresChangesPayload } from '@supabase/supabase-js';
 import { Progress } from '@/components/ui/progress';
 import { toast } from '@/hooks/use-toast';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -105,16 +107,18 @@ const SpotifySyncButton = () => {
           schema: 'public',
           table: 'sync_progress'
         },
-        (payload: any) => {
-          if (payload.new?.status === 'in_progress') {
+        (payload: RealtimePostgresChangesPayload<Tables<'sync_progress'>>) => {
+          // payload.new is the updated row, or {} for a delete.
+          const row = payload.new as Partial<Tables<'sync_progress'>>;
+          if (row.status === 'in_progress') {
             const progress: SyncProgressData = {
-              tracks_processed: payload.new.tracks_processed,
-              total_tracks: payload.new.total_tracks,
-              is_full_sync: payload.new.is_full_sync,
-              new_tracks_added: payload.new.new_tracks_added,
-              last_sync_completed_at: payload.new.last_sync_completed_at,
-              status: payload.new.status as 'in_progress' | 'completed' | 'failed',
-              created_at: payload.new.created_at
+              tracks_processed: row.tracks_processed,
+              total_tracks: row.total_tracks,
+              is_full_sync: row.is_full_sync,
+              new_tracks_added: row.new_tracks_added,
+              last_sync_completed_at: row.last_sync_completed_at,
+              status: row.status as 'in_progress' | 'completed' | 'failed',
+              created_at: row.created_at
             };
             setSyncProgress(progress);
             
@@ -140,8 +144,8 @@ const SpotifySyncButton = () => {
                 }, 500); // Debounce toasts by 500ms
               }
             }
-          } else if (payload.new?.status === 'completed') {
-            const completedSync = payload.new;
+          } else if (row.status === 'completed') {
+            const completedSync = row;
             setSyncProgress(null);
             setEstimatedTimeRemaining(null);
             
@@ -165,7 +169,7 @@ const SpotifySyncButton = () => {
                 description: `${syncType} completed • No new tracks found`,
               });
             }
-          } else if (payload.new?.status === 'failed') {
+          } else if (row.status === 'failed') {
             setSyncProgress(null);
             setEstimatedTimeRemaining(null);
             toast({

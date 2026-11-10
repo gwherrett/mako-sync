@@ -6,6 +6,7 @@
  */
 
 import StorageManagerService from '@/services/storageManager.service';
+import { getErrorMessage } from '@/utils/errorUtils';
 
 export interface IsolationTestResult {
   testName: string;
@@ -131,11 +132,11 @@ export class StorageIsolationTester {
         details: afterCleanup ? 'Successfully cleaned test keys' : 'Failed to clean test keys',
         duration: Date.now() - startTime
       };
-    } catch (error: any) {
+    } catch (error: unknown) {
       return {
         testName: 'Basic Storage Cleanup',
         passed: false,
-        details: `Error: ${error.message}`,
+        details: `Error: ${getErrorMessage(error)}`,
         duration: Date.now() - startTime
       };
     }
@@ -174,11 +175,11 @@ export class StorageIsolationTester {
           'Failed to clean only specified category',
         duration: Date.now() - startTime
       };
-    } catch (error: any) {
+    } catch (error: unknown) {
       return {
         testName: 'Category-Specific Cleanup',
         passed: false,
-        details: `Error: ${error.message}`,
+        details: `Error: ${getErrorMessage(error)}`,
         duration: Date.now() - startTime
       };
     }
@@ -217,11 +218,11 @@ export class StorageIsolationTester {
           'Failed to preserve persistent keys',
         duration: Date.now() - startTime
       };
-    } catch (error: any) {
+    } catch (error: unknown) {
       return {
         testName: 'Persistent Key Preservation',
         passed: false,
-        details: `Error: ${error.message}`,
+        details: `Error: ${getErrorMessage(error)}`,
         duration: Date.now() - startTime
       };
     }
@@ -262,11 +263,11 @@ export class StorageIsolationTester {
           'Failed to detect stale keys',
         duration: Date.now() - startTime
       };
-    } catch (error: any) {
+    } catch (error: unknown) {
       return {
         testName: 'Stale Key Detection',
         passed: false,
-        details: `Error: ${error.message}`,
+        details: `Error: ${getErrorMessage(error)}`,
         duration: Date.now() - startTime
       };
     }
@@ -299,11 +300,11 @@ export class StorageIsolationTester {
           'Failed to create isolated session',
         duration: Date.now() - startTime
       };
-    } catch (error: any) {
+    } catch (error: unknown) {
       return {
         testName: 'Session Isolation',
         passed: false,
-        details: `Error: ${error.message}`,
+        details: `Error: ${getErrorMessage(error)}`,
         duration: Date.now() - startTime
       };
     }
@@ -339,11 +340,11 @@ export class StorageIsolationTester {
           'Failed to detect cross-storage contamination',
         duration: Date.now() - startTime
       };
-    } catch (error: any) {
+    } catch (error: unknown) {
       return {
         testName: 'Cross-Storage Contamination Detection',
         passed: false,
-        details: `Error: ${error.message}`,
+        details: `Error: ${getErrorMessage(error)}`,
         duration: Date.now() - startTime
       };
     }
@@ -375,11 +376,11 @@ export class StorageIsolationTester {
           'Failed to migrate version',
         duration: Date.now() - startTime
       };
-    } catch (error: any) {
+    } catch (error: unknown) {
       return {
         testName: 'Version Migration',
         passed: false,
-        details: `Error: ${error.message}`,
+        details: `Error: ${getErrorMessage(error)}`,
         duration: Date.now() - startTime
       };
     }

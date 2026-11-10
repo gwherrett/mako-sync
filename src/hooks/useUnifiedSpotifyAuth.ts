@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { SpotifyAuthManager, type SpotifyAuthState, type SpotifyOperationResult } from '@/services/spotifyAuthManager.service';
 import type { SpotifyConnection } from '@/types/spotify';
+import { errorFields } from '@/utils/errorUtils';
 import { useAuth } from '@/contexts/NewAuthContext';
 
 /**
@@ -195,11 +196,11 @@ export const useUnifiedSpotifyAuth = (config: UseUnifiedSpotifyAuthConfig = {}):
         });
         return false;
       }
-    } catch (error: any) {
-      console.log('🎵 SPOTIFY: ✗ Connection error:', error.message);
+    } catch (error: unknown) {
+      console.log('🎵 SPOTIFY: ✗ Connection error:', errorFields(error).message);
       toast({
         title: "Connection Error",
-        description: error.message || "An unexpected error occurred",
+        description: errorFields(error).message || "An unexpected error occurred",
         variant: "destructive",
       });
       return false;
@@ -235,11 +236,11 @@ export const useUnifiedSpotifyAuth = (config: UseUnifiedSpotifyAuthConfig = {}):
         });
         return false;
       }
-    } catch (error: any) {
-      console.log('🎵 SPOTIFY: ✗ Disconnect error:', error.message);
+    } catch (error: unknown) {
+      console.log('🎵 SPOTIFY: ✗ Disconnect error:', errorFields(error).message);
       toast({
         title: "Disconnect Error",
-        description: error.message || "An unexpected error occurred",
+        description: errorFields(error).message || "An unexpected error occurred",
         variant: "destructive",
       });
       return false;
@@ -272,10 +273,10 @@ export const useUnifiedSpotifyAuth = (config: UseUnifiedSpotifyAuthConfig = {}):
         });
         return false;
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         title: "Refresh Error",
-        description: error.message || "An unexpected error occurred",
+        description: errorFields(error).message || "An unexpected error occurred",
         variant: "destructive",
       });
       return false;
@@ -316,10 +317,10 @@ export const useUnifiedSpotifyAuth = (config: UseUnifiedSpotifyAuthConfig = {}):
         });
         return false;
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         title: "Sync Error",
-        description: error.message || "An unexpected error occurred",
+        description: errorFields(error).message || "An unexpected error occurred",
         variant: "destructive",
       });
       return false;
@@ -333,8 +334,8 @@ export const useUnifiedSpotifyAuth = (config: UseUnifiedSpotifyAuthConfig = {}):
     try {
       const result = await authManager.current.checkConnection(force);
       return result.success;
-    } catch (error: any) {
-      console.error('🎵 SPOTIFY: Connection check failed:', error.message);
+    } catch (error: unknown) {
+      console.error('🎵 SPOTIFY: Connection check failed:', errorFields(error).message);
       return false;
     }
   }, []);
@@ -358,10 +359,10 @@ export const useUnifiedSpotifyAuth = (config: UseUnifiedSpotifyAuthConfig = {}):
         });
         return false;
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         title: "Health Check Error",
-        description: error.message || "An unexpected error occurred",
+        description: errorFields(error).message || "An unexpected error occurred",
         variant: "destructive",
       });
       return false;
@@ -387,10 +388,10 @@ export const useUnifiedSpotifyAuth = (config: UseUnifiedSpotifyAuthConfig = {}):
         });
         return false;
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         title: "Security Validation Error",
-        description: error.message || "An unexpected error occurred",
+        description: errorFields(error).message || "An unexpected error occurred",
         variant: "destructive",
       });
       return false;
@@ -410,10 +411,10 @@ export const useUnifiedSpotifyAuth = (config: UseUnifiedSpotifyAuthConfig = {}):
 
     try {
       return await lastOperation();
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         title: "Retry Failed",
-        description: error.message || "Failed to retry operation",
+        description: errorFields(error).message || "Failed to retry operation",
         variant: "destructive",
       });
       return false;
