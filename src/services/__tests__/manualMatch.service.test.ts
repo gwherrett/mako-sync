@@ -1,5 +1,10 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { ManualMatchService, DB_BATCH_SIZE, type TrackMatchDecision } from '../manualMatch.service';
+import {
+  ManualMatchService,
+  DB_BATCH_SIZE,
+  findNewDownloadIds,
+  type TrackMatchDecision,
+} from '../manualMatch.service';
 import type { LocalTrack, SpotifyTrack } from '../trackMatchingEngine';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -116,6 +121,7 @@ const LIBRARY = {
 function summarise(review: Awaited<ReturnType<typeof ManualMatchService.getCandidatesForReview>>) {
   return {
     autoConfirmed: review.autoConfirmed.map(m => `${m.spotifyTrack.id}→${m.localTrack.id}`),
+    toApprove: review.toApprove.map(r => `${r.spotifyTrack.id}→${r.candidate?.id ?? 'none'} (tier ${r.tier})`),
     toReview: review.toReview.map(r => `${r.spotifyTrack.id}→${r.candidate?.id ?? 'none'} (tier ${r.tier})`),
     confirmedMissing: review.confirmedMissing.map(m => m.spotifyTrack.id),
   };
@@ -145,6 +151,7 @@ describe('ManualMatchService', () => {
 
       expect(summarise(review)).toEqual({
         autoConfirmed: ['s1→l1'],
+        toApprove: [],
         toReview: ['s2→l2 (tier 2)', 's3→l3 (tier 3)', 's4→none (tier null)'],
         confirmedMissing: [],
       });
@@ -167,6 +174,7 @@ describe('ManualMatchService', () => {
 
       expect(summarise(review)).toEqual({
         autoConfirmed: ['s1→l1'],
+        toApprove: [],
         toReview: ['s3→l3 (tier 3)'],
         confirmedMissing: [],
       });
@@ -187,6 +195,7 @@ describe('ManualMatchService', () => {
       // Both tracks stay in the queue with no candidate, so the person can pick or confirm missing.
       expect(summarise(review)).toEqual({
         autoConfirmed: [],
+        toApprove: [],
         toReview: ['s1→none (tier null)', 's2→none (tier null)', 's3→l3 (tier 3)', 's4→none (tier null)'],
         confirmedMissing: [],
       });
@@ -207,6 +216,7 @@ describe('ManualMatchService', () => {
 
       expect(summarise(review)).toEqual({
         autoConfirmed: [],
+        toApprove: [],
         toReview: ['s2→l2 (tier 2)', 's3→l3 (tier 3)'],
         confirmedMissing: ['s1', 's4'],
       });
@@ -275,8 +285,93 @@ describe('ManualMatchService', () => {
 
       const review = await ManualMatchService.getCandidatesForReview('user-1');
 
-      expect(review).toEqual({ autoConfirmed: [], toReview: [], confirmedMissing: [], localTracks: [] });
+      expect(review).toEqual({ autoConfirmed: [], toApprove: [], toReview: [], confirmedMissing: [], localTracks: [] });
       expect(calls.filter(call => call.table === 'track_matches')).toEqual([]);
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // New downloads
+  // ---------------------------------------------------------------------------
+
+  describe('new downloads', () => {
+    /** LIBRARY, imported a year ago, with l1 and l3 downloaded in the last few days. */
+    const withDownloads = () => ({
+      ...LIBRARY,
+      local_mp3s: LIBRARY.local_mp3s.map(track => ({
+        ...track,
+        created_at:
+          track.id === 'l1' ? '2026-11-05T00:00:00.000Z'
+          : track.id === 'l3' ? '2026-11-07T00:00:00.000Z'
+          : '2025-11-01T00:00:00.000Z',
+      })),
+      track_matches: [],
+    });
+
+    it('puts matches for new downloads in toApprove at every tier, newest file first', async () => {
+      mockSupabase(withDownloads());
+
+      const review = summarise(await ManualMatchService.getCandidatesForReview('user-1'));
+
+      expect(review.toApprove).toEqual(['s3→l3 (tier 3)', 's1→l1 (tier 1)']);
+      expect(review.autoConfirmed).toEqual([]);
+      expect(review.toReview).toEqual(['s2→l2 (tier 2)', 's4→none (tier null)']);
+    });
+
+    it('does not auto-confirm a Tier 1 match for a new download', async () => {
+      const calls = mockSupabase(withDownloads());
+
+      const written = await ManualMatchService.bulkAutoConfirmTier1('user-1');
+
+      expect(written).toBe(0);
+      expect(queriesWith(calls, 'upsert')).toEqual([]);
+    });
+
+    it('leaves a confirmed new download out of toApprove', async () => {
+      mockSupabase({
+        ...withDownloads(),
+        track_matches: [decision('tm-1', 's1', 'l1', true, { match_method: 'tier1_exact' })],
+      });
+
+      const review = summarise(await ManualMatchService.getCandidatesForReview('user-1'));
+
+      expect(review.toApprove).toEqual(['s3→l3 (tier 3)']);
+      expect(review.autoConfirmed).toEqual(['s1→l1']);
+    });
+  });
+
+  describe('findNewDownloadIds', () => {
+    const now = new Date(NOW);
+    const at = (id: string, createdAt: string | null) => ({ ...local(id, id, 'Artist'), created_at: createdAt });
+
+    it('treats the initial import as not new, even when it was recent', () => {
+      const ids = findNewDownloadIds(
+        [
+          at('import-1', '2026-11-01T10:00:00.000Z'),
+          at('import-2', '2026-11-01T20:00:00.000Z'),
+          at('download', '2026-11-04T00:00:00.000Z'),
+        ],
+        now
+      );
+
+      expect([...ids]).toEqual(['download']);
+    });
+
+    it('only counts files added in the last 30 days', () => {
+      const ids = findNewDownloadIds(
+        [
+          at('import', '2025-01-01T00:00:00.000Z'),
+          at('old', '2026-10-01T00:00:00.000Z'),
+          at('recent', '2026-10-20T00:00:00.000Z'),
+        ],
+        now
+      );
+
+      expect([...ids]).toEqual(['recent']);
+    });
+
+    it('ignores files with no scan time', () => {
+      expect(findNewDownloadIds([at('a', null), local('b', 'b', 'Artist')], now).size).toBe(0);
     });
   });
 

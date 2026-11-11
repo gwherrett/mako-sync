@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { AlertCircle, CheckCircle2, ChevronDown, ChevronRight, Filter, ListChecks, Loader2, Music } from 'lucide-react';
+import { AlertCircle, CheckCircle2, ChevronDown, ChevronRight, Download, Filter, ListChecks, Loader2, Music } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
@@ -9,7 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { ToastAction } from '@/components/ui/toast';
 import { useToast } from '@/hooks/use-toast';
 import { useMatchReview, useReviewFilterOptions } from '@/hooks/useMatchReview';
-import type { AutoConfirmedMatch, ReviewItem } from '@/services/manualMatch.service';
+import { NEW_DOWNLOAD_WINDOW_DAYS, type AutoConfirmedMatch, type ReviewItem } from '@/services/manualMatch.service';
 import type { MatchCandidateFilters } from '@/services/trackMatching.service';
 import type { LocalTrack } from '@/services/trackMatchingEngine';
 import { DANCE_ALL_VALUE, SUPERDJ_LABEL } from '@/types/genreMapping';
@@ -43,6 +43,7 @@ const ReviewMatches: React.FC<ReviewMatchesProps> = ({ superGenres }) => {
 
   const [pendingIds, setPendingIds] = useState<ReadonlySet<string>>(new Set());
   const [queueLimit, setQueueLimit] = useState(QUEUE_PAGE_SIZE);
+  const [approveLimit, setApproveLimit] = useState(QUEUE_PAGE_SIZE);
   const [summaryOpen, setSummaryOpen] = useState(false);
   const [summaryLimit, setSummaryLimit] = useState(SUMMARY_PAGE_SIZE);
 
@@ -93,6 +94,7 @@ const ReviewMatches: React.FC<ReviewMatchesProps> = ({ superGenres }) => {
     }
     toast({ title: `${confirmed} exact ${plural(confirmed, 'match', 'matches')} confirmed` });
     setQueueLimit(QUEUE_PAGE_SIZE);
+    setApproveLimit(QUEUE_PAGE_SIZE);
     setSummaryLimit(SUMMARY_PAGE_SIZE);
     setLoadedFilters(filters);
   };
@@ -184,6 +186,7 @@ const ReviewMatches: React.FC<ReviewMatchesProps> = ({ superGenres }) => {
   };
 
   const hasFilters = superGenre !== 'all' || genre !== 'all' || artist !== 'all';
+  const toApprove = queue?.toApprove ?? [];
   const toReview = queue?.toReview ?? [];
   const autoConfirmed = queue?.autoConfirmed ?? [];
   const showQueueCard = isLoading || !!error || !!queue;
@@ -197,8 +200,9 @@ const ReviewMatches: React.FC<ReviewMatchesProps> = ({ superGenres }) => {
             Review Matches
           </CardTitle>
           <CardDescription>
-            Exact matches are confirmed for you. Check the rest: confirm the suggested file, pick another, or
-            mark the track as missing. Each decision saves straight away.
+            Exact matches are confirmed for you, except for new downloads, which wait for your approval. Check
+            the rest: confirm the suggested file, pick another, or mark the track as missing. Each decision
+            saves straight away.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -290,6 +294,51 @@ const ReviewMatches: React.FC<ReviewMatchesProps> = ({ superGenres }) => {
           limit={summaryLimit}
           onShowMore={() => setSummaryLimit(limit => limit + SUMMARY_PAGE_SIZE)}
         />
+      )}
+
+      {queue && !isLoading && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Download className="h-5 w-5" />
+              Potential Matches
+            </CardTitle>
+            <CardDescription>
+              {toApprove.length > 0
+                ? `${toApprove.length} ${plural(toApprove.length, 'match', 'matches')} for files added in the last ` +
+                  `${NEW_DOWNLOAD_WINDOW_DAYS} days ${plural(toApprove.length, 'needs', 'need')} your approval. ` +
+                  'Newest downloads first.'
+                : `No new downloads waiting for approval. Files added in the last ${NEW_DOWNLOAD_WINDOW_DAYS} days ` +
+                  'appear here once they match a liked track.'}
+            </CardDescription>
+          </CardHeader>
+          {toApprove.length > 0 && (
+            <CardContent className="space-y-4">
+              <ReviewQueueTable
+                items={toApprove.slice(0, approveLimit)}
+                localTracks={queue.localTracks}
+                pendingIds={pendingIds}
+                onConfirm={handleConfirm}
+                onPick={handlePick}
+                onConfirmMissing={handleConfirmMissing}
+              />
+              {toApprove.length > approveLimit && (
+                <div className="flex items-center justify-between text-sm text-muted-foreground">
+                  <span>
+                    Showing {approveLimit} of {toApprove.length}. More rows move up as you decide.
+                  </span>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setApproveLimit(limit => limit + QUEUE_PAGE_SIZE)}
+                  >
+                    Show more
+                  </Button>
+                </div>
+              )}
+            </CardContent>
+          )}
+        </Card>
       )}
 
       {showQueueCard && (

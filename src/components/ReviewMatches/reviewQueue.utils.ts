@@ -13,8 +13,14 @@ export interface TierBadge {
 /** The most local files the picker lists at once. Typing narrows the list. */
 export const PICKER_RESULT_LIMIT = 50;
 
-/** Badge text and colour for a queue row: Core Title is neutral, Fuzzy is amber, No Match is muted. */
+/**
+ * Badge text and colour for a queue row: Exact is green, Core Title is neutral, Fuzzy is amber,
+ * No Match is muted.
+ */
 export function getTierBadge(item: Pick<ReviewItem, 'tier' | 'similarity'>): TierBadge {
+  if (item.tier === 1) {
+    return { label: 'Exact', className: 'border-green-600/50 bg-green-600/10 text-green-600' };
+  }
   if (item.tier === 2) {
     // Not the `secondary` token: it is the theme's red, which would read as a warning.
     return { label: 'Core Title', className: 'border-transparent bg-muted text-foreground' };

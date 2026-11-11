@@ -17,6 +17,8 @@ export interface LocalTrack {
   album: string | null;
   genre: string | null;
   file_path: string;
+  /** When the file was first scanned into the library. Used to spot new downloads. */
+  created_at?: string | null;
 }
 
 export interface SpotifyTrack {

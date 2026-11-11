@@ -40,7 +40,7 @@ function reviewItem(id: string): ReviewItem {
 }
 
 function queueOf(...ids: string[]): ReviewCandidates {
-  return { autoConfirmed: [], toReview: ids.map(reviewItem), confirmedMissing: [], localTracks: [] };
+  return { autoConfirmed: [], toApprove: [], toReview: ids.map(reviewItem), confirmedMissing: [], localTracks: [] };
 }
 
 function setup() {
