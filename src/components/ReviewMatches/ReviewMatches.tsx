@@ -487,7 +487,7 @@ interface SourceToggleProps {
   onSourceChange?: (source: ReviewSource) => void;
 }
 
-/** Spotify / Vinyl / Both buttons, moved from MissingTracksAnalyzer. */
+/** Spotify / Vinyl / Both buttons, moved from the old Missing Tracks tab. */
 function SourceToggle({ source, onSourceChange }: SourceToggleProps) {
   return (
     <div className="flex flex-wrap items-center gap-2" role="group" aria-label="Source">

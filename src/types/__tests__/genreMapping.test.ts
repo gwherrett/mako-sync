@@ -4,7 +4,6 @@ import {
   DANCE_SUPER_GENRES,
   SUPERDJ_LABEL,
   applySuperGenreFilter,
-  getSuperGenreFilterLabel,
 } from '../genreMapping';
 
 const makeQuery = () => {
@@ -16,18 +15,6 @@ const makeQuery = () => {
 };
 
 describe('genreMapping SuperDJ group', () => {
-  describe('getSuperGenreFilterLabel', () => {
-    it('labels the group sentinel as SuperDJ', () => {
-      expect(SUPERDJ_LABEL).toBe('SuperDJ');
-      expect(getSuperGenreFilterLabel(DANCE_ALL_VALUE)).toBe('SuperDJ');
-    });
-
-    it('returns an individual SuperGenre unchanged, including Dance', () => {
-      expect(getSuperGenreFilterLabel('House')).toBe('House');
-      expect(getSuperGenreFilterLabel('Dance')).toBe('Dance');
-    });
-  });
-
   describe('applySuperGenreFilter', () => {
     it('expands the SuperDJ sentinel into an .in() match on the group', () => {
       const query = makeQuery();

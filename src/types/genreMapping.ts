@@ -73,9 +73,6 @@ export const DANCE_ALL_VALUE = '__dance_all__';
 // Display label for the DANCE_ALL_VALUE option.
 export const SUPERDJ_LABEL = 'SuperDJ';
 
-export const getSuperGenreFilterLabel = (value: string): string =>
-  value === DANCE_ALL_VALUE ? SUPERDJ_LABEL : value;
-
 /** The two filter methods applySuperGenreFilter calls on a Supabase query builder. */
 interface SuperGenreFilterable {
   eq(column: 'super_genre', value: string): this;

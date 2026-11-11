@@ -1,6 +1,6 @@
 # Manual Match Review: Architecture + UI Plan
 
-**Status:** In progress. Phase 0 ([MAK-151](https://linear.app/mako-sync/issue/MAK-151)) and Phase 0.5 ([MAK-152](https://linear.app/mako-sync/issue/MAK-152), closed 2026-10-18) are done. Phase 1 ([MAK-153](https://linear.app/mako-sync/issue/MAK-153)) was applied to production on 2026-11-08 and passed its acceptance checks. Part 2 UI 1 ([MAK-180](https://linear.app/mako-sync/issue/MAK-180)) is done. UI 2 ([MAK-181](https://linear.app/mako-sync/issue/MAK-181)) replaces the Missing Tracks tab with Review Matches; UI 3 ([MAK-182](https://linear.app/mako-sync/issue/MAK-182)) then deletes `MissingTracksAnalyzer.tsx`.
+**Status:** Done. Phase 0 ([MAK-151](https://linear.app/mako-sync/issue/MAK-151)), Phase 0.5 ([MAK-152](https://linear.app/mako-sync/issue/MAK-152)) and Phase 1 ([MAK-153](https://linear.app/mako-sync/issue/MAK-153)) are done. Part 2 UI 1 ([MAK-180](https://linear.app/mako-sync/issue/MAK-180)) added the review queue, UI 2 ([MAK-181](https://linear.app/mako-sync/issue/MAK-181)) replaced the Missing Tracks tab with Review Matches, and UI 3 ([MAK-182](https://linear.app/mako-sync/issue/MAK-182)) deleted `MissingTracksAnalyzer.tsx`, `SyncAnalysis.tsx` and `TrackMatchingService.findMissingTracks()`. The file names below describe the codebase as it was when the plan was written.
 **Linear project:** [Manual Match Review](https://linear.app/mako-sync/project/manual-match-review-67092b2d3c1b)
 
 ---

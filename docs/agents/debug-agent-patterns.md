@@ -37,7 +37,7 @@ const { data, error } = await supabase
 - `src/hooks/useLocalScanner.ts` — loads existing hashes on rescan
 - `src/components/LocalTracksTable.tsx` — table display query
 - `src/components/StatsOverview.tsx` — counts/aggregates across full library
-- `src/components/MissingTracksAnalyzer.tsx` — loads both Spotify and local sets
+- `src/services/manualMatch.service.ts` — loads both Spotify and local sets for the Review Matches queue
 
 ---
 

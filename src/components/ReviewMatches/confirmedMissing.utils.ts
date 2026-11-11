@@ -4,7 +4,7 @@ import type { SuperGenre } from '@/types/genreMapping';
 import type { SlskdTrackToSync } from '@/types/slskd';
 
 /**
- * Helpers for the Confirmed Missing section. Moved from MissingTracksAnalyzer (MAK-181), and
+ * Helpers for the Confirmed Missing section. Moved from the old Missing Tracks tab (MAK-181), and
  * kept the same so the CSV and the slskd payload match what the old Missing Tracks tab made.
  */
 
