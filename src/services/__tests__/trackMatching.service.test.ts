@@ -396,10 +396,8 @@ describe('TrackMatchingService', () => {
       expect(results).toHaveLength(1500);
       expect(results.filter(r => r.matched).map(r => r.spotifyTrack.id)).toEqual(['s1400']);
     });
-  });
 
-  describe('findMissingTracks', () => {
-    it('returns the same misses as the old inline tier logic for a mixed library', async () => {
+    it('leaves the same tracks unmatched as the old inline tier logic for a mixed library', async () => {
       // Expected misses were recorded by running this fixture against the inline tier logic
       // this service had before it called the engine.
       mockTables({
@@ -424,102 +422,15 @@ describe('TrackMatchingService', () => {
         ],
       });
 
-      const result = await TrackMatchingService.findMissingTracks('user-123');
+      const { results } = await TrackMatchingService.getMatchCandidates('user-123');
 
-      expect(result.map(r => r.spotifyTrack.id)).toEqual(['s5', 's6', 's7']);
-      expect(result.every(r => r.reason === 'No matching local track found')).toBe(true);
+      expect(results.filter(r => !r.matched).map(r => r.spotifyTrack.id)).toEqual(['s5', 's6', 's7']);
     });
 
-    it('returns the MissingTrack shape', async () => {
-      const missing = spotify('s2', 'Missing Track', 'Artist Two');
-      mockTables({
-        local_mp3s: [local('1', 'Local Track', 'Artist One')],
-        spotify_liked: [spotify('s1', 'Local Track', 'Artist One'), missing],
-      });
-
-      const result = await TrackMatchingService.findMissingTracks('user-123');
-
-      expect(result).toEqual([{ spotifyTrack: missing, reason: 'No matching local track found' }]);
-    });
-
-    it('should return empty array when all tracks match', async () => {
-      mockTables({
-        local_mp3s: [local('1', 'Track One', 'Artist')],
-        spotify_liked: [spotify('s1', 'Track One', 'Artist')],
-      });
-
-      expect(await TrackMatchingService.findMissingTracks('user-123')).toHaveLength(0);
-    });
-
-    it('should handle case-insensitive matching', async () => {
-      mockTables({
-        local_mp3s: [local('1', 'TRACK ONE', 'ARTIST')],
-        spotify_liked: [spotify('s1', 'track one', 'artist')],
-      });
-
-      expect(await TrackMatchingService.findMissingTracks('user-123')).toHaveLength(0);
-    });
-
-    it('should handle null titles and artists', async () => {
-      mockTables({
-        local_mp3s: [local('1', null, null)],
-        spotify_liked: [spotify('s1', 'Some Track', 'Some Artist')],
-      });
-
-      // Won't match null with actual values
-      expect(await TrackMatchingService.findMissingTracks('user-123')).toHaveLength(1);
-    });
-
-    it('should normalize special characters in matching', async () => {
-      mockTables({
-        local_mp3s: [local('1', 'Track: One!', "Artist's Name")],
-        spotify_liked: [spotify('s1', 'Track One', 'Artists Name')],
-      });
-
-      expect(await TrackMatchingService.findMissingTracks('user-123')).toHaveLength(0);
-    });
-
-    it('matches a cross-compared mix title (Tier 2b) that the old inline logic missed', async () => {
-      // The inline tier logic had no Tier 2b, so it listed this track as missing.
-      // The engine matches the Spotify full title against the local core title.
-      mockTables({
-        local_mp3s: [local('l1', 'Zombie Herd Mix (Extended)', 'Fela Kuti')],
-        spotify_liked: [spotify('s1', 'Zombie (Herd Mix)', 'Fela Kuti')],
-      });
-
-      expect(await TrackMatchingService.findMissingTracks('user-123')).toHaveLength(0);
-    });
-
-    it('passes all filters to the Spotify fetch', async () => {
-      const calls = mockTables({
-        local_mp3s: [],
-        spotify_liked: [spotify('s1', 'Rock Track', 'Artist', { super_genre: 'Rock' })],
-      });
-
-      const result = await TrackMatchingService.findMissingTracks('user-123', 'Rock', 'rock', 'Artist');
-
-      expect(result).toHaveLength(1);
-      expect(argsOf(calls, 'spotify_liked', 'eq')).toEqual([
-        ['user_id', 'user-123'],
-        ['super_genre', 'Rock'],
-        ['genre', 'rock'],
-        ['artist', 'Artist'],
-      ]);
-    });
-
-    it('should use fuzzy matching for minor typos', async () => {
-      mockTables({
-        local_mp3s: [local('1', 'Track Nme', 'Artist')],
-        spotify_liked: [spotify('s1', 'Track Name', 'Artist')],
-      });
-
-      expect(await TrackMatchingService.findMissingTracks('user-123')).toHaveLength(0);
-    });
-
-    it('should propagate fetch errors', async () => {
+    it('propagates fetch errors', async () => {
       mockTables({ spotify_liked: [] }, { local_mp3s: { message: 'Database error' } });
 
-      await expect(TrackMatchingService.findMissingTracks('user-123'))
+      await expect(TrackMatchingService.getMatchCandidates('user-123'))
         .rejects.toThrow('Failed to fetch local tracks: Database error');
     });
   });

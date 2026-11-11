@@ -93,11 +93,6 @@ export interface VinylGapRecord {
   matched: LocalTrack[];
 }
 
-interface MissingTrack {
-  spotifyTrack: SpotifyTrack;
-  reason: string;
-}
-
 // Debug mode - set to true to log detailed matching info for specific tracks
 const DEBUG_MATCHING = true;
 // Add artist/title substrings to debug specific tracks (case-insensitive)
@@ -223,27 +218,6 @@ export class TrackMatchingService {
     if (DEBUG_MATCHING) logDebugResults(results, localTracks);
 
     return { results, localTracks, allLocalTracks };
-  }
-
-  // Find missing tracks (Spotify tracks not in local collection)
-  static async findMissingTracks(
-    userId: string,
-    superGenreFilter?: string,
-    genreFilter?: string,
-    artistFilter?: string
-  ): Promise<MissingTrack[]> {
-    const { results } = await this.getMatchCandidates(userId, {
-      superGenre: superGenreFilter,
-      genre: genreFilter,
-      artist: artistFilter,
-    });
-
-    return results
-      .filter(result => !result.matched)
-      .map(result => ({
-        spotifyTrack: result.spotifyTrack,
-        reason: 'No matching local track found',
-      }));
   }
 
   // Cross-reference a vinyl record's Discogs tracklist against the user's local files.

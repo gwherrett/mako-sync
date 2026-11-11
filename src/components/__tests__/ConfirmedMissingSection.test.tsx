@@ -19,7 +19,7 @@ import type { SpotifyTrack } from '@/services/trackMatchingEngine';
 
 /**
  * Tests for the Confirmed Missing section (MAK-181). The CSV, grouping and slskd cases moved
- * here from MissingTracksAnalyzer.test.tsx. The suite runs without a DOM, so the section is
+ * here from the old Missing Tracks tab tests. The suite runs without a DOM, so the section is
  * rendered to static markup and its handlers are tested through the pure helpers they call.
  */
 
