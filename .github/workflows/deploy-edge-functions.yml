@@ -19,8 +19,8 @@ jobs:
       - name: Setup Supabase CLI
         uses: supabase/setup-cli@v3
         with:
-          # Pinned: "latest" jumped to 3.0.0, which prompts before production deploys
-          version: 3.0.0
+          # Pinned to the same major as the `supabase` dev dependency in package.json (v3 prompts before hosted changes; every deploy below passes --yes)
+          version: 3.1.0
 
       - name: Deploy Edge Functions
         env:
