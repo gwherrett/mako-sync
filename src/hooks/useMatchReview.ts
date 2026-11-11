@@ -72,12 +72,10 @@ export function createMatchReviewMutations({
   };
   // The decided track leaves the queue straight away. The refetch then reconciles.
   const decided = (spotifyLikedId: string) => {
-    const undecided = (item: { spotifyTrack: { id: string } }) => item.spotifyTrack.id !== spotifyLikedId;
     queryClient.setQueriesData<ReviewCandidates>({ queryKey: baseKey }, queue =>
       queue && {
         ...queue,
-        toApprove: queue.toApprove.filter(undecided),
-        toReview: queue.toReview.filter(undecided),
+        toReview: queue.toReview.filter(item => item.spotifyTrack.id !== spotifyLikedId),
       }
     );
     invalidate();

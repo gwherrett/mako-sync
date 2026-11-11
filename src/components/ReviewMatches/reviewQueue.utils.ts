@@ -13,14 +13,8 @@ export interface TierBadge {
 /** The most local files the picker lists at once. Typing narrows the list. */
 export const PICKER_RESULT_LIMIT = 50;
 
-/**
- * Badge text and colour for a queue row: Exact is green, Core Title is neutral, Fuzzy is amber,
- * No Match is muted.
- */
+/** Badge text and colour for a queue row: Core Title is neutral, Fuzzy is amber, No Match is muted. */
 export function getTierBadge(item: Pick<ReviewItem, 'tier' | 'similarity'>): TierBadge {
-  if (item.tier === 1) {
-    return { label: 'Exact', className: 'border-green-600/50 bg-green-600/10 text-green-600' };
-  }
   if (item.tier === 2) {
     // Not the `secondary` token: it is the theme's red, which would read as a warning.
     return { label: 'Core Title', className: 'border-transparent bg-muted text-foreground' };
@@ -40,6 +34,19 @@ export function getRowActions(item: Pick<ReviewItem, 'tier' | 'candidate'>): Row
   return item.tier && item.candidate
     ? ['confirm', 'reject', 'confirmMissing']
     : ['pick', 'confirmMissing'];
+}
+
+/**
+ * Split the queue: rows where the engine already found a potential match, and rows with no
+ * candidate. Order within each group is kept.
+ */
+export function splitByCandidate<T extends Pick<ReviewItem, 'candidate'>>(
+  items: T[]
+): { potentialMatches: T[]; noCandidate: T[] } {
+  const potentialMatches: T[] = [];
+  const noCandidate: T[] = [];
+  for (const item of items) (item.candidate ? potentialMatches : noCandidate).push(item);
+  return { potentialMatches, noCandidate };
 }
 
 /** The `match_method` to record for a row's engine suggestion. */

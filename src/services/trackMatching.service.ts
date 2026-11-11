@@ -137,7 +137,7 @@ export class TrackMatchingService {
       (from, to) =>
         supabase
           .from('local_mp3s')
-          .select('id, title, artist, primary_artist, album, genre, file_path, created_at')
+          .select('id, title, artist, primary_artist, album, genre, file_path')
           .eq('user_id', userId)
           .order('id')
           .range(from, to)

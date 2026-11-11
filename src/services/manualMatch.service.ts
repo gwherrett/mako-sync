@@ -54,11 +54,8 @@ export interface ReviewItem {
   spotifyTrack: SpotifyTrack;
   /** The engine's suggestion. Null when the engine found none or the person rejected it. */
   candidate: LocalTrack | null;
-  /**
-   * The tier that suggested `candidate`, or null when there is no candidate. Tier 1 only
-   * appears for a new download, which waits for approval instead of being auto-confirmed.
-   */
-  tier: 1 | 2 | 3 | null;
+  /** The tier that suggested `candidate`, or null when there is no candidate. */
+  tier: 2 | 3 | null;
   /** Title similarity in percent, for Tier 3 candidates. */
   similarity?: number;
   /** Local files already rejected for this track, so a picker can leave them out. */
@@ -76,8 +73,6 @@ export interface ConfirmedMissingTrack {
 
 export interface ReviewCandidates {
   autoConfirmed: AutoConfirmedMatch[];
-  /** Suggestions whose local file is a new download, newest file first. Each has a candidate. */
-  toApprove: ReviewItem[];
   toReview: ReviewItem[];
   confirmedMissing: ConfirmedMissingTrack[];
   /**
@@ -113,45 +108,6 @@ interface ReviewState {
   results: MatchResult[];
   localTracks: LocalTrack[];
   decisionsByTrack: Map<string, TrackMatchDecision[]>;
-  /** Ids of local files that count as new downloads. */
-  newDownloadIds: Set<string>;
-}
-
-/** A file first scanned within this many days is a new download. */
-export const NEW_DOWNLOAD_WINDOW_DAYS = 30;
-/**
- * Files scanned within this long of the library's first file are the initial import, not
- * downloads: otherwise a library scanned for the first time would be all "new".
- */
-export const INITIAL_IMPORT_GRACE_MS = 24 * 60 * 60 * 1000;
-const DAY_MS = 24 * 60 * 60 * 1000;
-
-/**
- * The local files that count as new downloads: first scanned in the last
- * NEW_DOWNLOAD_WINDOW_DAYS days, and after the library's initial import.
- */
-export function findNewDownloadIds(localTracks: LocalTrack[], now: Date = new Date()): Set<string> {
-  const scannedAt = new Map<string, number>();
-  let firstScan = Infinity;
-  for (const track of localTracks) {
-    const time = track.created_at ? Date.parse(track.created_at) : NaN;
-    if (Number.isNaN(time)) continue;
-    scannedAt.set(track.id, time);
-    if (time < firstScan) firstScan = time;
-  }
-
-  const windowStart = now.getTime() - NEW_DOWNLOAD_WINDOW_DAYS * DAY_MS;
-  const importEnd = firstScan + INITIAL_IMPORT_GRACE_MS;
-  const ids = new Set<string>();
-  for (const [id, time] of scannedAt) {
-    if (time >= windowStart && time > importEnd) ids.add(id);
-  }
-  return ids;
-}
-
-function scanTime(track: LocalTrack | null): number {
-  const time = track?.created_at ? Date.parse(track.created_at) : NaN;
-  return Number.isNaN(time) ? 0 : time;
 }
 
 function nowIso(): string {
@@ -205,7 +161,7 @@ async function loadReviewState(userId: string, filters: MatchCandidateFilters): 
     userId,
     new Set(results.map(result => result.spotifyTrack.id))
   );
-  return { results, localTracks, decisionsByTrack, newDownloadIds: findNewDownloadIds(localTracks) };
+  return { results, localTracks, decisionsByTrack };
 }
 
 function confirmedDecision(decisions: TrackMatchDecision[]): TrackMatchDecision | undefined {
@@ -231,14 +187,8 @@ function liveCandidate(result: MatchResult, rejected: Set<string>): LocalTrack |
  * Sort engine results into review groups. A saved decision always wins over the engine:
  * a track with a confirmed row is never queued, and a rejected pair is never suggested again.
  */
-function groupForReview({ results, localTracks, decisionsByTrack, newDownloadIds }: ReviewState): ReviewCandidates {
-  const groups: ReviewCandidates = {
-    autoConfirmed: [],
-    toApprove: [],
-    toReview: [],
-    confirmedMissing: [],
-    localTracks,
-  };
+function groupForReview({ results, localTracks, decisionsByTrack }: ReviewState): ReviewCandidates {
+  const groups: ReviewCandidates = { autoConfirmed: [], toReview: [], confirmedMissing: [], localTracks };
 
   for (const result of results) {
     const { spotifyTrack } = result;
@@ -268,18 +218,6 @@ function groupForReview({ results, localTracks, decisionsByTrack, newDownloadIds
     const rejected = rejectedMp3Ids(decisions);
     const candidate = liveCandidate(result, rejected);
 
-    // A new download waits for approval at every tier, so the person sees it arrive.
-    if (candidate && result.tier && newDownloadIds.has(candidate.id)) {
-      groups.toApprove.push({
-        spotifyTrack,
-        candidate,
-        tier: result.tier,
-        ...(result.tier === 3 && result.similarity !== undefined ? { similarity: result.similarity } : {}),
-        rejectedMp3Ids: [...rejected],
-      });
-      continue;
-    }
-
     if (candidate && result.tier === 1) {
       groups.autoConfirmed.push({ spotifyTrack, localTrack: candidate, trackMatchId: null });
       continue;
@@ -295,7 +233,6 @@ function groupForReview({ results, localTracks, decisionsByTrack, newDownloadIds
     });
   }
 
-  groups.toApprove.sort((a, b) => scanTime(b.candidate) - scanTime(a.candidate));
   return groups;
 }
 
@@ -337,7 +274,6 @@ export class ManualMatchService {
   /**
    * Engine results for the filters, sorted into review groups using the decisions already saved:
    * - `autoConfirmed`: Tier 1 results.
-   * - `toApprove`: results of any tier whose candidate is a new download (findNewDownloadIds).
    * - `toReview`: Tier 2, Tier 3 and no-match results with no confirmed row. A rejected
    *   candidate is dropped, which leaves the track in the queue with no candidate.
    * - `confirmedMissing`: tracks confirmed as having no local copy.
@@ -349,8 +285,7 @@ export class ManualMatchService {
   ): Promise<ReviewCandidates> {
     const groups = groupForReview(await loadReviewState(userId, filters));
     console.log(
-      `🧾 Review queue: ${groups.toApprove.length} new downloads to approve, ` +
-      `${groups.toReview.length} to review, ${groups.autoConfirmed.length} exact, ` +
+      `🧾 Review queue: ${groups.toReview.length} to review, ${groups.autoConfirmed.length} exact, ` +
       `${groups.confirmedMissing.length} confirmed missing`
     );
     return groups;
@@ -358,11 +293,11 @@ export class ManualMatchService {
 
   /**
    * Save every Tier 1 result as a confirmed engine match, in batches of DB_BATCH_SIZE.
-   * Skips tracks that already have a confirmed row, pairs the person rejected, and new
-   * downloads, which wait in `toApprove`. Returns the number of rows written.
+   * Skips tracks that already have a confirmed row, and pairs the person rejected.
+   * Returns the number of rows written.
    */
   static async bulkAutoConfirmTier1(userId: string, filters: MatchCandidateFilters = {}): Promise<number> {
-    const { results, decisionsByTrack, newDownloadIds } = await loadReviewState(userId, filters);
+    const { results, decisionsByTrack } = await loadReviewState(userId, filters);
 
     const rows: TrackMatchInsert[] = [];
     for (const result of results) {
@@ -370,7 +305,7 @@ export class ManualMatchService {
       const decisions = decisionsByTrack.get(result.spotifyTrack.id) ?? [];
       if (confirmedDecision(decisions)) continue;
       const candidate = liveCandidate(result, rejectedMp3Ids(decisions));
-      if (!candidate || newDownloadIds.has(candidate.id)) continue;
+      if (!candidate) continue;
 
       rows.push({
         spotify_track_id: result.spotifyTrack.id,

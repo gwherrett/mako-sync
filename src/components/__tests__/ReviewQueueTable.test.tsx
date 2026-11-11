@@ -8,6 +8,7 @@ import {
   getTierBadge,
   localTrackTitle,
   searchLocalTracks,
+  splitByCandidate,
 } from '@/components/ReviewMatches/reviewQueue.utils';
 import type { ReviewItem } from '@/services/manualMatch.service';
 import type { LocalTrack, SpotifyTrack } from '@/services/trackMatchingEngine';
@@ -232,5 +233,14 @@ describe('searchLocalTracks — picker search', () => {
 
   it('stops at the limit', () => {
     expect(searchLocalTracks(tracks, '', { limit: 2 })).toHaveLength(2);
+  });
+});
+
+describe('splitByCandidate', () => {
+  it('puts rows with a candidate in potentialMatches and keeps the order of each group', () => {
+    const { potentialMatches, noCandidate } = splitByCandidate([noMatchItem, coreTitleItem, fuzzyItem]);
+
+    expect(potentialMatches.map(item => item.spotifyTrack.id)).toEqual(['s2', 's3']);
+    expect(noCandidate.map(item => item.spotifyTrack.id)).toEqual([noMatchItem.spotifyTrack.id]);
   });
 });
