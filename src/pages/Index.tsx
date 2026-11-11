@@ -1,14 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { Database, Search, Download, Disc3 } from 'lucide-react';
+import { Database, Download, Disc3, ListChecks } from 'lucide-react';
 import LibraryHeader from '@/components/LibraryHeader';
 import SetupChecklist from '@/components/SetupChecklist';
 import TracksTable from '@/components/TracksTable';
 import LocalTracksTable from '@/components/LocalTracksTable';
 import FileUploadScanner from '@/components/FileUploadScanner';
 import SpotifySyncButton from '@/components/SpotifySyncButton';
-import MissingTracksAnalyzer from '@/components/MissingTracksAnalyzer';
-import ReviewMatches from '@/components/ReviewMatches/ReviewMatches';
+import ReviewMatches, { type ReviewSource } from '@/components/ReviewMatches/ReviewMatches';
 import { DownloadProcessingSection } from '@/components/DownloadProcessingSection';
 import { VinylTab } from '@/components/vinyl/VinylTab';
 import { TrackMatchingService } from '@/services/trackMatching.service';
@@ -63,18 +62,18 @@ const Index = () => {
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [isScanInProgress, setIsScanInProgress] = useState(false);
 
-  // Get initial tab + missing source from URL query params
+  // Get initial tab + review source from URL query params. The Review Matches tab keeps
+  // the value `missing`, so old ?tab=missing&source=... links still open it.
   const initialTab = searchParams.get('tab') || 'vinyl';
   const [activeTab, setActiveTab] = useState(initialTab);
-  const missingSource = (searchParams.get('source') as 'spotify' | 'vinyl' | 'both') || 'spotify';
+  const reviewSource = (searchParams.get('source') as ReviewSource) || 'spotify';
 
-  const handleMissingSourceChange = (source: 'spotify' | 'vinyl' | 'both') => {
+  const handleReviewSourceChange = (source: ReviewSource) => {
     setSearchParams(prev => { prev.set('source', source); return prev; });
   };
 
-  // State for MissingTracksAnalyzer
+  // Supergenre options for the Review Matches filters
   const [superGenres, setSuperGenres] = useState<string[]>([]);
-  const [selectedGenre, setSelectedGenre] = useState<string>('all');
   const [user, setUser] = useState<User | null>(null);
 
   // Tab badge counts
@@ -91,7 +90,7 @@ const Index = () => {
     }
   }, [searchParams]);
 
-  // Load user and super genres for Missing Tracks tab
+  // Load user and super genres for the Review Matches tab
   useEffect(() => {
     const loadData = async () => {
       const { data: { user } } = await supabase.auth.getUser();
@@ -237,10 +236,10 @@ const Index = () => {
                 </Badge>
               )}
             </TabsTrigger>
-            {/* Tab 4: Missing Tracks */}
-            <TabsTrigger value="missing" className="gap-1 sm:gap-2 px-1 sm:px-3">
-              <Search className="w-4 h-4 shrink-0" />
-              <span className="hidden sm:inline truncate">Missing</span>
+            {/* Tab 4: Review Matches */}
+            <TabsTrigger value="missing" className="gap-1 sm:gap-2 px-1 sm:px-3" aria-label="Review Matches">
+              <ListChecks className="w-4 h-4 shrink-0" />
+              <span className="hidden sm:inline truncate">Review Matches</span>
             </TabsTrigger>
             {/* Tab 5: Process Downloads */}
             <TabsTrigger value="downloads" className="gap-1 sm:gap-2 px-1 sm:px-3">
@@ -426,17 +425,12 @@ const Index = () => {
             )}
           </TabsContent>
 
-          {/* Tab 4: Missing Tracks */}
+          {/* Tab 4: Review Matches */}
           <TabsContent value="missing" className="space-y-6">
-            {/* The review queue works on Spotify tracks, so it is hidden in the vinyl-only view.
-                MissingTracksAnalyzer stays below it until MAK-181 moves its actions over. */}
-            {missingSource !== 'vinyl' && <ReviewMatches superGenres={superGenres} />}
-            <MissingTracksAnalyzer
-              selectedGenre={selectedGenre}
-              setSelectedGenre={setSelectedGenre}
+            <ReviewMatches
               superGenres={superGenres}
-              source={missingSource}
-              onSourceChange={handleMissingSourceChange}
+              source={reviewSource}
+              onSourceChange={handleReviewSourceChange}
             />
           </TabsContent>
 

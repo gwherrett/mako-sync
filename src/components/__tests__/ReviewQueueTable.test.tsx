@@ -20,7 +20,7 @@ import type { LocalTrack, SpotifyTrack } from '@/services/trackMatchingEngine';
 
 function spotify(id: string, title: string, artist: string): SpotifyTrack {
   return {
-    id, title, artist, primary_artist: artist, album: 'Album', genre: 'deep house',
+    id, spotify_id: `sp-${id}`, title, artist, primary_artist: artist, album: 'Album', genre: 'deep house',
     super_genre: 'House', super_genre_manual_override: false,
   };
 }

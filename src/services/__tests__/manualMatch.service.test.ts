@@ -77,7 +77,7 @@ function local(id: string, title: string, artist: string): LocalTrack {
 
 function spotify(id: string, title: string, artist: string): SpotifyTrack {
   return {
-    id, title, artist, primary_artist: artist, album: 'Album', genre: null,
+    id, spotify_id: `sp-${id}`, title, artist, primary_artist: artist, album: 'Album', genre: null,
     super_genre: 'House', super_genre_manual_override: false,
   };
 }

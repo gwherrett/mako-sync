@@ -4,8 +4,16 @@ import {
   createMatchReviewMutations,
   matchReviewBaseKey,
   matchReviewQueryKey,
+  withSpotifyTrackPatched,
+  withoutSpotifyTrack,
 } from '@/hooks/useMatchReview';
-import { ManualMatchService, type ReviewCandidates, type ReviewItem } from '@/services/manualMatch.service';
+import { DuplicateDetectionService } from '@/services/duplicateDetection.service';
+import {
+  ManualMatchService,
+  type ConfirmedMissingTrack,
+  type ReviewCandidates,
+  type ReviewItem,
+} from '@/services/manualMatch.service';
 
 /**
  * Tests for the useMatchReview mutations (MAK-180). The suite runs without a DOM, so the
@@ -23,6 +31,9 @@ vi.mock('@/services/manualMatch.service', () => ({
     undoDecision: vi.fn(),
   },
 }));
+vi.mock('@/services/duplicateDetection.service', () => ({
+  DuplicateDetectionService: { unlikeTrack: vi.fn() },
+}));
 
 const USER_ID = 'user-123';
 const FILTERS = { superGenre: 'House', genre: 'all', artist: 'Kerri Chandler' };
@@ -30,7 +41,7 @@ const FILTERS = { superGenre: 'House', genre: 'all', artist: 'Kerri Chandler' };
 function reviewItem(id: string): ReviewItem {
   return {
     spotifyTrack: {
-      id, title: `Track ${id}`, artist: 'Kerri Chandler', primary_artist: 'Kerri Chandler',
+      id, spotify_id: `sp-${id}`, title: `Track ${id}`, artist: 'Kerri Chandler', primary_artist: 'Kerri Chandler',
       album: null, genre: null, super_genre: 'House', super_genre_manual_override: false,
     },
     candidate: null,
@@ -41,6 +52,21 @@ function reviewItem(id: string): ReviewItem {
 
 function queueOf(...ids: string[]): ReviewCandidates {
   return { autoConfirmed: [], toReview: ids.map(reviewItem), confirmedMissing: [], localTracks: [] };
+}
+
+function confirmedMissing(id: string): ConfirmedMissingTrack {
+  return {
+    trackMatchId: `tm-${id}`,
+    spotifyTrack: reviewItem(id).spotifyTrack,
+    failureCategory: null,
+    notes: null,
+    reviewedAt: '2026-11-10T00:00:00.000Z',
+  };
+}
+
+/** A queue with `queued` tracks to review and `missing` tracks confirmed missing. */
+function queueWith(queued: string[], missing: string[]): ReviewCandidates {
+  return { ...queueOf(...queued), confirmedMissing: missing.map(confirmedMissing) };
 }
 
 function setup() {
@@ -171,6 +197,32 @@ describe('useMatchReview mutations — the decided row leaves the queue', () => 
     expect(queuedIds(queryClient)).toEqual(['s1']);
   });
 
+  it('adds the track to Confirmed Missing after confirmTrueMissing, with the new row id', async () => {
+    const { mutations, run, queryClient } = setup();
+    queryClient.setQueryData(matchReviewQueryKey(USER_ID, FILTERS), queueOf('s1', 's2'));
+
+    await run(mutations.confirmTrueMissing, { spotifyLikedId: 's2', options: { notes: 'vinyl only' } });
+
+    const missing = queryClient.getQueryData<ReviewCandidates>(matchReviewQueryKey(USER_ID, FILTERS))?.confirmedMissing;
+    expect(missing).toEqual([
+      expect.objectContaining({
+        trackMatchId: 'tm-missing',
+        spotifyTrack: expect.objectContaining({ id: 's2' }),
+        failureCategory: null,
+        notes: 'vinyl only',
+      }),
+    ]);
+  });
+
+  it('confirmMatch does not add the track to Confirmed Missing', async () => {
+    const { mutations, run, queryClient } = setup();
+    queryClient.setQueryData(matchReviewQueryKey(USER_ID, FILTERS), queueOf('s1'));
+
+    await run(mutations.confirmMatch, { spotifyLikedId: 's1', mp3Id: 'm1', options: { method: 'manual', source: 'human' } });
+
+    expect(queryClient.getQueryData<ReviewCandidates>(matchReviewQueryKey(USER_ID, FILTERS))?.confirmedMissing).toEqual([]);
+  });
+
   it('keeps the track after rejectCandidate: it still needs a decision', async () => {
     const { mutations, run, queryClient } = setup();
     queryClient.setQueryData(matchReviewQueryKey(USER_ID, FILTERS), queueOf('s1', 's2'));
@@ -178,6 +230,97 @@ describe('useMatchReview mutations — the decided row leaves the queue', () => 
     await run(mutations.rejectCandidate, { spotifyLikedId: 's1', mp3Id: 'm1', options: { method: 'tier2_core' } });
 
     expect(queuedIds(queryClient)).toEqual(['s1', 's2']);
+  });
+});
+
+describe('useMatchReview mutations — Confirmed Missing actions', () => {
+  beforeEach(() => {
+    vi.mocked(ManualMatchService.undoDecision).mockResolvedValue(undefined);
+    vi.mocked(DuplicateDetectionService.unlikeTrack).mockResolvedValue(undefined);
+  });
+
+  const cached = (queryClient: QueryClient) =>
+    queryClient.getQueryData<ReviewCandidates>(matchReviewQueryKey(USER_ID, FILTERS));
+  const missingIds = (queryClient: QueryClient) => cached(queryClient)?.confirmedMissing.map(m => m.spotifyTrack.id);
+
+  it('undoDecision drops the undone row from Confirmed Missing before the refetch', async () => {
+    const { mutations, run, queryClient, invalidate } = setup();
+    queryClient.setQueryData(matchReviewQueryKey(USER_ID, FILTERS), queueWith([], ['s1', 's2']));
+
+    await run(mutations.undoDecision, 'tm-s1');
+
+    expect(missingIds(queryClient)).toEqual(['s2']);
+    expect(invalidate).toHaveBeenCalledWith({ queryKey: ['match_review', USER_ID] });
+  });
+
+  it('unlikeTrack sends Spotify\'s own id for the signed-in user', async () => {
+    const { mutations, run } = setup();
+
+    await run(mutations.unlikeTrack, { spotifyLikedId: 's1', spotifyId: 'sp-s1' });
+
+    expect(DuplicateDetectionService.unlikeTrack).toHaveBeenCalledWith('sp-s1', USER_ID);
+  });
+
+  it('unlikeTrack drops the track from every group, then invalidates the queue', async () => {
+    const { mutations, run, queryClient, invalidate } = setup();
+    queryClient.setQueryData(matchReviewQueryKey(USER_ID, FILTERS), queueWith(['s1', 's3'], ['s1', 's2']));
+
+    await run(mutations.unlikeTrack, { spotifyLikedId: 's1', spotifyId: 'sp-s1' });
+
+    expect(missingIds(queryClient)).toEqual(['s2']);
+    expect(cached(queryClient)?.toReview.map(i => i.spotifyTrack.id)).toEqual(['s3']);
+    expect(invalidate).toHaveBeenCalledWith({ queryKey: ['match_review', USER_ID] });
+  });
+
+  it('unlikeTrack shows a destructive toast and keeps the track when Spotify fails', async () => {
+    const { mutations, run, queryClient, toast, invalidate } = setup();
+    queryClient.setQueryData(matchReviewQueryKey(USER_ID, FILTERS), queueWith([], ['s1']));
+    vi.mocked(DuplicateDetectionService.unlikeTrack).mockRejectedValue(new Error('Spotify API error (401)'));
+
+    await expect(run(mutations.unlikeTrack, { spotifyLikedId: 's1', spotifyId: 'sp-s1' })).rejects.toThrow();
+
+    expect(toast).toHaveBeenCalledWith({
+      title: 'Failed to unlike', description: 'Spotify API error (401)', variant: 'destructive',
+    });
+    expect(missingIds(queryClient)).toEqual(['s1']);
+    expect(invalidate).not.toHaveBeenCalled();
+  });
+
+  it('unlikeTrack fails without a signed-in user', async () => {
+    const queryClient = new QueryClient();
+    const mutations = createMatchReviewMutations({ queryClient, toast: vi.fn(), userId: undefined });
+
+    await expect(
+      new MutationObserver(queryClient, mutations.unlikeTrack).mutate({ spotifyLikedId: 's1', spotifyId: 'sp-s1' })
+    ).rejects.toThrow('Sign in to unlike tracks.');
+    expect(DuplicateDetectionService.unlikeTrack).not.toHaveBeenCalled();
+  });
+});
+
+describe('queue cache helpers', () => {
+  it('withSpotifyTrackPatched changes the saved track in every group, and nothing else', () => {
+    const queue = queueWith(['s1', 's2'], ['s1']);
+    const patched = withSpotifyTrackPatched(queue, 's1', { super_genre: 'Jazz', super_genre_manual_override: true });
+
+    expect(patched.confirmedMissing[0].spotifyTrack).toMatchObject({ super_genre: 'Jazz', super_genre_manual_override: true });
+    expect(patched.toReview[0].spotifyTrack).toMatchObject({ super_genre: 'Jazz', super_genre_manual_override: true });
+    expect(patched.toReview[1].spotifyTrack).toMatchObject({ super_genre: 'House', super_genre_manual_override: false });
+    expect(queue.confirmedMissing[0].spotifyTrack.super_genre).toBe('House');
+  });
+
+  it('withSpotifyTrackPatched clears the override when the dialog resets to auto', () => {
+    const pinned = withSpotifyTrackPatched(queueWith([], ['s1']), 's1', { super_genre: 'Pop', super_genre_manual_override: true });
+    const reset = withSpotifyTrackPatched(pinned, 's1', { super_genre: 'Pop', super_genre_manual_override: false });
+
+    expect(reset.confirmedMissing[0].spotifyTrack.super_genre_manual_override).toBe(false);
+  });
+
+  it('withoutSpotifyTrack leaves other tracks alone', () => {
+    const queue = queueWith(['s2'], ['s1', 's3']);
+    const after = withoutSpotifyTrack(queue, 's1');
+
+    expect(after.confirmedMissing.map(m => m.spotifyTrack.id)).toEqual(['s3']);
+    expect(after.toReview.map(i => i.spotifyTrack.id)).toEqual(['s2']);
   });
 });
 

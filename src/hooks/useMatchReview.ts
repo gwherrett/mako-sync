@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from 'react';
+import { useCallback, useEffect, useMemo } from 'react';
 import { useMutation, useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/contexts/NewAuthContext';
 import { useToast } from '@/hooks/use-toast';
@@ -6,10 +6,13 @@ import {
   ManualMatchService,
   type ConfirmMatchOptions,
   type ConfirmMissingOptions,
+  type ConfirmedMissingTrack,
   type RejectCandidateOptions,
   type ReviewCandidates,
 } from '@/services/manualMatch.service';
+import { DuplicateDetectionService } from '@/services/duplicateDetection.service';
 import { TrackMatchingService, type MatchCandidateFilters } from '@/services/trackMatching.service';
+import type { SpotifyTrack } from '@/services/trackMatchingEngine';
 
 const QUERY_KEY = 'match_review';
 const FILTER_OPTIONS_QUERY_KEY = 'match_review_filter_options';
@@ -31,6 +34,43 @@ export interface RejectCandidateVariables {
 export interface ConfirmMissingVariables {
   spotifyLikedId: string;
   options?: ConfirmMissingOptions;
+}
+
+export interface UnlikeTrackVariables {
+  /** `spotify_liked.id`, to drop the track from the loaded queue. */
+  spotifyLikedId: string;
+  /** Spotify's own track id, which the Spotify API takes. */
+  spotifyId: string;
+}
+
+/** The fields of a queued Spotify track that the Edit SuperGenre dialog changes. */
+export type SpotifyTrackGenrePatch = Pick<SpotifyTrack, 'super_genre' | 'super_genre_manual_override'>;
+
+/** The queue with the track gone from every group, as after an unlike. */
+export function withoutSpotifyTrack(queue: ReviewCandidates, spotifyLikedId: string): ReviewCandidates {
+  const keep = (item: { spotifyTrack: SpotifyTrack }) => item.spotifyTrack.id !== spotifyLikedId;
+  return {
+    ...queue,
+    autoConfirmed: queue.autoConfirmed.filter(keep),
+    toReview: queue.toReview.filter(keep),
+    confirmedMissing: queue.confirmedMissing.filter(keep),
+  };
+}
+
+/** The queue with one Spotify track's fields changed in every group it appears in. */
+export function withSpotifyTrackPatched(
+  queue: ReviewCandidates,
+  spotifyLikedId: string,
+  patch: SpotifyTrackGenrePatch
+): ReviewCandidates {
+  const update = <T extends { spotifyTrack: SpotifyTrack }>(item: T): T =>
+    item.spotifyTrack.id === spotifyLikedId ? { ...item, spotifyTrack: { ...item.spotifyTrack, ...patch } } : item;
+  return {
+    ...queue,
+    autoConfirmed: queue.autoConfirmed.map(update),
+    toReview: queue.toReview.map(update),
+    confirmedMissing: queue.confirmedMissing.map(update),
+  };
 }
 
 /** Every review queue a user has loaded shares this prefix, so one invalidation covers them all. */
@@ -70,14 +110,31 @@ export function createMatchReviewMutations({
   const failWith = (title: string) => (error: Error) => {
     toast({ title, description: error.message, variant: 'destructive' });
   };
-  // The decided track leaves the queue straight away. The refetch then reconciles.
-  const decided = (spotifyLikedId: string) => {
-    queryClient.setQueriesData<ReviewCandidates>({ queryKey: baseKey }, queue =>
-      queue && {
+  // The decided track leaves the queue straight away, and a track confirmed missing joins
+  // Confirmed Missing. The refetch then reconciles.
+  const decided = (spotifyLikedId: string, missing?: { trackMatchId: string; options?: ConfirmMissingOptions }) => {
+    queryClient.setQueriesData<ReviewCandidates>({ queryKey: baseKey }, queue => {
+      if (!queue) return queue;
+      const item = queue.toReview.find(i => i.spotifyTrack.id === spotifyLikedId);
+      const confirmedMissing: ConfirmedMissingTrack[] =
+        item && missing
+          ? [
+              ...queue.confirmedMissing,
+              {
+                trackMatchId: missing.trackMatchId,
+                spotifyTrack: item.spotifyTrack,
+                failureCategory: missing.options?.failureCategory ?? null,
+                notes: missing.options?.notes ?? null,
+                reviewedAt: new Date().toISOString(),
+              },
+            ]
+          : queue.confirmedMissing;
+      return {
         ...queue,
-        toReview: queue.toReview.filter(item => item.spotifyTrack.id !== spotifyLikedId),
-      }
-    );
+        toReview: queue.toReview.filter(i => i.spotifyTrack.id !== spotifyLikedId),
+        confirmedMissing,
+      };
+    });
     invalidate();
   };
 
@@ -105,13 +162,38 @@ export function createMatchReviewMutations({
     confirmTrueMissing: {
       mutationFn: ({ spotifyLikedId, options }: ConfirmMissingVariables) =>
         ManualMatchService.confirmTrueMissing(spotifyLikedId, options),
-      onSuccess: (_id: string, { spotifyLikedId }: ConfirmMissingVariables) => decided(spotifyLikedId),
+      onSuccess: (trackMatchId: string, { spotifyLikedId, options }: ConfirmMissingVariables) =>
+        decided(spotifyLikedId, { trackMatchId, options }),
       onError: failWith('Could not confirm missing'),
     },
     undoDecision: {
       mutationFn: (trackMatchId: string) => ManualMatchService.undoDecision(trackMatchId),
-      onSuccess: invalidate,
+      // An undone confirmed-missing row leaves that list straight away. The refetch puts
+      // the track back in the queue.
+      onSuccess: (_result: void, trackMatchId: string) => {
+        queryClient.setQueriesData<ReviewCandidates>({ queryKey: baseKey }, queue =>
+          queue && {
+            ...queue,
+            confirmedMissing: queue.confirmedMissing.filter(item => item.trackMatchId !== trackMatchId),
+          }
+        );
+        invalidate();
+      },
       onError: failWith('Could not undo decision'),
+    },
+    unlikeTrack: {
+      mutationFn: ({ spotifyId }: UnlikeTrackVariables) => {
+        if (!userId) throw new Error('Sign in to unlike tracks.');
+        return DuplicateDetectionService.unlikeTrack(spotifyId, userId);
+      },
+      // Unliking deletes the spotify_liked row, and its track_matches rows cascade with it.
+      onSuccess: (_result: void, { spotifyLikedId }: UnlikeTrackVariables) => {
+        queryClient.setQueriesData<ReviewCandidates>({ queryKey: baseKey }, queue =>
+          queue && withoutSpotifyTrack(queue, spotifyLikedId)
+        );
+        invalidate();
+      },
+      onError: failWith('Failed to unlike'),
     },
   };
 }
@@ -151,6 +233,18 @@ export function useMatchReview(filters: MatchCandidateFilters | null) {
   const rejectCandidate = useMutation(mutations.rejectCandidate);
   const confirmTrueMissing = useMutation(mutations.confirmTrueMissing);
   const undoDecision = useMutation(mutations.undoDecision);
+  const unlikeTrack = useMutation(mutations.unlikeTrack);
+
+  // Not a refetch: that re-runs the whole match, and would drop a track whose new
+  // supergenre falls outside the filters while the person is still looking at it.
+  const updateSpotifyTrack = useCallback(
+    (spotifyLikedId: string, patch: SpotifyTrackGenrePatch) => {
+      queryClient.setQueriesData<ReviewCandidates>({ queryKey: matchReviewBaseKey(userId) }, queue =>
+        queue && withSpotifyTrackPatched(queue, spotifyLikedId, patch)
+      );
+    },
+    [queryClient, userId]
+  );
 
   return {
     queue: query.data,
@@ -164,6 +258,9 @@ export function useMatchReview(filters: MatchCandidateFilters | null) {
     rejectCandidate: rejectCandidate.mutateAsync,
     confirmTrueMissing: confirmTrueMissing.mutateAsync,
     undoDecision: undoDecision.mutateAsync,
+    unlikeTrack: unlikeTrack.mutateAsync,
+    /** Change a track's fields in the loaded queue, after an edit saved elsewhere. */
+    updateSpotifyTrack,
   };
 }
 

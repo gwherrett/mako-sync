@@ -411,8 +411,8 @@ The slskd integration enables users to push missing tracks to their Soulseek dow
 
 ```
 ┌──────────────────┐
-│ Missing Tracks   │
-│ Analysis (Client)│
+│ Confirmed Missing│
+│ Tracks (Client)  │
 └────────┬─────────┘
          │
          ▼
@@ -501,11 +501,11 @@ export class SlskdClientService {
    - Test connection button
    - Connection status indicator
 
-2. **Missing Tracks Analyzer** (`src/components/MissingTracksAnalyzer.tsx`)
-   - Add artist-level checkboxes (multi-select)
-   - "Push to slskd Wishlist" button
-   - Sync progress UI
-   - Results summary display
+2. **Confirmed Missing section** (`src/components/ReviewMatches/ConfirmedMissingSection.tsx`, in the Review Matches tab)
+   - Artist-level checkboxes (multi-select)
+   - "Push to slskd" button, plus a per-album push
+   - Sync progress UI (`SlskdSyncProgress`)
+   - Works on tracks the user confirmed missing in the review queue
 
 #### **Multi-User Isolation**
 

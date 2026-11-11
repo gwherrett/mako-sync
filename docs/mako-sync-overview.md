@@ -29,9 +29,10 @@ flowchart TD
         H --> I[Accept / Reject / Manual]
     end
 
-    subgraph step4["Step 4: Missing Tracks"]
-        J[Compare Libraries] --> K[Identify Missing Tracks]
-        K --> L[Push to Slskd Wishlist]
+    subgraph step4["Step 4: Review Matches"]
+        J[Compare Libraries] --> K[Review Suggested Matches]
+        K --> K2[Confirm Missing Tracks]
+        K2 --> L[Push to Slskd Wishlist]
     end
 
     subgraph step5["Step 5: Process Downloads"]
@@ -69,10 +70,12 @@ Some Spotify tracks lack genre data from Spotify's artist metadata. Use AI-power
 
 **What you get:** Complete genre coverage for accurate matching and organization.
 
-### Step 4: Missing Tracks
-Compare your Spotify library against local files to find what's missing. Select artists and push their missing tracks to your Slskd wishlist for automatic download.
+### Step 4: Review Matches
+Compare your Spotify library against local files. Exact matches are confirmed for you. For the rest, confirm the suggested local file, pick another one, or confirm the track is missing. Each decision is saved, so the next review skips tracks you've already decided.
 
-**What you get:** A list of gaps, grouped by artist, with one-click Slskd integration.
+Tracks you confirm as missing are listed under **Confirmed Missing**, grouped by artist. Select artists to export them as CSV or push their tracks to your Slskd wishlist for automatic download.
+
+**What you get:** A reviewed list of gaps, grouped by artist, with one-click Slskd integration.
 
 ### Step 5: Process Downloads
 After Slskd downloads your tracks, scan the downloads folder. Map genres and write the Supergenre to the Grouping (TIT1) tag, which is supported by all major DJ software and media players.
@@ -117,7 +120,7 @@ Matching uses normalized text comparison:
 2. **Sync Library** - Dashboard → Spotify tab → "Sync Liked Songs"
 3. **Scan Local Files** - Dashboard → Local tab → Select folders
 4. **Fix No Genre Tracks** - Dashboard → No Genre tab → Assign missing Supergenres
-5. **Find Missing** - Dashboard → Missing tab → Review gaps
+5. **Review Matches** - Dashboard → Review Matches tab → "Load Review Queue" → confirm matches or confirm tracks missing
 6. **Configure Slskd** - Settings → Add API endpoint and key
-7. **Push to Wishlist** - Select artists → "Push to Slskd"
+7. **Push to Wishlist** - Confirmed Missing → select artists → "Push to Slskd"
 8. **Process Downloads** - Dashboard → Downloads tab → Scan and write tags
