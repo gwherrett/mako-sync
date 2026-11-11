@@ -75,7 +75,11 @@ export interface ReviewCandidates {
   autoConfirmed: AutoConfirmedMatch[];
   toReview: ReviewItem[];
   confirmedMissing: ConfirmedMissingTrack[];
-  /** Local tracks in scope for the filters, for search-and-pick. */
+  /**
+   * Every local track the user has, for search-and-pick. Not scoped to the filters like the
+   * engine's candidates: a manual pick is most needed when the file's artist tag differs
+   * from Spotify's, and that file is outside the artist-overlap scope.
+   */
   localTracks: LocalTrack[];
 }
 
@@ -152,7 +156,7 @@ async function fetchDecisions(
 }
 
 async function loadReviewState(userId: string, filters: MatchCandidateFilters): Promise<ReviewState> {
-  const { results, localTracks } = await TrackMatchingService.getMatchCandidates(userId, filters);
+  const { results, allLocalTracks: localTracks } = await TrackMatchingService.getMatchCandidates(userId, filters);
   const decisionsByTrack = await fetchDecisions(
     userId,
     new Set(results.map(result => result.spotifyTrack.id))

@@ -68,6 +68,8 @@ export interface MatchCandidates {
   results: MatchResult[];
   /** Local tracks whose artist appears in the filtered Spotify subset. */
   localTracks: LocalTrack[];
+  /** Every local track the user has, whatever its artist. */
+  allLocalTracks: LocalTrack[];
 }
 
 /** A genre and an artist that appear together on at least one liked song. */
@@ -220,7 +222,7 @@ export class TrackMatchingService {
     );
     if (DEBUG_MATCHING) logDebugResults(results, localTracks);
 
-    return { results, localTracks };
+    return { results, localTracks, allLocalTracks };
   }
 
   // Find missing tracks (Spotify tracks not in local collection)

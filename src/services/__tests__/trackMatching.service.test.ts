@@ -322,6 +322,21 @@ describe('TrackMatchingService', () => {
       expect(localTracks.map(t => t.id)).toEqual(['l1', 'l3']);
     });
 
+    it('also returns every local track, whatever its artist', async () => {
+      mockTables({
+        local_mp3s: [
+          local('l1', 'Track One', 'Artist A'),
+          local('l2', 'Heroes', 'David Bowie'),
+          local('l3', 'Untagged', null),
+        ],
+        spotify_liked: [spotify('s1', 'Track One', 'Artist A')],
+      });
+
+      const { allLocalTracks } = await TrackMatchingService.getMatchCandidates('user-123');
+
+      expect(allLocalTracks.map(t => t.id)).toEqual(['l1', 'l2', 'l3']);
+    });
+
     it('compares artists the same way the engine does', async () => {
       mockTables({
         local_mp3s: [
@@ -360,12 +375,13 @@ describe('TrackMatchingService', () => {
       ]);
     });
 
-    it('returns no results and no local tracks for an empty Spotify subset', async () => {
-      mockTables({ local_mp3s: [local('l1', 'Track', 'Artist')], spotify_liked: [] });
+    it('returns no results and no in-scope local tracks for an empty Spotify subset', async () => {
+      const library = [local('l1', 'Track', 'Artist')];
+      mockTables({ local_mp3s: library, spotify_liked: [] });
 
       const candidates = await TrackMatchingService.getMatchCandidates('user-123');
 
-      expect(candidates).toEqual({ results: [], localTracks: [] });
+      expect(candidates).toEqual({ results: [], localTracks: [], allLocalTracks: library });
     });
 
     it('matches Spotify tracks past the first 1000 rows', async () => {

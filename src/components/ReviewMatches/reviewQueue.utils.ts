@@ -41,12 +41,13 @@ export function candidateMatchMethod(item: Pick<ReviewItem, 'tier'>): MatchMetho
   return item.tier ? TIER_MATCH_METHOD[item.tier] : 'manual';
 }
 
+/** The file name is searched too: a file with wrong or empty tags can still be found by name. */
 function searchText(track: LocalTrack): string {
-  return `${track.title ?? ''} ${track.artist ?? ''}`.toLowerCase();
+  return `${track.title ?? ''} ${track.artist ?? ''} ${track.file_path}`.toLowerCase();
 }
 
 /**
- * Local files for the picker, searched by title and artist. Every word typed must appear.
+ * Local files for the picker, searched by title, artist and file name. Every word typed must appear.
  * Files by `preferredArtist` come first, so with nothing typed the list opens on the most
  * likely picks. `excludeIds` drops files already rejected for this track.
  */
