@@ -195,6 +195,13 @@ Fix the dead-code bug rather than repeat it: apply real Tailwind classes to the 
 - Empty queue (everything resolved): reuse `MissingTracksAnalyzer`'s existing empty-state card style (`Music` icon, heading, CTA) with copy adjusted to "Nothing left to review."
 - Error: inline `text-destructive` card at the top of the Review Queue card (matches `GenreTools.tsx`'s page-level error pattern), plus a toast.
 
+#### Potential Matches
+
+A card between the auto-confirmed summary and the Review Queue lists the queue rows where the
+engine already found a candidate (Core Title and Fuzzy), with Confirm / Reject / Confirm Missing.
+The Review Queue below keeps the rows with no candidate. A newly downloaded file that matches a
+liked track shows up here once it is scanned (exact matches are still auto-confirmed).
+
 ### Files to Add/Modify
 - **Modify** `src/pages/Index.tsx` — rename "missing" tab label/content to render the new component; no structural tab changes.
 - **New** `src/components/ReviewMatches/ReviewMatches.tsx` — top-level container (filters + trigger + collapsed Tier-1 summary + review queue + confirmed-missing section), replaces `MissingTracksAnalyzer` as the tab's root component.

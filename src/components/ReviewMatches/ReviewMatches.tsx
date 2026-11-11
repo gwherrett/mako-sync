@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { AlertCircle, CheckCircle2, ChevronDown, ChevronRight, Filter, ListChecks, Loader2, Music } from 'lucide-react';
+import { AlertCircle, CheckCircle2, ChevronDown, ChevronRight, Filter, ListChecks, Loader2, Music, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
@@ -14,7 +14,7 @@ import type { MatchCandidateFilters } from '@/services/trackMatching.service';
 import type { LocalTrack } from '@/services/trackMatchingEngine';
 import { DANCE_ALL_VALUE, SUPERDJ_LABEL } from '@/types/genreMapping';
 import { ReviewQueueTable } from './ReviewQueueTable';
-import { candidateMatchMethod, localTrackTitle } from './reviewQueue.utils';
+import { candidateMatchMethod, localTrackTitle, splitByCandidate } from './reviewQueue.utils';
 
 /** Rows drawn at once. The next rows move up as decisions are made. */
 const QUEUE_PAGE_SIZE = 50;
@@ -43,6 +43,7 @@ const ReviewMatches: React.FC<ReviewMatchesProps> = ({ superGenres }) => {
 
   const [pendingIds, setPendingIds] = useState<ReadonlySet<string>>(new Set());
   const [queueLimit, setQueueLimit] = useState(QUEUE_PAGE_SIZE);
+  const [potentialLimit, setPotentialLimit] = useState(QUEUE_PAGE_SIZE);
   const [summaryOpen, setSummaryOpen] = useState(false);
   const [summaryLimit, setSummaryLimit] = useState(SUMMARY_PAGE_SIZE);
 
@@ -93,6 +94,7 @@ const ReviewMatches: React.FC<ReviewMatchesProps> = ({ superGenres }) => {
     }
     toast({ title: `${confirmed} exact ${plural(confirmed, 'match', 'matches')} confirmed` });
     setQueueLimit(QUEUE_PAGE_SIZE);
+    setPotentialLimit(QUEUE_PAGE_SIZE);
     setSummaryLimit(SUMMARY_PAGE_SIZE);
     setLoadedFilters(filters);
   };
@@ -184,7 +186,10 @@ const ReviewMatches: React.FC<ReviewMatchesProps> = ({ superGenres }) => {
   };
 
   const hasFilters = superGenre !== 'all' || genre !== 'all' || artist !== 'all';
-  const toReview = queue?.toReview ?? [];
+  const { potentialMatches, noCandidate: toReview } = useMemo(
+    () => splitByCandidate(queue?.toReview ?? []),
+    [queue?.toReview]
+  );
   const autoConfirmed = queue?.autoConfirmed ?? [];
   const showQueueCard = isLoading || !!error || !!queue;
 
@@ -292,6 +297,45 @@ const ReviewMatches: React.FC<ReviewMatchesProps> = ({ superGenres }) => {
         />
       )}
 
+      {queue && !isLoading && potentialMatches.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Sparkles className="h-5 w-5" />
+              Potential Matches
+            </CardTitle>
+            <CardDescription>
+              {potentialMatches.length} {plural(potentialMatches.length, 'track has', 'tracks have')} a likely
+              local file. Confirm it, or reject it and pick another.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <ReviewQueueTable
+              items={potentialMatches.slice(0, potentialLimit)}
+              localTracks={queue.localTracks}
+              pendingIds={pendingIds}
+              onConfirm={handleConfirm}
+              onPick={handlePick}
+              onConfirmMissing={handleConfirmMissing}
+            />
+            {potentialMatches.length > potentialLimit && (
+              <div className="flex items-center justify-between text-sm text-muted-foreground">
+                <span>
+                  Showing {potentialLimit} of {potentialMatches.length}. More rows move up as you decide.
+                </span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setPotentialLimit(limit => limit + QUEUE_PAGE_SIZE)}
+                >
+                  Show more
+                </Button>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
       {showQueueCard && (
         <Card>
           <CardHeader>
@@ -327,11 +371,22 @@ const ReviewMatches: React.FC<ReviewMatchesProps> = ({ superGenres }) => {
             ) : queue && toReview.length === 0 ? (
               <div className="py-8 text-center">
                 <Music className="mx-auto mb-4 h-12 w-12 text-muted-foreground" />
-                <h3 className="mb-2 text-lg font-semibold">Nothing left to review</h3>
-                <p className="text-muted-foreground">
-                  Every track in this selection has a decision. Change the filters to review another part of
-                  your library.
-                </p>
+                {potentialMatches.length > 0 ? (
+                  <>
+                    <h3 className="mb-2 text-lg font-semibold">No tracks without a candidate</h3>
+                    <p className="text-muted-foreground">
+                      Every remaining track has a potential match. Check them in Potential Matches above.
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <h3 className="mb-2 text-lg font-semibold">Nothing left to review</h3>
+                    <p className="text-muted-foreground">
+                      Every track in this selection has a decision. Change the filters to review another part
+                      of your library.
+                    </p>
+                  </>
+                )}
               </div>
             ) : queue ? (
               <>

@@ -36,6 +36,19 @@ export function getRowActions(item: Pick<ReviewItem, 'tier' | 'candidate'>): Row
     : ['pick', 'confirmMissing'];
 }
 
+/**
+ * Split the queue: rows where the engine already found a potential match, and rows with no
+ * candidate. Order within each group is kept.
+ */
+export function splitByCandidate<T extends Pick<ReviewItem, 'candidate'>>(
+  items: T[]
+): { potentialMatches: T[]; noCandidate: T[] } {
+  const potentialMatches: T[] = [];
+  const noCandidate: T[] = [];
+  for (const item of items) (item.candidate ? potentialMatches : noCandidate).push(item);
+  return { potentialMatches, noCandidate };
+}
+
 /** The `match_method` to record for a row's engine suggestion. */
 export function candidateMatchMethod(item: Pick<ReviewItem, 'tier'>): MatchMethod {
   return item.tier ? TIER_MATCH_METHOD[item.tier] : 'manual';
