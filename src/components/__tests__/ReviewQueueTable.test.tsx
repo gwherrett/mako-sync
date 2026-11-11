@@ -6,6 +6,7 @@ import {
   candidateMatchMethod,
   getRowActions,
   getTierBadge,
+  localTrackTitle,
   searchLocalTracks,
 } from '@/components/ReviewMatches/reviewQueue.utils';
 import type { ReviewItem } from '@/services/manualMatch.service';
@@ -113,10 +114,24 @@ describe('ReviewQueueTable — row content', () => {
     expect(rows['2']).toContain('Kerri Chandler');
   });
 
-  it('shows the candidate title, artist, album and file path', () => {
+  it('shows the candidate by its tags: title, artist and album', () => {
     expect(rows['3']).toContain('Bar A Thyme');
     expect(rows['3']).toContain('Kerri Chandler · Local Album');
-    expect(rows['3']).toContain('m3.mp3');
+  });
+
+  it('does not show the candidate file path (MAK-207)', () => {
+    expect(rows['3']).not.toContain('m3.mp3');
+  });
+
+  it('shows the file name for a candidate with no title tag', () => {
+    const untagged: ReviewItem = {
+      ...fuzzyItem,
+      candidate: { ...local('m5', null, null), file_path: 'D:\\Music\\House/Metro - Hold Your Wig.mp3' },
+    };
+    const row = renderRows([untagged])['3'];
+    expect(row).toContain('Metro - Hold Your Wig');
+    expect(row).not.toContain('Music');
+    expect(row).not.toContain('.mp3');
   });
 
   it('says there is no candidate on a no-match row', () => {
@@ -159,6 +174,21 @@ describe('row helpers', () => {
     expect(candidateMatchMethod(coreTitleItem)).toBe('tier2_core');
     expect(candidateMatchMethod(fuzzyItem)).toBe('tier3_fuzzy');
     expect(candidateMatchMethod(noMatchItem)).toBe('manual');
+  });
+});
+
+describe('localTrackTitle', () => {
+  it('uses the title tag when there is one', () => {
+    expect(localTrackTitle({ title: 'Rain', file_path: 'a/b/other.mp3' })).toBe('Rain');
+  });
+
+  it('falls back to the file name without folders or extension', () => {
+    expect(localTrackTitle({ title: null, file_path: 'a/b/Metro - Hold Your Wig.flac' })).toBe('Metro - Hold Your Wig');
+    expect(localTrackTitle({ title: '  ', file_path: 'C:\\Music\\Track 01.mp3' })).toBe('Track 01');
+  });
+
+  it('says Untitled when there is no title and no file name', () => {
+    expect(localTrackTitle({ title: null, file_path: '' })).toBe('Untitled');
   });
 });
 

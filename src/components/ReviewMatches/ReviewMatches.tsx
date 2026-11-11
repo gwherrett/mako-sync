@@ -14,7 +14,7 @@ import type { MatchCandidateFilters } from '@/services/trackMatching.service';
 import type { LocalTrack } from '@/services/trackMatchingEngine';
 import { DANCE_ALL_VALUE, SUPERDJ_LABEL } from '@/types/genreMapping';
 import { ReviewQueueTable } from './ReviewQueueTable';
-import { candidateMatchMethod } from './reviewQueue.utils';
+import { candidateMatchMethod, localTrackTitle } from './reviewQueue.utils';
 
 /** Rows drawn at once. The next rows move up as decisions are made. */
 const QUEUE_PAGE_SIZE = 50;
@@ -406,8 +406,12 @@ function AutoConfirmedSummary({ matches, open, onOpenChange, limit, onShowMore }
                   <TableRow key={spotifyTrack.id}>
                     <TableCell className="font-medium">{spotifyTrack.title}</TableCell>
                     <TableCell>{spotifyTrack.artist}</TableCell>
-                    <TableCell className="max-w-md truncate text-muted-foreground" title={localTrack.file_path}>
-                      {localTrack.file_path}
+                    <TableCell>
+                      <div>{localTrackTitle(localTrack)}</div>
+                      <div className="text-sm text-muted-foreground">
+                        {localTrack.artist || 'Unknown artist'}
+                        {localTrack.album && ` · ${localTrack.album}`}
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}
