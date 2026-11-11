@@ -8,6 +8,7 @@ import LocalTracksTable from '@/components/LocalTracksTable';
 import FileUploadScanner from '@/components/FileUploadScanner';
 import SpotifySyncButton from '@/components/SpotifySyncButton';
 import MissingTracksAnalyzer from '@/components/MissingTracksAnalyzer';
+import ReviewMatches from '@/components/ReviewMatches/ReviewMatches';
 import { DownloadProcessingSection } from '@/components/DownloadProcessingSection';
 import { VinylTab } from '@/components/vinyl/VinylTab';
 import { TrackMatchingService } from '@/services/trackMatching.service';
@@ -427,6 +428,9 @@ const Index = () => {
 
           {/* Tab 4: Missing Tracks */}
           <TabsContent value="missing" className="space-y-6">
+            {/* The review queue works on Spotify tracks, so it is hidden in the vinyl-only view.
+                MissingTracksAnalyzer stays below it until MAK-181 moves its actions over. */}
+            {missingSource !== 'vinyl' && <ReviewMatches superGenres={superGenres} />}
             <MissingTracksAnalyzer
               selectedGenre={selectedGenre}
               setSelectedGenre={setSelectedGenre}

@@ -174,6 +174,48 @@ describe('TrackMatchingService', () => {
     });
   });
 
+  describe('fetchGenreArtistPairs', () => {
+    it('returns each genre and artist pair once', async () => {
+      const calls = mockTables({
+        spotify_liked: [
+          { genre: 'deep house', artist: 'Kerri Chandler' },
+          { genre: 'deep house', artist: 'Kerri Chandler' },
+          { genre: 'garage house', artist: 'Kerri Chandler' },
+          { genre: null, artist: 'Moodymann' },
+        ],
+      });
+
+      const pairs = await TrackMatchingService.fetchGenreArtistPairs('user-123', 'House');
+
+      expect(pairs).toEqual([
+        { genre: 'deep house', artist: 'Kerri Chandler' },
+        { genre: 'garage house', artist: 'Kerri Chandler' },
+        { genre: null, artist: 'Moodymann' },
+      ]);
+      expect(argsOf(calls, 'spotify_liked', 'eq')).toEqual([
+        ['user_id', 'user-123'],
+        ['super_genre', 'House'],
+      ]);
+    });
+
+    it('pages past the 1000-row cap', async () => {
+      const rows = Array.from({ length: 2500 }, (_, i) => ({ genre: 'house', artist: `Artist ${i}` }));
+      const calls = mockTables({ spotify_liked: rows });
+
+      const pairs = await TrackMatchingService.fetchGenreArtistPairs('user-123');
+
+      expect(pairs).toHaveLength(2500);
+      expect(argsOf(calls, 'spotify_liked', 'range')).toEqual([[0, 999], [1000, 1999], [2000, 2999]]);
+    });
+
+    it('throws when the fetch fails', async () => {
+      mockTables({}, { spotify_liked: { message: 'API error' } });
+
+      await expect(TrackMatchingService.fetchGenreArtistPairs('user-123'))
+        .rejects.toThrow('Failed to fetch filter options: API error');
+    });
+  });
+
   describe('fetchSuperGenres', () => {
     it('should fetch unique super genres for a user', async () => {
       const mockData = [
