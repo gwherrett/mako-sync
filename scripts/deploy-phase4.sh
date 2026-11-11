@@ -63,7 +63,7 @@ fi
 # Step 2: Apply database migrations
 print_status "Step 2: Applying database migrations..."
 print_status "Applying all pending migrations..."
-if supabase db push; then
+if supabase db push --remote; then   # CLI 3 targets the local stack without --remote
     print_success "Database migrations applied successfully"
 else
     print_error "Failed to apply migrations. Please check the error above."
@@ -85,7 +85,7 @@ print_status "Step 4: Verifying critical Phase 4 migrations..."
 
 # Check for user_roles_security migration
 print_status "Checking user roles security migration..."
-if supabase migration list | grep -q "20251205032300_user_roles_security"; then
+if supabase migration list --remote | grep -q "20251205032300_user_roles_security"; then
     print_success "User roles security migration found"
 else
     print_warning "User roles security migration not found in migration list"
@@ -93,7 +93,7 @@ fi
 
 # Check for cached genres migration
 print_status "Checking cached genres migration..."
-if supabase migration list | grep -q "20251124221124_8c0acd2f-e542-474f-a262-c80cf65030e4"; then
+if supabase migration list --remote | grep -q "20251124221124_8c0acd2f-e542-474f-a262-c80cf65030e4"; then
     print_success "Cached genres migration found"
 else
     print_warning "Cached genres migration not found in migration list"

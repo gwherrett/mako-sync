@@ -31,7 +31,7 @@ supabase login
 supabase link --project-ref your-project-id
 
 # 2. Apply database migrations
-supabase db push
+supabase db push --remote   # CLI 3 targets the local stack without --remote
 
 # 3. Enable vault extension (if not already enabled)
 # Supabase Dashboard → Database → Extensions → Enable "vault"
@@ -42,6 +42,7 @@ supabase secrets set SPOTIFY_CLIENT_SECRET=your_client_secret
 supabase secrets set SUPABASE_DB_URL=your_connection_string
 
 # 5. Deploy edge functions
+# CLI 3 asks before every hosted change and the default answer is No; add --yes in CI
 supabase functions deploy spotify-sync-liked
 supabase functions deploy spotify-auth
 supabase functions deploy spotify-callback
