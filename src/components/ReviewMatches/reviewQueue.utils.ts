@@ -41,6 +41,16 @@ export function candidateMatchMethod(item: Pick<ReviewItem, 'tier'>): MatchMetho
   return item.tier ? TIER_MATCH_METHOD[item.tier] : 'manual';
 }
 
+/**
+ * The name a local file is shown by: its title tag. A file with no title tag falls back to its
+ * file name (no folders, no extension), so it can still be told apart from other untagged files.
+ */
+export function localTrackTitle(track: Pick<LocalTrack, 'title' | 'file_path'>): string {
+  if (track.title?.trim()) return track.title;
+  const fileName = track.file_path.split(/[\\/]/).pop() ?? '';
+  return fileName.replace(/\.[^.]+$/, '') || 'Untitled';
+}
+
 /** The file name is searched too: a file with wrong or empty tags can still be found by name. */
 function searchText(track: LocalTrack): string {
   return `${track.title ?? ''} ${track.artist ?? ''} ${track.file_path}`.toLowerCase();

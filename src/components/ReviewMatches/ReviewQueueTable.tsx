@@ -7,7 +7,7 @@ import { cn } from '@/lib/utils';
 import type { ReviewItem } from '@/services/manualMatch.service';
 import type { LocalTrack } from '@/services/trackMatchingEngine';
 import { LocalTrackCombobox } from './LocalTrackCombobox';
-import { getRowActions, getTierBadge } from './reviewQueue.utils';
+import { getRowActions, getTierBadge, localTrackTitle } from './reviewQueue.utils';
 
 interface ReviewQueueTableProps {
   items: ReviewItem[];
@@ -65,13 +65,10 @@ export function ReviewQueueTable({
               <TableCell className="max-w-xs align-top">
                 {candidate ? (
                   <>
-                    <div className="font-medium">{candidate.title || 'Untitled'}</div>
+                    <div className="font-medium">{localTrackTitle(candidate)}</div>
                     <div className="text-sm text-muted-foreground">
                       {candidate.artist || 'Unknown artist'}
                       {candidate.album && ` · ${candidate.album}`}
-                    </div>
-                    <div className="truncate text-xs text-muted-foreground" title={candidate.file_path}>
-                      {candidate.file_path}
                     </div>
                   </>
                 ) : (

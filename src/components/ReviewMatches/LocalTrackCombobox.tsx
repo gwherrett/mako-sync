@@ -2,7 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import type { LocalTrack } from '@/services/trackMatchingEngine';
-import { PICKER_RESULT_LIMIT, searchLocalTracks } from './reviewQueue.utils';
+import { localTrackTitle, PICKER_RESULT_LIMIT, searchLocalTracks } from './reviewQueue.utils';
 
 interface LocalTrackComboboxProps {
   /** The button that opens the picker. */
@@ -61,11 +61,11 @@ export function LocalTrackCombobox({
                   }}
                   className="flex flex-col items-start gap-0.5"
                 >
-                  <span className="font-medium">
-                    {track.title || 'Untitled'}
-                    <span className="font-normal text-muted-foreground"> · {track.artist || 'Unknown artist'}</span>
+                  <span className="font-medium">{localTrackTitle(track)}</span>
+                  <span className="text-xs text-muted-foreground">
+                    {track.artist || 'Unknown artist'}
+                    {track.album && ` · ${track.album}`}
                   </span>
-                  <span className="w-full truncate text-xs text-muted-foreground">{track.file_path}</span>
                 </CommandItem>
               ))}
             </CommandGroup>
