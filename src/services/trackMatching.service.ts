@@ -70,6 +70,12 @@ export interface MatchCandidates {
   localTracks: LocalTrack[];
 }
 
+/** A genre and an artist that appear together on at least one liked song. */
+export interface GenreArtistPair {
+  genre: string | null;
+  artist: string;
+}
+
 export interface VinylFlatTrack {
   recordId: string;
   recordTitle: string;
@@ -357,5 +363,30 @@ export class TrackMatchingService {
 
     const uniqueGenres = [...new Set(data?.map(item => item.super_genre).filter(Boolean) || [])];
     return uniqueGenres.sort();
+  }
+
+  /**
+   * The distinct (genre, artist) pairs in a user's liked songs, within a supergenre filter.
+   * One paginated read feeds both the Genre and the Artist filter selects, so picking a
+   * genre narrows the artists without another request.
+   */
+  static async fetchGenreArtistPairs(userId: string, superGenreFilter?: string): Promise<GenreArtistPair[]> {
+    const rows = await fetchAllPages<GenreArtistPair>(
+      (from, to) =>
+        applySuperGenreFilter(
+          supabase.from('spotify_liked').select('genre, artist').eq('user_id', userId),
+          superGenreFilter
+        )
+          .order('id')
+          .range(from, to)
+          .then(r => r),
+      'fetch filter options'
+    );
+
+    const pairs = new Map<string, GenreArtistPair>();
+    for (const { genre, artist } of rows) {
+      pairs.set(JSON.stringify([genre, artist]), { genre, artist });
+    }
+    return [...pairs.values()];
   }
 }
