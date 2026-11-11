@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { AlertCircle, CheckCircle2, ChevronDown, ChevronRight, Filter, ListChecks, Loader2, Music, Sparkles } from 'lucide-react';
+import { AlertCircle, CheckCircle2, ChevronDown, ChevronRight, Disc3, Filter, ListChecks, Loader2, Music, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
@@ -7,12 +7,14 @@ import { Select, SelectContent, SelectItem, SelectSeparator, SelectTrigger, Sele
 import { Skeleton } from '@/components/ui/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { ToastAction } from '@/components/ui/toast';
+import { VinylGapsView } from '@/components/VinylGapsView';
 import { useToast } from '@/hooks/use-toast';
 import { useMatchReview, useReviewFilterOptions } from '@/hooks/useMatchReview';
-import type { AutoConfirmedMatch, ReviewItem } from '@/services/manualMatch.service';
+import type { AutoConfirmedMatch, ConfirmedMissingTrack, ReviewItem } from '@/services/manualMatch.service';
 import type { MatchCandidateFilters } from '@/services/trackMatching.service';
 import type { LocalTrack } from '@/services/trackMatchingEngine';
-import { DANCE_ALL_VALUE, SUPERDJ_LABEL } from '@/types/genreMapping';
+import { DANCE_ALL_VALUE, SUPERDJ_LABEL, type SuperGenre } from '@/types/genreMapping';
+import { ConfirmedMissingSection } from './ConfirmedMissingSection';
 import { ReviewQueueTable } from './ReviewQueueTable';
 import { candidateMatchMethod, localTrackTitle, splitByCandidate } from './reviewQueue.utils';
 
@@ -23,16 +25,26 @@ const SKELETON_ROWS = 5;
 /** Long enough to read the toast and reach Undo. */
 const UNDO_TOAST_MS = 8000;
 
+/** Which gaps the tab shows: liked Spotify tracks, vinyl records, or both. */
+export type ReviewSource = 'spotify' | 'vinyl' | 'both';
+
+const REVIEW_SOURCES: ReviewSource[] = ['spotify', 'vinyl', 'both'];
+
 interface ReviewMatchesProps {
   superGenres: string[];
+  source?: ReviewSource;
+  onSourceChange?: (source: ReviewSource) => void;
 }
 
 function plural(count: number, one: string, many: string): string {
   return count === 1 ? one : many;
 }
 
-const ReviewMatches: React.FC<ReviewMatchesProps> = ({ superGenres }) => {
+const ReviewMatches: React.FC<ReviewMatchesProps> = ({ superGenres, source = 'spotify', onSourceChange }) => {
   const { toast } = useToast();
+  const [vinylSuperGenreFilter, setVinylSuperGenreFilter] = useState('all');
+  // Bumped on every Load, so Confirmed Missing starts with nothing selected.
+  const [loadCount, setLoadCount] = useState(0);
 
   // Cascading filters: supergenre -> genre -> artist
   const [superGenre, setSuperGenre] = useState('all');
@@ -58,6 +70,8 @@ const ReviewMatches: React.FC<ReviewMatchesProps> = ({ superGenres }) => {
     rejectCandidate,
     confirmTrueMissing,
     undoDecision,
+    unlikeTrack,
+    updateSpotifyTrack,
   } = useMatchReview(loadedFilters);
 
   const availableGenres = useMemo(
@@ -96,6 +110,7 @@ const ReviewMatches: React.FC<ReviewMatchesProps> = ({ superGenres }) => {
     setQueueLimit(QUEUE_PAGE_SIZE);
     setPotentialLimit(QUEUE_PAGE_SIZE);
     setSummaryLimit(SUMMARY_PAGE_SIZE);
+    setLoadCount(count => count + 1);
     setLoadedFilters(filters);
   };
 
@@ -185,6 +200,21 @@ const ReviewMatches: React.FC<ReviewMatchesProps> = ({ superGenres }) => {
     ]);
   };
 
+  const handleUndoMissing = (track: ConfirmedMissingTrack) => handleUndo([track.trackMatchId]);
+
+  const handleUnlike = async ({ spotifyTrack }: ConfirmedMissingTrack) => {
+    try {
+      await unlikeTrack({ spotifyLikedId: spotifyTrack.id, spotifyId: spotifyTrack.spotify_id });
+    } catch {
+      return; // The hook shows the error.
+    }
+    toast({ title: 'Unliked', description: `"${spotifyTrack.title}" removed from your Spotify library.` });
+  };
+
+  const handleGenreSaved = (trackId: string, superGenreValue: SuperGenre | null, isOverride: boolean) => {
+    updateSpotifyTrack(trackId, { super_genre: superGenreValue, super_genre_manual_override: isOverride });
+  };
+
   const hasFilters = superGenre !== 'all' || genre !== 'all' || artist !== 'all';
   const { potentialMatches, noCandidate: toReview } = useMemo(
     () => splitByCandidate(queue?.toReview ?? []),
@@ -193,14 +223,30 @@ const ReviewMatches: React.FC<ReviewMatchesProps> = ({ superGenres }) => {
   const autoConfirmed = queue?.autoConfirmed ?? [];
   const showQueueCard = isLoading || !!error || !!queue;
 
+  const sourceToggle = <SourceToggle source={source} onSourceChange={onSourceChange} />;
+
+  // Vinyl only: the review flow works on Spotify tracks, so only the vinyl gaps show.
+  // Its state is kept, so switching back shows the same queue.
+  if (source === 'vinyl') {
+    return (
+      <div className="space-y-4">
+        {sourceToggle}
+        <VinylGapsView superGenreFilter={vinylSuperGenreFilter} onSuperGenreChange={setVinylSuperGenreFilter} />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <ListChecks className="h-5 w-5" />
-            Review Matches
-          </CardTitle>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <CardTitle className="flex items-center gap-2">
+              <ListChecks className="h-5 w-5" />
+              Review Matches
+            </CardTitle>
+            {sourceToggle}
+          </div>
           <CardDescription>
             Exact matches are confirmed for you. Check the rest: confirm the suggested file, pick another, or
             mark the track as missing. Each decision saves straight away.
@@ -413,9 +459,56 @@ const ReviewMatches: React.FC<ReviewMatchesProps> = ({ superGenres }) => {
           </CardContent>
         </Card>
       )}
+
+      {queue && !isLoading && (
+        <ConfirmedMissingSection
+          key={loadCount}
+          tracks={queue.confirmedMissing}
+          onUndo={handleUndoMissing}
+          onUnlike={handleUnlike}
+          onGenreSaved={handleGenreSaved}
+        />
+      )}
+
+      {source === 'both' && (
+        <div>
+          <h3 className="mb-3 flex items-center gap-2 text-base font-semibold">
+            <Disc3 className="h-4 w-4" /> Vinyl Gaps
+          </h3>
+          <VinylGapsView superGenreFilter={vinylSuperGenreFilter} onSuperGenreChange={setVinylSuperGenreFilter} />
+        </div>
+      )}
     </div>
   );
 };
+
+interface SourceToggleProps {
+  source: ReviewSource;
+  onSourceChange?: (source: ReviewSource) => void;
+}
+
+/** Spotify / Vinyl / Both buttons, moved from MissingTracksAnalyzer. */
+function SourceToggle({ source, onSourceChange }: SourceToggleProps) {
+  return (
+    <div className="flex flex-wrap items-center gap-2" role="group" aria-label="Source">
+      <span className="text-sm text-muted-foreground">Source:</span>
+      {REVIEW_SOURCES.map(value => (
+        <Button
+          key={value}
+          size="sm"
+          variant={source === value ? 'default' : 'outline'}
+          aria-pressed={source === value}
+          onClick={() => onSourceChange?.(value)}
+          className="capitalize"
+        >
+          {value === 'vinyl' && <Disc3 className="mr-1.5 h-4 w-4" />}
+          {value === 'spotify' && <Music className="mr-1.5 h-4 w-4" />}
+          {value}
+        </Button>
+      ))}
+    </div>
+  );
+}
 
 interface AutoConfirmedSummaryProps {
   matches: AutoConfirmedMatch[];

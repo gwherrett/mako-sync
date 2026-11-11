@@ -37,6 +37,8 @@ function makeLocal(overrides: Partial<LocalTrack> & { id: string }): LocalTrack 
 
 function makeSpotify(overrides: Partial<SpotifyTrack> & { id: string }): SpotifyTrack {
   return {
+    spotify_id: `sp-${overrides.id}`,
+    super_genre_manual_override: false,
     title: 'Test Track',
     artist: 'Test Artist',
     primary_artist: null,

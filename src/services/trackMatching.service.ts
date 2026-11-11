@@ -159,7 +159,7 @@ export class TrackMatchingService {
     const buildQuery = () => {
       let query = supabase
         .from('spotify_liked')
-        .select('id, title, artist, primary_artist, album, genre, super_genre, super_genre_manual_override')
+        .select('id, spotify_id, title, artist, primary_artist, album, genre, super_genre, super_genre_manual_override')
         .eq('user_id', userId);
 
       // Apply cascading filters

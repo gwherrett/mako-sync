@@ -20,7 +20,10 @@ export interface LocalTrack {
 }
 
 export interface SpotifyTrack {
+  /** `spotify_liked.id`, the row's uuid. */
   id: string;
+  /** Spotify's own track id, which the Spotify Web API takes. */
+  spotify_id: string;
   title: string;
   artist: string;
   primary_artist: string | null;
