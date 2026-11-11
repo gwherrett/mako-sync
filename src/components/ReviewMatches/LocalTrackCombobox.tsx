@@ -7,7 +7,7 @@ import { PICKER_RESULT_LIMIT, searchLocalTracks } from './reviewQueue.utils';
 interface LocalTrackComboboxProps {
   /** The button that opens the picker. */
   children: React.ReactElement;
-  /** Local files already loaded for the review session. Searched on the client. */
+  /** Every local file the user has, already loaded for the review session. Searched on the client. */
   localTracks: LocalTrack[];
   /** Files to leave out: ones already rejected for this track. */
   excludeIds?: string[];
@@ -44,7 +44,7 @@ export function LocalTrackCombobox({
         {/* The list is filtered by searchLocalTracks, so cmdk's own filter is off. */}
         <Command shouldFilter={false}>
           <CommandInput
-            placeholder="Search local files by title or artist..."
+            placeholder="Search by title, artist or file name..."
             value={query}
             onValueChange={setQuery}
           />

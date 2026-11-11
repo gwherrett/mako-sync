@@ -183,6 +183,11 @@ describe('searchLocalTracks — picker search', () => {
     expect(ids(searchLocalTracks(tracks, 'moody'))).toEqual(['c']);
   });
 
+  it('matches the file name, for files with wrong or empty tags', () => {
+    const untagged: LocalTrack = { ...local('e', null, null), file_path: 'Metro - Hold Your Wig.mp3' };
+    expect(ids(searchLocalTracks([...tracks, untagged], 'hold wig'))).toEqual(['e']);
+  });
+
   it('needs every typed word, across title and artist', () => {
     expect(ids(searchLocalTracks(tracks, 'rain kerri'))).toEqual(['a']);
   });

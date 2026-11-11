@@ -11,7 +11,7 @@ import { getRowActions, getTierBadge } from './reviewQueue.utils';
 
 interface ReviewQueueTableProps {
   items: ReviewItem[];
-  /** Local files in scope for the session, for the picker. */
+  /** Every local file the user has, for the picker. */
   localTracks: LocalTrack[];
   /** Spotify track ids with a decision being saved. Their buttons are disabled. */
   pendingIds: ReadonlySet<string>;

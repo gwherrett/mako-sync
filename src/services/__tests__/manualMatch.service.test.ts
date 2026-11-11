@@ -230,7 +230,7 @@ describe('ManualMatchService', () => {
       expect(summarise(review).toReview).toContain('s2→l2 (tier 2)');
     });
 
-    it('returns the in-scope local tracks for search-and-pick', async () => {
+    it('returns every local track for search-and-pick, including artists outside the Spotify subset', async () => {
       mockSupabase({
         local_mp3s: [...LIBRARY.local_mp3s, local('l9', 'Heroes', 'David Bowie')],
         spotify_liked: LIBRARY.spotify_liked,
@@ -239,7 +239,7 @@ describe('ManualMatchService', () => {
 
       const review = await ManualMatchService.getCandidatesForReview('user-1');
 
-      expect(review.localTracks.map(t => t.id)).toEqual(['l1', 'l2', 'l3', 'l4']);
+      expect(review.localTracks.map(t => t.id)).toEqual(['l1', 'l2', 'l3', 'l4', 'l9']);
     });
 
     it("reads the user's decisions through spotify_liked, past the first 1000 rows", async () => {
