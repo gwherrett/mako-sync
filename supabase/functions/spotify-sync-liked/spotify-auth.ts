@@ -50,7 +50,7 @@ export async function refreshSpotifyToken(connection: SpotifyConnection, supabas
   } catch (vaultError: unknown) {
     await pool.end()
     console.error('Failed to retrieve refresh token from vault:', vaultError)
-    throw new Error('Failed to retrieve refresh token from vault - please reconnect Spotify')
+    throw new Error('Failed to retrieve refresh token from vault - please reconnect Spotify', { cause: vaultError })
   }
 
   // Validate client credentials exist
@@ -167,7 +167,7 @@ export async function refreshSpotifyToken(connection: SpotifyConnection, supabas
     }
   } catch (vaultError: unknown) {
     console.error('Failed to update tokens in vault:', vaultError instanceof Error ? vaultError.message : vaultError)
-    throw new Error('Failed to update tokens in vault - please reconnect Spotify')
+    throw new Error('Failed to update tokens in vault - please reconnect Spotify', { cause: vaultError })
   } finally {
     await pool.end()
   }
@@ -345,7 +345,7 @@ export async function getValidAccessToken(connection: SpotifyConnection, supabas
     }
   } catch (vaultError: unknown) {
     console.error('Failed to retrieve access token from vault:', vaultError instanceof Error ? vaultError.message : vaultError)
-    throw new Error('Failed to retrieve access token from vault - please reconnect Spotify')
+    throw new Error('Failed to retrieve access token from vault - please reconnect Spotify', { cause: vaultError })
   } finally {
     await pool.end()
   }

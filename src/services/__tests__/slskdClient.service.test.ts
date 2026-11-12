@@ -1,5 +1,129 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { SlskdClientService } from '../slskdClient.service';
+import type { SlskdConfig } from '@/types/slskd';
+
+const config = { apiEndpoint: 'http://slskd.local:5030', apiKey: 'key-123' } as SlskdConfig;
+
+function mockResponse(init: {
+  ok?: boolean;
+  status?: number;
+  statusText?: string;
+  body?: string;
+  contentType?: string | null;
+  json?: unknown;
+  textRejects?: boolean;
+}): Response {
+  return {
+    ok: init.ok ?? true,
+    status: init.status ?? 200,
+    statusText: init.statusText ?? 'OK',
+    headers: { get: () => init.contentType ?? null },
+    text: init.textRejects
+      ? () => Promise.reject(new Error('stream error'))
+      : () => Promise.resolve(init.body ?? ''),
+    json: () => Promise.resolve(init.json),
+  } as unknown as Response;
+}
+
+describe('SlskdClientService HTTP calls', () => {
+  const fetchMock = vi.fn();
+
+  beforeEach(() => {
+    vi.stubGlobal('fetch', fetchMock);
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+  });
+
+  afterEach(() => {
+    fetchMock.mockReset();
+  });
+
+  describe('testConnection', () => {
+    it('returns true for a JSON response from the application endpoint', async () => {
+      fetchMock.mockResolvedValue(
+        mockResponse({ contentType: 'application/json; charset=utf-8', json: { version: '1' } })
+      );
+
+      await expect(SlskdClientService.testConnection(config)).resolves.toBe(true);
+      expect(fetchMock).toHaveBeenCalledWith(
+        'http://slskd.local:5030/api/v0/application',
+        expect.objectContaining({ method: 'GET', headers: { 'X-API-Key': 'key-123' } })
+      );
+    });
+
+    it('returns false for a non-OK status', async () => {
+      fetchMock.mockResolvedValue(mockResponse({ ok: false, status: 401, statusText: 'Unauthorized' }));
+
+      await expect(SlskdClientService.testConnection(config)).resolves.toBe(false);
+    });
+
+    it('returns false when the response is not JSON', async () => {
+      fetchMock.mockResolvedValue(mockResponse({ contentType: 'text/html' }));
+
+      await expect(SlskdClientService.testConnection(config)).resolves.toBe(false);
+    });
+
+    it('returns false when there is no content type', async () => {
+      fetchMock.mockResolvedValue(mockResponse({ contentType: null }));
+
+      await expect(SlskdClientService.testConnection(config)).resolves.toBe(false);
+    });
+
+    it('returns false when fetch throws', async () => {
+      fetchMock.mockRejectedValue(new TypeError('Failed to fetch'));
+
+      await expect(SlskdClientService.testConnection(config)).resolves.toBe(false);
+    });
+  });
+
+  describe('getExistingSearches', () => {
+    it('sends the API key and parses the JSON body', async () => {
+      const searches = [{ id: '1', searchText: 'Artist - Title', state: 'Completed' }];
+      fetchMock.mockResolvedValue(mockResponse({ body: JSON.stringify(searches) }));
+
+      await expect(SlskdClientService.getExistingSearches(config)).resolves.toEqual(searches);
+      expect(fetchMock).toHaveBeenCalledWith(
+        'http://slskd.local:5030/api/v0/searches',
+        expect.objectContaining({
+          method: 'GET',
+          headers: { 'X-API-Key': 'key-123', 'Content-Type': 'application/json' },
+        })
+      );
+    });
+
+    it('returns an empty object for an empty body', async () => {
+      fetchMock.mockResolvedValue(mockResponse({ body: '' }));
+
+      await expect(SlskdClientService.getExistingSearches(config)).resolves.toEqual({});
+    });
+
+    it('throws with the status and body text for an error response', async () => {
+      fetchMock.mockResolvedValue(mockResponse({ ok: false, status: 500, body: 'Internal error' }));
+
+      await expect(SlskdClientService.getExistingSearches(config))
+        .rejects.toThrow('slskd API error (500): Internal error');
+    });
+
+    it('falls back to "Unknown error" when the error body cannot be read', async () => {
+      fetchMock.mockResolvedValue(mockResponse({ ok: false, status: 502, textRejects: true }));
+
+      await expect(SlskdClientService.getExistingSearches(config))
+        .rejects.toThrow('slskd API error (502): Unknown error');
+    });
+  });
+
+  describe('addToWishlist', () => {
+    it('posts the search text', async () => {
+      const created = { id: '9', searchText: 'Artist - Title', state: 'InProgress' };
+      fetchMock.mockResolvedValue(mockResponse({ body: JSON.stringify(created) }));
+
+      await expect(SlskdClientService.addToWishlist(config, 'Artist - Title')).resolves.toEqual(created);
+      expect(fetchMock).toHaveBeenCalledWith(
+        'http://slskd.local:5030/api/v0/searches',
+        expect.objectContaining({ method: 'POST', body: JSON.stringify({ searchText: 'Artist - Title' }) })
+      );
+    });
+  });
+});
 
 describe('SlskdClientService', () => {
   describe('formatSearchQuery', () => {

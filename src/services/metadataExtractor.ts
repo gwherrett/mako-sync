@@ -395,7 +395,7 @@ export const extractMetadata = async (file: File): Promise<ScannedTrack> => {
     const validationResult = metadataSchema.safeParse(errorTrackData);
     if (!validationResult.success) {
       console.error(`❌ Error case validation failed for ${file.name}:`, validationResult.error.issues);
-      throw new Error(`Failed to extract and validate metadata from ${file.name}`);
+      throw new Error(`Failed to extract and validate metadata from ${file.name}`, { cause: error });
     }
     
     return validationResult.data as ScannedTrack;

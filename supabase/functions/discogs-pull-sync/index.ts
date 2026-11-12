@@ -226,7 +226,7 @@ async function pullFromDiscogs(
         },
       })
     } catch (fetchErr) {
-      throw new Error(`Failed to fetch Discogs collection page ${page}: ${fetchErr}`)
+      throw new Error(`Failed to fetch Discogs collection page ${page}: ${fetchErr}`, { cause: fetchErr })
     }
 
     if (resp.status === 429) throw new Error('RATE_LIMITED')

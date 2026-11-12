@@ -5,8 +5,12 @@
  * that does not require live Supabase connections.
  */
 
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { AuthRetryService } from '../authRetry.service';
+import { AuthService } from '../auth.service';
+import { SessionService } from '../session.service';
+import { UserService } from '../user.service';
+import { ErrorHandlingService } from '../errorHandling.service';
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -253,5 +257,198 @@ describe('AuthRetryService – executeAuthOperation() circuit breaker integratio
     expect(result.success).toBe(false);
     expect(result.attempts).toBe(0);
     expect(mockOp).not.toHaveBeenCalled();
+  });
+});
+
+describe('AuthRetryService – executeAuthOperation() failure path', () => {
+  const run = (op: () => Promise<unknown>, config: Record<string, unknown>) =>
+    (AuthRetryService as any).executeAuthOperation(op, 'testOp', { operation: 'test' }, config);
+  const shouldRetry = (value: boolean) =>
+    vi.spyOn(ErrorHandlingService, 'handleError').mockReturnValue({ shouldRetry: value } as any);
+  let sleep: ReturnType<typeof vi.spyOn>;
+
+  beforeEach(() => {
+    resetCircuitBreakers();
+    sleep = vi.spyOn(AuthRetryService as any, 'sleep').mockResolvedValue(undefined);
+    vi.spyOn(console, 'log').mockImplementation(() => {});
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    vi.spyOn(console, 'warn').mockImplementation(() => {});
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('retries a retryable error and succeeds on a later attempt', async () => {
+    shouldRetry(true);
+    const op = vi.fn()
+      .mockRejectedValueOnce(new Error('network_error'))
+      .mockResolvedValueOnce('ok');
+
+    const result = await run(op, { maxRetries: 2, enableCircuitBreaker: false });
+
+    expect(result).toMatchObject({ success: true, data: 'ok', attempts: 2 });
+    expect(sleep).toHaveBeenCalledTimes(1);
+  });
+
+  it('backs off within ±25% of the exponential delay, capped at maxDelay', async () => {
+    shouldRetry(true);
+    const op = vi.fn().mockRejectedValue(new Error('timeout'));
+
+    await run(op, {
+      maxRetries: 3,
+      baseDelay: 1000,
+      backoffMultiplier: 2,
+      maxDelay: 1500,
+      enableCircuitBreaker: false,
+    });
+
+    const delays = sleep.mock.calls.map(([ms]) => ms as number);
+    expect(delays).toHaveLength(3);
+    expect(delays[0]).toBeGreaterThanOrEqual(750);
+    expect(delays[0]).toBeLessThanOrEqual(1250);
+    // 2000 and 4000 are both capped to 1500.
+    for (const delay of delays.slice(1)) {
+      expect(delay).toBeGreaterThanOrEqual(1125);
+      expect(delay).toBeLessThanOrEqual(1875);
+    }
+  });
+
+  it('stops after maxRetries + 1 attempts and returns the last error', async () => {
+    shouldRetry(true);
+    const op = vi.fn().mockRejectedValue(new Error('still down'));
+
+    const result = await run(op, { maxRetries: 2, enableCircuitBreaker: false });
+
+    expect(op).toHaveBeenCalledTimes(3);
+    expect(result.success).toBe(false);
+    expect(result.attempts).toBe(3);
+    expect(result.error.message).toBe('still down');
+  });
+
+  it('does not retry an error that is not retryable', async () => {
+    shouldRetry(false);
+    const op = vi.fn().mockRejectedValue(new Error('invalid_credentials'));
+
+    const result = await run(op, { maxRetries: 3, enableCircuitBreaker: false });
+
+    expect(op).toHaveBeenCalledTimes(1);
+    expect(sleep).not.toHaveBeenCalled();
+    expect(result).toMatchObject({ success: false, attempts: 1 });
+  });
+
+  it('wraps a non-Error rejection in an Error', async () => {
+    shouldRetry(false);
+
+    const result = await run(() => Promise.reject('plain failure'), {
+      maxRetries: 0,
+      enableCircuitBreaker: false,
+    });
+
+    expect(result.error).toBeInstanceOf(Error);
+    expect(result.error.message).toBe('plain failure');
+  });
+
+  it('passes the attempt number and maxRetries to the error handler', async () => {
+    const handleError = shouldRetry(false);
+
+    await run(() => Promise.reject(new Error('x')), { maxRetries: 4, enableCircuitBreaker: false });
+
+    expect(handleError).toHaveBeenCalledWith(expect.any(Error), {
+      operation: 'test',
+      additionalData: { attempt: 1, maxRetries: 4 },
+    });
+  });
+
+  it('records each failure on the circuit breaker and opens it at the threshold', async () => {
+    shouldRetry(true);
+    const op = vi.fn().mockRejectedValue(new Error('down'));
+
+    await run(op, { maxRetries: 2, enableCircuitBreaker: true, circuitBreakerThreshold: 3 });
+
+    const state = AuthRetryService.getCircuitBreakerStatus()['testOp'];
+    expect(state.failureCount).toBe(3);
+    expect(state.isOpen).toBe(true);
+  });
+
+  it('resets the circuit breaker after a success', async () => {
+    shouldRetry(true);
+    const op = vi.fn()
+      .mockRejectedValueOnce(new Error('blip'))
+      .mockResolvedValueOnce('ok');
+
+    await run(op, { maxRetries: 1, enableCircuitBreaker: true, circuitBreakerThreshold: 5 });
+
+    expect(AuthRetryService.getCircuitBreakerStatus()['testOp'].failureCount).toBe(0);
+  });
+});
+
+describe('AuthRetryService – public operations', () => {
+  const noBreaker = { enableCircuitBreaker: false, maxRetries: 0 };
+
+  beforeEach(() => {
+    resetCircuitBreakers();
+    vi.spyOn(console, 'log').mockImplementation(() => {});
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('signUpWithRetry calls AuthService.signUp', async () => {
+    const data = { email: 'a@example.com', password: 'pw' } as any;
+    const signUp = vi.spyOn(AuthService, 'signUp').mockResolvedValue('signed-up' as any);
+
+    const result = await AuthRetryService.signUpWithRetry(data, noBreaker);
+
+    expect(signUp).toHaveBeenCalledWith(data);
+    expect(result.data).toBe('signed-up');
+  });
+
+  it('signInWithRetry calls AuthService.signIn', async () => {
+    const data = { email: 'a@example.com', password: 'pw' } as any;
+    const signIn = vi.spyOn(AuthService, 'signIn').mockResolvedValue('signed-in' as any);
+
+    const result = await AuthRetryService.signInWithRetry(data, noBreaker);
+
+    expect(signIn).toHaveBeenCalledWith(data);
+    expect(result.data).toBe('signed-in');
+  });
+
+  it('refreshSessionWithRetry calls SessionService.refreshSession', async () => {
+    const refresh = vi.spyOn(SessionService, 'refreshSession').mockResolvedValue('refreshed' as any);
+
+    const result = await AuthRetryService.refreshSessionWithRetry(noBreaker);
+
+    expect(refresh).toHaveBeenCalled();
+    expect(result.data).toBe('refreshed');
+  });
+
+  it('resetPasswordWithRetry calls AuthService.resetPassword', async () => {
+    const reset = vi.spyOn(AuthService, 'resetPassword').mockResolvedValue('sent' as any);
+
+    const result = await AuthRetryService.resetPasswordWithRetry('a@example.com', noBreaker);
+
+    expect(reset).toHaveBeenCalledWith('a@example.com');
+    expect(result.data).toBe('sent');
+  });
+
+  it('updatePasswordWithRetry calls AuthService.updatePassword', async () => {
+    const update = vi.spyOn(AuthService, 'updatePassword').mockResolvedValue('updated' as any);
+
+    const result = await AuthRetryService.updatePasswordWithRetry('new-pw', noBreaker);
+
+    expect(update).toHaveBeenCalledWith('new-pw');
+    expect(result.data).toBe('updated');
+  });
+
+  it('updateProfileWithRetry calls UserService.updateProfile', async () => {
+    const updates = { display_name: 'DJ' } as any;
+    const update = vi.spyOn(UserService, 'updateProfile').mockResolvedValue('profile' as any);
+
+    const result = await AuthRetryService.updateProfileWithRetry('user-1', updates, noBreaker);
+
+    expect(update).toHaveBeenCalledWith('user-1', updates);
+    expect(result.data).toBe('profile');
   });
 });

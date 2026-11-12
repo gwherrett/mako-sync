@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { applyVinylFilters, buildDecadeOptions, VINYL_FILTER_DEFAULTS } from '../VinylFilters';
+import { applyVinylFilters, buildDecadeOptions, VINYL_FILTER_DEFAULTS } from '../vinylFilters.utils';
 import type { PhysicalMediaRecord } from '@/types/discogs';
 
 function makeRecord(overrides: Partial<PhysicalMediaRecord> = {}): PhysicalMediaRecord {

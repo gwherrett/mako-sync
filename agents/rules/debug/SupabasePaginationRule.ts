@@ -37,10 +37,6 @@ export class SupabasePaginationRule extends BaseRule {
 
     const lines = getLines(context);
 
-    // Track if we're inside a multi-line query
-    let queryStartLine = -1;
-    let queryBuffer = '';
-
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i];
 
@@ -51,8 +47,8 @@ export class SupabasePaginationRule extends BaseRule {
 
       // Check if line contains supabase query start
       if (line.includes('supabase') && line.includes('.from(')) {
-        queryStartLine = i + 1;
-        queryBuffer = line;
+        const queryStartLine = i + 1;
+        let queryBuffer = line;
 
         // Check if query continues on next lines
         let j = i + 1;
@@ -86,8 +82,6 @@ export class SupabasePaginationRule extends BaseRule {
 
         // Skip lines we already processed
         i = j - 1;
-        queryBuffer = '';
-        queryStartLine = -1;
       }
     }
 
