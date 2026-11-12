@@ -560,7 +560,7 @@ export class StorageManagerService {
     }
     
     // Determine contamination level
-    let level: 'low' | 'medium' | 'high' | 'critical' = 'low';
+    let level: 'low' | 'medium' | 'high' | 'critical';
     
     if (issues.length === 0) {
       level = 'low';

@@ -41,6 +41,14 @@ export default tseslint.config(
     },
   },
   {
+    // shadcn/ui files are generated and export variants and hooks next to their components
+    // by design. Editing them would make the next shadcn update harder.
+    files: ["src/components/ui/**/*.{ts,tsx}"],
+    rules: {
+      "react-refresh/only-export-components": "off",
+    },
+  },
+  {
     // Tests and mocks stand in for partial library objects (Supabase builders, File System
     // handles, music-metadata results), where typing every field adds noise and no safety.
     files: [

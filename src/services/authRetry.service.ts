@@ -187,7 +187,7 @@ export class AuthRetryService {
   ): Promise<AuthOperationResult<T>> {
     const retryConfig = { ...this.DEFAULT_CONFIG, ...config };
     const startTime = Date.now();
-    let attempts = 0;
+    let attempts: number;
     let lastError: Error | AuthError | null = null;
 
     // Check circuit breaker
@@ -258,11 +258,12 @@ export class AuthRetryService {
       }
     }
 
-    // All attempts failed
+    // All attempts failed. Every failure leaves the loop through `break`, which skips the
+    // increment, so `attempts` is already the number of attempts made.
     return {
       success: false,
-      error: lastError || new Error(`${operationType} failed after ${attempts - 1} attempts`),
-      attempts: attempts - 1,
+      error: lastError || new Error(`${operationType} failed after ${attempts} attempts`),
+      attempts,
       totalTime: Date.now() - startTime
     };
   }

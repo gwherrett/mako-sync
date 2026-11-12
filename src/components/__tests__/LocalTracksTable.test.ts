@@ -537,6 +537,7 @@ describe('LocalTracksTable – fetch cancellation logic (fetchAbortController)',
     // Simulate successful completion — clear the ref
     currentController = null;
 
+    expect(currentController).toBeNull();
     expect(signal.aborted).toBe(false);
   });
 
@@ -545,6 +546,7 @@ describe('LocalTracksTable – fetch cancellation logic (fetchAbortController)',
 
     if (currentController) currentController.abort();
     currentController = new AbortController();
+    expect(currentController.signal.aborted).toBe(false);
 
     // Simulate fetch completing
     currentController = null;
