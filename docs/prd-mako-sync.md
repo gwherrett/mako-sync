@@ -701,7 +701,7 @@ This ensures the "unmapped/unprocessed" count accurately reflects tracks that tr
 7. **TracksTable.tsx** - Spotify tracks display
 8. **LocalTracksTable.tsx** - Local files display
 9. **MissingTracksAnalyzer.tsx** - Gap analysis view
-10. **NoGenreTracksProcessor.tsx** - AI-assisted classification
+10. **TrackLevelProcessor.tsx** - AI-assisted classification (Genre Tools, Assign tab)
 11. **GenreMappingTable.tsx** - Genre mapping editor
 
 ---
