@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '@/contexts/NewAuthContext';
 
 interface AuthStateConfig {
@@ -56,12 +56,10 @@ export const useAuthState = (config: AuthStateConfig = {}): AuthState => {
   // Connection state
   const [isOnline, setIsOnline] = useState(navigator.onLine);
 
-  // Handle initialization
-  useEffect(() => {
-    if (!loading) {
-      setIsInitializing(false);
-    }
-  }, [loading]);
+  // Handle initialization: stays false once auth has finished loading the first time
+  if (isInitializing && !loading) {
+    setIsInitializing(false);
+  }
 
   // Handle session timing with optimized updates
   useEffect(() => {
@@ -113,12 +111,26 @@ export const useAuthState = (config: AuthStateConfig = {}): AuthState => {
     return () => clearTimeout(timeoutId);
   }, [session?.expires_at, sessionTimeoutWarning]);
 
-  // Auto-refresh session when warning appears
+  // Auto-refresh session when warning appears. A manual refresh (refreshSession) already in
+  // progress skips it. The ref stops a second auto-refresh starting while one is in flight;
+  // unlike refreshSession, an auto-refresh doesn't set isRefreshing.
+  const autoRefreshInFlight = useRef(false);
   useEffect(() => {
-    if (showSessionWarning && autoRefresh && !isRefreshing) {
-      refreshSession();
-    }
-  }, [showSessionWarning, autoRefresh, isRefreshing]);
+    if (!showSessionWarning || !autoRefresh || isRefreshing || autoRefreshInFlight.current) return;
+
+    autoRefreshInFlight.current = true;
+    contextRefreshSession()
+      .then(() => {
+        setShowSessionWarning(false);
+        setIsSessionExpired(false);
+      })
+      .catch((error) => {
+        console.error('Failed to refresh session:', error);
+      })
+      .finally(() => {
+        autoRefreshInFlight.current = false;
+      });
+  }, [showSessionWarning, autoRefresh, isRefreshing, contextRefreshSession]);
 
   // Handle online/offline status
   useEffect(() => {

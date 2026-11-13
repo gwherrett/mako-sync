@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo, useRef } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { z } from 'zod';
 
 interface ValidationField {
@@ -44,11 +44,6 @@ export const useRealTimeValidation = ({
   });
 
   const [debounceTimers, setDebounceTimers] = useState<Record<string, NodeJS.Timeout>>({});
-  const isTyping = useRef<Record<string, boolean>>({});
-  const fieldsRef = useRef<Record<string, ValidationField>>({});
-  
-  // Keep fieldsRef in sync with fields state
-  fieldsRef.current = fields;
 
   const validateField = useCallback((fieldName: string, value: string) => {
     const schema = schemas[fieldName];
@@ -126,7 +121,8 @@ export const useRealTimeValidation = ({
     Object.keys(fields).forEach(resetField);
   }, [fields, resetField]);
 
-  // Create stable handlers using refs to avoid re-creation
+  // Props for one field, from the current field state. Callers get new handlers on each render
+  // either way, so depending on `fields` costs nothing and keeps `value` and `onBlur` current.
   const getFieldProps = useCallback((fieldName: string) => {
     return {
       value: fields[fieldName]?.value || '',
@@ -134,13 +130,9 @@ export const useRealTimeValidation = ({
       touched: fields[fieldName]?.touched || false,
       valid: fields[fieldName]?.valid || false,
       onChange: (value: string) => updateField(fieldName, value),
-      onBlur: () => {
-        // Use ref to get current value to avoid closure issues
-        const currentValue = fieldsRef.current[fieldName]?.value || '';
-        updateField(fieldName, currentValue, true);
-      },
+      onBlur: () => updateField(fieldName, fields[fieldName]?.value || '', true),
     };
-  }, [updateField]); // Remove fields dependency to prevent re-creation
+  }, [fields, updateField]);
 
   const isFormValid = useMemo(() => {
     return Object.values(fields).every(field => 

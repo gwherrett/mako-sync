@@ -29,15 +29,16 @@ export const useDiscogsAuth = (): UseDiscogsAuthReturn => {
   const { loading: authLoading, initialDataReady, isAuthenticated } = useAuth();
   const { toast } = useToast();
 
-  const manager = useRef<DiscogsAuthManager>(DiscogsAuthManager.getInstance());
-  const [authState, setAuthState] = useState<DiscogsAuthState>(() => manager.current.getState());
+  // A singleton, so this is the same object on every render
+  const [manager] = useState<DiscogsAuthManager>(() => DiscogsAuthManager.getInstance());
+  const [authState, setAuthState] = useState<DiscogsAuthState>(() => manager.getState());
   const [isInitialCheckComplete, setIsInitialCheckComplete] = useState(false);
   const [isConnecting, setIsConnecting] = useState(false);
   const [isDisconnecting, setIsDisconnecting] = useState(false);
   const initialCheckDone = useRef(false);
 
   useEffect(() => {
-    return manager.current.subscribe((newState) => {
+    return manager.subscribe((newState) => {
       setAuthState(prev => {
         if (
           prev.isConnected === newState.isConnected &&
@@ -48,36 +49,39 @@ export const useDiscogsAuth = (): UseDiscogsAuthReturn => {
         return newState;
       });
     });
-  }, []);
+  }, [manager]);
+
+  // Not signed in: there's nothing to check, so the initial check is complete once auth is ready
+  if (!isInitialCheckComplete && !authLoading && initialDataReady && !isAuthenticated) {
+    setIsInitialCheckComplete(true);
+  }
 
   useEffect(() => {
     if (authLoading || !initialDataReady) return;
 
-    if (!isAuthenticated) {
-      setIsInitialCheckComplete(true);
-      return;
-    }
+    // Not signed in: marked complete during render, above
+    if (!isAuthenticated) return;
 
-    const timeSinceLastCheck = Date.now() - manager.current.getState().lastCheck;
+    const timeSinceLastCheck = Date.now() - manager.getState().lastCheck;
     if (timeSinceLastCheck > 30000 && !initialCheckDone.current) {
       initialCheckDone.current = true;
       console.log('🎵 DISCOGS: Checking connection...');
-      manager.current.checkConnection().finally(() => {
-        const state = manager.current.getState();
+      manager.checkConnection().finally(() => {
+        const state = manager.getState();
         console.log('🎵 DISCOGS: Ready', state.isConnected ? '(connected)' : '(not connected)');
         setIsInitialCheckComplete(true);
       });
     } else {
       setIsInitialCheckComplete(true);
     }
-  }, [authLoading, initialDataReady, isAuthenticated]);
+  }, [manager, authLoading, initialDataReady, isAuthenticated]);
 
   const connectDiscogs = useCallback(async (): Promise<boolean> => {
     if (isConnecting) return false;
     setIsConnecting(true);
     try {
       const callbackUrl = `${window.location.origin}/discogs-callback`;
-      const result = await manager.current.connect(callbackUrl);
+      const result = await manager.connect(callbackUrl);
       if (result.success && result.data?.authorizeUrl) {
         toast({ title: 'Connecting to Discogs', description: 'Redirecting to Discogs for authorization...' });
         window.location.href = result.data.authorizeUrl;
@@ -93,13 +97,13 @@ export const useDiscogsAuth = (): UseDiscogsAuthReturn => {
     } finally {
       setIsConnecting(false);
     }
-  }, [isConnecting, toast]);
+  }, [manager, isConnecting, toast]);
 
   const disconnectDiscogs = useCallback(async (): Promise<boolean> => {
     if (isDisconnecting) return false;
     setIsDisconnecting(true);
     try {
-      const result = await manager.current.disconnect();
+      const result = await manager.disconnect();
       if (result.success) {
         toast({ title: 'Discogs Disconnected', description: 'Successfully disconnected from Discogs' });
         return true;
@@ -114,12 +118,12 @@ export const useDiscogsAuth = (): UseDiscogsAuthReturn => {
     } finally {
       setIsDisconnecting(false);
     }
-  }, [isDisconnecting, toast]);
+  }, [manager, isDisconnecting, toast]);
 
   const checkConnection = useCallback(async (force = false): Promise<boolean> => {
-    const result = await manager.current.checkConnection(force);
+    const result = await manager.checkConnection(force);
     return result.success;
-  }, []);
+  }, [manager]);
 
   return {
     isConnected: authState.isConnected,

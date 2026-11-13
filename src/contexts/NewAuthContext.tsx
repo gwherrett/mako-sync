@@ -471,6 +471,7 @@ export const NewAuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     );
 
     // Initialize auth state - this performs server-side validation
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- false positive: initializeAuth only sets state after awaiting the startup validator or the session fetch
     initializeAuth();
 
     return () => {

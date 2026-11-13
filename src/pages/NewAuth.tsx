@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/NewAuthContext';
 import { useAuthRedirect } from '@/hooks/useAuthRedirect';
-import { useRealTimeValidation } from '@/hooks/useRealTimeValidation';
 import { useAuthState } from '@/hooks/useAuthState';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -61,12 +60,14 @@ const NewAuth = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showResendConfirmation, setShowResendConfirmation] = useState(false);
   const [passwordResetSent, setPasswordResetSent] = useState(false);
-  const [showPasswordStrength, setShowPasswordStrength] = useState(false);
 
   // STRIPPED VERSION: No validation, just basic state
-  const [email, setEmail] = useState('gwherrett@gmail.com');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [displayName, setDisplayName] = useState('');
+
+  // Show password strength once the user starts typing a password in signup mode
+  const showPasswordStrength = !isLogin && password !== '';
 
   // Authentication state management
   const authState = useAuthState({
@@ -96,24 +97,11 @@ const NewAuth = () => {
     loginPath: '/auth'
   });
 
+  // Clear any error left over from another page. Switching between login and signup
+  // clears the error and the form in switchMode and after a successful signup.
   useEffect(() => {
-    // Clear error when switching between login/signup
     clearError();
-    // Reset form data when switching modes
-    setEmail('');
-    setPassword('');
-    setDisplayName('');
-    setShowPasswordStrength(false);
-  }, [isLogin, clearError]);
-
-  // Show password strength when user starts typing password in signup mode
-  useEffect(() => {
-    if (!isLogin && password) {
-      setShowPasswordStrength(true);
-    } else {
-      setShowPasswordStrength(false);
-    }
-  }, [isLogin, password]);
+  }, [clearError]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -155,6 +143,7 @@ const NewAuth = () => {
           setEmail('');
           setPassword('');
           setDisplayName('');
+          clearError();
         }
       }
     } catch (error) {
@@ -184,7 +173,6 @@ const NewAuth = () => {
     setShowPassword(false);
     setShowResendConfirmation(false);
     setPasswordResetSent(false);
-    setShowPasswordStrength(false);
     clearError();
   };
 

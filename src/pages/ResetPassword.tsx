@@ -26,7 +26,6 @@ const ResetPassword = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
   const [resetComplete, setResetComplete] = useState(false);
-  const [tokenValid, setTokenValid] = useState<boolean | null>(null);
 
   const { updatePassword, error, clearError } = useAuth();
 
@@ -35,16 +34,9 @@ const ResetPassword = () => {
   const refreshToken = searchParams.get('refresh_token');
   const type = searchParams.get('type');
 
-  useEffect(() => {
-    // Validate that we have the required parameters for password reset
-    if (type === 'recovery' && accessToken && refreshToken) {
-      setTokenValid(true);
-      // Set the session with the tokens from the URL
-      // This is handled automatically by Supabase when the user clicks the reset link
-    } else {
-      setTokenValid(false);
-    }
-  }, [type, accessToken, refreshToken]);
+  // Validate that we have the required parameters for password reset.
+  // Supabase sets the session from the URL tokens when the user clicks the reset link.
+  const tokenValid = type === 'recovery' && !!accessToken && !!refreshToken;
 
   useEffect(() => {
     clearError();
@@ -103,7 +95,7 @@ const ResetPassword = () => {
   };
 
   // Invalid token state
-  if (tokenValid === false) {
+  if (!tokenValid) {
     return (
       <div className="min-h-screen bg-linear-to-br from-expos-dark via-expos-dark-elevated to-black flex items-center justify-center p-4">
         <Card className="w-full max-w-md bg-spotify-dark border-white/10">
@@ -134,18 +126,6 @@ const ResetPassword = () => {
             </Button>
           </CardContent>
         </Card>
-      </div>
-    );
-  }
-
-  // Loading state while validating token
-  if (tokenValid === null) {
-    return (
-      <div className="min-h-screen bg-linear-to-br from-expos-dark via-expos-dark-elevated to-black flex items-center justify-center p-4">
-        <div className="text-center">
-          <Loader2 className="w-8 h-8 animate-spin text-green-400 mx-auto mb-4" />
-          <p className="text-gray-400">Validating reset link...</p>
-        </div>
       </div>
     );
   }
