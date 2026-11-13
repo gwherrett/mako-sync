@@ -82,13 +82,15 @@ const Index = () => {
   const [localCount, setLocalCount] = useState<number | null>(null);
   const [vinylCount, setVinylCount] = useState<number | null>(null);
 
-  // Update active tab when URL query param changes
-  useEffect(() => {
+  // Update active tab when the URL query string changes
+  const [syncedSearchParams, setSyncedSearchParams] = useState(searchParams);
+  if (searchParams !== syncedSearchParams) {
+    setSyncedSearchParams(searchParams);
     const tabParam = searchParams.get('tab');
     if (tabParam && ['local', 'vinyl', 'spotify', 'missing', 'downloads'].includes(tabParam)) {
       setActiveTab(tabParam);
     }
-  }, [searchParams]);
+  }
 
   // Load user and super genres for the Review Matches tab
   useEffect(() => {

@@ -53,6 +53,184 @@ interface SpotifyTrack {
   mix: string | null;
 }
 
+const TRACKS_PER_PAGE = 50;
+
+type SpotifySortField = 'added_at' | 'year' | 'artist' | 'title' | 'album' | 'super_genre' | 'genre';
+
+interface SpotifyTrackFilters {
+  searchQuery: string;
+  selectedArtist: string;
+  selectedGenre: string;
+  superGenre: string;
+  dateFilter: string;
+  noSuperGenre: boolean;
+  noGenre: boolean;
+}
+
+// The builder is viewed through FilterableQuery: checking it against the interface as a
+// generic constraint makes TypeScript give up (TS2589). The caller gets its own type back.
+function applySpotifyTrackFilters<Q>(query: Q, f: SpotifyTrackFilters): Q {
+  let q = query as unknown as FilterableQuery;
+  if (f.searchQuery.trim()) {
+    q = q.or(`title.ilike.%${f.searchQuery}%,artist.ilike.%${f.searchQuery}%`);
+  }
+  if (f.selectedGenre) q = q.eq('genre', f.selectedGenre);
+  if (f.noGenre) q = q.is('genre', null);
+  if (f.noSuperGenre) q = q.is('super_genre', null);
+  else q = applySuperGenreFilter(q, f.superGenre);
+  if (f.selectedArtist) q = q.eq('artist', f.selectedArtist);
+  if (f.dateFilter === 'week') {
+    const weekAgo = new Date();
+    weekAgo.setDate(weekAgo.getDate() - 7);
+    q = q.gte('added_at', weekAgo.toISOString());
+  } else if (f.dateFilter === 'month') {
+    const monthAgo = new Date();
+    monthAgo.setMonth(monthAgo.getMonth() - 1);
+    q = q.gte('added_at', monthAgo.toISOString());
+  }
+  return q as unknown as Q;
+}
+
+/** `count` is null if the count query failed; `tracks` is null if either query failed. */
+interface SpotifyTracksPage {
+  count: number | null;
+  tracks: SpotifyTrack[] | null;
+  timedOut: boolean;
+}
+
+/** Runs the count query, then the page query. Aborting `cancel` aborts whichever is in flight. */
+async function fetchSpotifyTracksPage(
+  userId: string,
+  filters: SpotifyTrackFilters,
+  sortField: SpotifySortField,
+  sortDirection: 'asc' | 'desc',
+  page: number,
+  cancel: AbortSignal
+): Promise<SpotifyTracksPage> {
+  const countResult = await withQueryTimeout(
+    async (signal) => {
+      let query = supabase
+        .from('spotify_liked')
+        .select('*', { count: 'exact' })
+        .eq('user_id', userId);
+      query = applySpotifyTrackFilters(query, filters);
+      query = query.range(0, 0);
+      return query.abortSignal(AbortSignal.any([signal, cancel]));
+    },
+    15000,
+    'TracksTable:count'
+  );
+
+  if (countResult.error) return { count: null, tracks: null, timedOut: countResult.timedOut };
+  const count = countResult.data?.count || 0;
+  if (cancel.aborted) return { count, tracks: null, timedOut: false };
+
+  const dataResult = await withQueryTimeout(
+    async (signal) => {
+      let query = supabase
+        .from('spotify_liked')
+        .select('*')
+        .eq('user_id', userId);
+      query = applySpotifyTrackFilters(query, filters);
+      return query
+        .order(sortField, { ascending: sortDirection === 'asc' })
+        .range((page - 1) * TRACKS_PER_PAGE, page * TRACKS_PER_PAGE - 1)
+        .abortSignal(AbortSignal.any([signal, cancel]));
+    },
+    15000,
+    'TracksTable:data'
+  );
+
+  if (dataResult.error) return { count, tracks: null, timedOut: dataResult.timedOut };
+  return { count, tracks: dataResult.data?.data || [], timedOut: false };
+}
+
+/** Each list is null if its query returned no data. */
+interface SpotifyFilterOptions {
+  artists: string[] | null;
+  genres: string[] | null;
+  superGenres: string[] | null;
+}
+
+async function fetchSpotifyFilterOptions(
+  userId: string,
+  f: Pick<SpotifyTrackFilters, 'selectedGenre' | 'superGenre' | 'noSuperGenre'>,
+  cancel: AbortSignal
+): Promise<SpotifyFilterOptions> {
+  // Get unique artists with timeout protection
+  const artistResult = await withQueryTimeout(
+    async (signal) => {
+      let query = supabase
+        .from('spotify_liked')
+        .select('artist')
+        .eq('user_id', userId)
+        .not('artist', 'is', null);
+
+      if (f.selectedGenre) {
+        query = query.eq('genre', f.selectedGenre);
+      }
+
+      if (f.noSuperGenre) {
+        query = query.is('super_genre', null);
+      } else {
+        query = applySuperGenreFilter(query, f.superGenre);
+      }
+
+      return query.abortSignal(AbortSignal.any([signal, cancel]));
+    },
+    10000,
+    'TracksTable:filterOptions:artists'
+  );
+  const artists = artistResult.data?.data
+    ? [...new Set(artistResult.data.data.map(item => item.artist))].sort()
+    : null;
+  if (cancel.aborted) return { artists, genres: null, superGenres: null };
+
+  // Get unique genres with timeout protection
+  const genreResult = await withQueryTimeout(
+    async (signal) => {
+      let query = supabase
+        .from('spotify_liked')
+        .select('genre')
+        .eq('user_id', userId)
+        .not('genre', 'is', null);
+
+      if (f.noSuperGenre) {
+        query = query.is('super_genre', null);
+      } else {
+        query = applySuperGenreFilter(query, f.superGenre);
+      }
+
+      return query.abortSignal(AbortSignal.any([signal, cancel]));
+    },
+    10000,
+    'TracksTable:filterOptions:genres'
+  );
+  const genres = genreResult.data?.data
+    ? [...new Set(genreResult.data.data.map(item => item.genre))].sort()
+    : null;
+  if (cancel.aborted) return { artists, genres, superGenres: null };
+
+  // Get unique super genres with timeout protection
+  const superGenreResult = await withQueryTimeout(
+    async (signal) => {
+      return supabase
+        .from('spotify_liked')
+        .select('super_genre')
+        .eq('user_id', userId)
+        .not('super_genre', 'is', null)
+        .abortSignal(AbortSignal.any([signal, cancel]));
+    },
+    10000,
+    'TracksTable:filterOptions:superGenres'
+  );
+  const superGenres = superGenreResult.data?.data
+    ? [...new Set(superGenreResult.data.data.map(item => item.super_genre))].sort()
+    : null;
+
+  return { artists, genres, superGenres };
+}
+
 interface TracksTableProps {
   onTrackSelect: (track: SpotifyTrack) => void;
   selectedTrack: SpotifyTrack | null;
@@ -83,7 +261,7 @@ const TracksTable = ({ onTrackSelect, selectedTrack, sharedSearchQuery = '', sha
   const [superGenres, setSuperGenres] = useState<string[]>([]);
 
   const [unlikingTrackId, setUnlikingTrackId] = useState<string | null>(null);
-  const tracksPerPage = 50;
+  const tracksPerPage = TRACKS_PER_PAGE;
   const { toast } = useToast();
   const { user, isAuthenticated, loading: authLoading, initialDataReady, spotifyDataFetchEnabled } = useAuth();
   const { isInitialCheckComplete: spotifyCheckComplete } = useUnifiedSpotifyAuth();
@@ -92,43 +270,111 @@ const TracksTable = ({ onTrackSelect, selectedTrack, sharedSearchQuery = '', sha
   // Compute effective filters (shared takes precedence, local adds to it)
   const effectiveSearchQuery = sharedSearchQuery || searchQuery;
   const effectiveSuperGenre = sharedSuperGenre || selectedSuperGenre;
+  const userId = user?.id;
+
+  // Bumped when a Spotify sync completes, to make the data and filter-option effects run again
+  const [reloadCount, setReloadCount] = useState(0);
+  // True once a page of results has been shown
+  const [hasLoaded, setHasLoaded] = useState(false);
 
   // Reset to page 1 when shared filters change
-  useEffect(() => {
+  const [syncedShared, setSyncedShared] = useState({ sharedSearchQuery, sharedSuperGenre });
+  if (syncedShared.sharedSearchQuery !== sharedSearchQuery || syncedShared.sharedSuperGenre !== sharedSuperGenre) {
+    setSyncedShared({ sharedSearchQuery, sharedSuperGenre });
     setCurrentPage(1);
-  }, [sharedSearchQuery, sharedSuperGenre]);
+  }
+
+  // Signed out: show an empty table. Uses the same guards as the data effect, so the
+  // token-refresh settle window doesn't clear it.
+  const signedOut = !authLoading && spotifyDataFetchEnabled && spotifyCheckComplete && (!isAuthenticated || !userId);
+  if (signedOut && (tracks.length > 0 || totalTracks !== 0 || loading)) {
+    setTracks([]);
+    setTotalTracks(0);
+    setLoading(false);
+  }
 
   // Consolidated fetch effect - debounces search, immediate for other filters
   // Wait for spotifyDataFetchEnabled AND Spotify connection check to prevent concurrent request deadlock.
   // spotifyDataFetchEnabled is false during the token-refresh settle window, which prevents queries from
   // firing into the locked Supabase client. When it transitions back to true, this effect re-runs
   // automatically, giving "show stale data then auto-refresh" behaviour on tab restore.
+  // The cleanup aborts any in-flight queries, so a slower old query can't overwrite newer results.
   useEffect(() => {
     if (authLoading || !spotifyDataFetchEnabled || !spotifyCheckComplete) return;
-    if (!isAuthenticated || !user) {
-      setTracks([]);
-      setTotalTracks(0);
-      setLoading(false);
-      return;
-    }
+    // The signed-out state is cleared during render, above
+    if (!isAuthenticated || !userId) return;
+
+    let ignore = false;
+    const cancel = new AbortController();
+    const filters: SpotifyTrackFilters = {
+      searchQuery: effectiveSearchQuery,
+      selectedArtist,
+      selectedGenre,
+      superGenre: effectiveSuperGenre,
+      dateFilter,
+      noSuperGenre,
+      noGenre,
+    };
 
     // Debounce only for search query changes
     const timeoutId = setTimeout(() => {
-      fetchTracks();
+      setLoading(true);
+      fetchSpotifyTracksPage(userId, filters, sortField, sortDirection, currentPage, cancel.signal)
+        .then((result) => {
+          if (ignore) return;
+          if (result.count !== null) setTotalTracks(result.count);
+          if (result.tracks !== null) {
+            setTracks(result.tracks);
+            setHasLoaded(true);
+          } else if (result.timedOut) {
+            toast({
+              title: "Query Timeout",
+              description: "The request took too long. Please try again.",
+              variant: "destructive",
+            });
+          }
+          setLoading(false);
+        })
+        .catch((error) => {
+          if (ignore) return;
+          console.error('Error loading Spotify tracks:', error);
+          setLoading(false);
+        });
     }, effectiveSearchQuery ? 300 : 0);
 
-    return () => clearTimeout(timeoutId);
-  }, [authLoading, spotifyDataFetchEnabled, spotifyCheckComplete, isAuthenticated, user?.id, currentPage, sortField, sortDirection, selectedArtist, selectedGenre, effectiveSuperGenre, dateFilter, noSuperGenre, noGenre, effectiveSearchQuery]);
+    return () => {
+      ignore = true;
+      clearTimeout(timeoutId);
+      cancel.abort();
+    };
+  }, [authLoading, spotifyDataFetchEnabled, spotifyCheckComplete, isAuthenticated, userId, currentPage, sortField, sortDirection, selectedArtist, selectedGenre, effectiveSuperGenre, dateFilter, noSuperGenre, noGenre, effectiveSearchQuery, reloadCount, toast]);
 
-  // Separate useEffect for filter options that updates when genre changes
+  // Separate effect for filter options, which narrow with the genre and supergenre filters
   useEffect(() => {
-    if (authLoading || !spotifyDataFetchEnabled || !spotifyCheckComplete || !isAuthenticated || !user) return;
-    fetchFilterOptions();
-  }, [authLoading, spotifyDataFetchEnabled, spotifyCheckComplete, isAuthenticated, user?.id, selectedGenre, effectiveSuperGenre]);
+    if (authLoading || !spotifyDataFetchEnabled || !spotifyCheckComplete || !isAuthenticated || !userId) return;
+
+    let ignore = false;
+    const cancel = new AbortController();
+    fetchSpotifyFilterOptions(userId, { selectedGenre, superGenre: effectiveSuperGenre, noSuperGenre }, cancel.signal)
+      .then((options) => {
+        if (ignore) return;
+        if (options.artists) setArtists(options.artists);
+        if (options.genres) setGenres(options.genres);
+        if (options.superGenres) setSuperGenres(options.superGenres);
+      })
+      .catch((error) => {
+        if (!ignore) console.error('Error loading Spotify filter options:', error);
+      });
+
+    return () => {
+      ignore = true;
+      cancel.abort();
+    };
+  }, [authLoading, spotifyDataFetchEnabled, spotifyCheckComplete, isAuthenticated, userId, selectedGenre, effectiveSuperGenre, noSuperGenre, reloadCount]);
 
   // Subscribe to sync_progress to refresh when sync completes
   useEffect(() => {
-    if (!user || !isAuthenticated) return;
+    if (!userId || !isAuthenticated) return;
 
     const channel = supabase
       .channel('tracks-sync-refresh')
@@ -138,13 +384,12 @@ const TracksTable = ({ onTrackSelect, selectedTrack, sharedSearchQuery = '', sha
           event: 'UPDATE',
           schema: 'public',
           table: 'sync_progress',
-          filter: `user_id=eq.${user.id}`
+          filter: `user_id=eq.${userId}`
         },
         (payload: RealtimePostgresUpdatePayload<Tables<'sync_progress'>>) => {
-          // Refresh tracks when sync completes
+          // Refresh tracks and filter options when sync completes, using the current filters
           if (payload.new?.status === 'completed') {
-            fetchTracks();
-            fetchFilterOptions();
+            setReloadCount((n) => n + 1);
           }
         }
       )
@@ -154,181 +399,7 @@ const TracksTable = ({ onTrackSelect, selectedTrack, sharedSearchQuery = '', sha
       channel.unsubscribe();
       supabase.removeChannel(channel);
     };
-  }, [user?.id, isAuthenticated]);
-
-
-  const fetchTracks = async () => {
-    if (!user) return;
-    
-    setLoading(true);
-    
-    // Build filter function for reuse (uses effective filters that combine shared + local)
-    // The builder is viewed through FilterableQuery: checking it against the interface as a
-    // generic constraint makes TypeScript give up (TS2589). The caller gets its own type back.
-    const applyFilters = <Q,>(query: Q): Q => {
-      let q = query as unknown as FilterableQuery;
-      if (effectiveSearchQuery.trim()) {
-        q = q.or(`title.ilike.%${effectiveSearchQuery}%,artist.ilike.%${effectiveSearchQuery}%`);
-      }
-      if (selectedGenre) q = q.eq('genre', selectedGenre);
-      if (noGenre) q = q.is('genre', null);
-      if (noSuperGenre) q = q.is('super_genre', null);
-      else q = applySuperGenreFilter(q, effectiveSuperGenre);
-      if (selectedArtist) q = q.eq('artist', selectedArtist);
-      if (dateFilter === 'week') {
-        const weekAgo = new Date();
-        weekAgo.setDate(weekAgo.getDate() - 7);
-        q = q.gte('added_at', weekAgo.toISOString());
-      } else if (dateFilter === 'month') {
-        const monthAgo = new Date();
-        monthAgo.setMonth(monthAgo.getMonth() - 1);
-        q = q.gte('added_at', monthAgo.toISOString());
-      }
-      return q as unknown as Q;
-    };
-
-    // Count query with timeout
-    const countResult = await withQueryTimeout(
-      async (signal) => {
-        let query = supabase
-          .from('spotify_liked')
-          .select('*', { count: 'exact' })
-          .eq('user_id', user.id);
-        query = applyFilters(query);
-        query = query.range(0, 0);
-        return query.abortSignal(signal);
-      },
-      15000,
-      'TracksTable:count'
-    );
-
-    if (countResult.error) {
-      if (countResult.timedOut) {
-        toast({
-          title: "Query Timeout",
-          description: "The request took too long. Please try again.",
-          variant: "destructive",
-        });
-      }
-      setLoading(false);
-      return;
-    }
-
-    setTotalTracks(countResult.data?.count || 0);
-
-    // Data query with timeout
-    const dataResult = await withQueryTimeout(
-      async (signal) => {
-        let query = supabase
-          .from('spotify_liked')
-          .select('*')
-          .eq('user_id', user.id);
-        query = applyFilters(query);
-        return query
-          .order(sortField, { ascending: sortDirection === 'asc' })
-          .range((currentPage - 1) * tracksPerPage, currentPage * tracksPerPage - 1)
-          .abortSignal(signal);
-      },
-      15000,
-      'TracksTable:data'
-    );
-
-    if (dataResult.error) {
-      if (dataResult.timedOut) {
-        toast({
-          title: "Query Timeout",
-          description: "The request took too long. Please try again.",
-          variant: "destructive",
-        });
-      }
-      setLoading(false);
-      return;
-    }
-
-    setTracks(dataResult.data?.data || []);
-    setLoading(false);
-  };
-
-  const fetchFilterOptions = async () => {
-    if (!user) return;
-
-    const userId = user.id;
-    
-    // Get unique artists with timeout protection
-    const artistResult = await withQueryTimeout(
-      async (signal) => {
-        let query = supabase
-          .from('spotify_liked')
-          .select('artist')
-          .eq('user_id', userId)
-          .not('artist', 'is', null);
-        
-        if (selectedGenre) {
-          query = query.eq('genre', selectedGenre);
-        }
-        
-        if (noSuperGenre) {
-          query = query.is('super_genre', null);
-        } else {
-          query = applySuperGenreFilter(query, effectiveSuperGenre);
-        }
-
-        return query.abortSignal(signal);
-      },
-      10000,
-      'TracksTable:filterOptions:artists'
-    );
-    
-    if (artistResult.data?.data) {
-      const uniqueArtists = [...new Set(artistResult.data.data.map(item => item.artist))].sort();
-      setArtists(uniqueArtists);
-    }
-
-    // Get unique genres with timeout protection
-    const genreResult = await withQueryTimeout(
-      async (signal) => {
-        let query = supabase
-          .from('spotify_liked')
-          .select('genre')
-          .eq('user_id', userId)
-          .not('genre', 'is', null);
-
-        if (noSuperGenre) {
-          query = query.is('super_genre', null);
-        } else {
-          query = applySuperGenreFilter(query, effectiveSuperGenre);
-        }
-
-        return query.abortSignal(signal);
-      },
-      10000,
-      'TracksTable:filterOptions:genres'
-    );
-    
-    if (genreResult.data?.data) {
-      const uniqueGenres = [...new Set(genreResult.data.data.map(item => item.genre))].sort();
-      setGenres(uniqueGenres);
-    }
-
-    // Get unique super genres with timeout protection
-    const superGenreResult = await withQueryTimeout(
-      async (signal) => {
-        return supabase
-          .from('spotify_liked')
-          .select('super_genre')
-          .eq('user_id', userId)
-          .not('super_genre', 'is', null)
-          .abortSignal(signal);
-      },
-      10000,
-      'TracksTable:filterOptions:superGenres'
-    );
-    
-    if (superGenreResult.data?.data) {
-      const uniqueSuperGenres = [...new Set(superGenreResult.data.data.map(item => item.super_genre))].sort();
-      setSuperGenres(uniqueSuperGenres);
-    }
-  };
+  }, [userId, isAuthenticated]);
 
   const clearFilters = () => {
     setSearchQuery('');
@@ -388,7 +459,10 @@ const TracksTable = ({ onTrackSelect, selectedTrack, sharedSearchQuery = '', sha
   };
 
 
-  if (loading) {
+  // During the token-refresh settle window, keep showing the current rows. The paused run's
+  // queries were aborted, so `loading` can still be true from it; the data effect fetches
+  // again when the window ends.
+  if (loading && !(hasLoaded && !spotifyDataFetchEnabled)) {
     return (
       <Card>
         <CardContent className="p-6">

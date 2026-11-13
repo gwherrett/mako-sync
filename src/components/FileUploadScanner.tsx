@@ -28,9 +28,10 @@ const FileUploadScanner = ({ onScanComplete, onScanningChange }: FileUploadScann
   const { toast } = useToast();
   const [isDeleting, setIsDeleting] = useState(false);
 
+  // Tell the parent when scanning starts and stops, so the tables can pause their queries
   React.useEffect(() => {
     onScanningChange?.(isScanning);
-  }, [isScanning]);
+  }, [isScanning, onScanningChange]);
 
   const deleteAllLocalFiles = async () => {
     setIsDeleting(true);

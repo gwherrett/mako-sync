@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { MoreHorizontal, ChevronUp, ChevronDown, Filter, X, Edit, Trash2, FileCheck, AlertCircle, Copy } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { TrackFilters } from '@/components/common/TrackFilters';
@@ -72,6 +72,180 @@ interface LocalTracksTableProps {
   isScanInProgress?: boolean; // Suppress fetches while scanner is running
 }
 
+const TRACKS_PER_PAGE = 100;
+
+type LocalSortField = 'last_modified' | 'year' | 'artist' | 'title' | 'album' | 'genre' | 'super_genre' | 'bitrate' | 'file_size';
+
+interface LocalTrackFilters {
+  searchQuery: string;
+  yearFrom: string;
+  yearTo: string;
+  selectedSuperGenre: string;
+  selectedArtist: string;
+  selectedAlbum: string;
+  selectedGenre: string;
+  bitrateFilter: string;
+  formatFilter: string;
+  missingMetadata: string;
+}
+
+// The builder is viewed through FilterableQuery: checking it against the interface as a
+// generic constraint makes TypeScript give up (TS2589). The caller gets its own type back.
+function applyLocalTrackFilters<Q>(query: Q, f: LocalTrackFilters): Q {
+  let q = query as unknown as FilterableQuery;
+  if (f.searchQuery.trim()) {
+    q = q.or(`title.ilike.%${f.searchQuery}%,artist.ilike.%${f.searchQuery}%,album.ilike.%${f.searchQuery}%,file_path.ilike.%${f.searchQuery}%`);
+  }
+  if (f.yearFrom) q = q.gte('year', parseInt(f.yearFrom));
+  if (f.yearTo) q = q.lte('year', parseInt(f.yearTo));
+  q = applySuperGenreFilter(q, f.selectedSuperGenre);
+  if (f.selectedArtist) q = q.eq('artist', f.selectedArtist);
+  if (f.selectedAlbum) q = q.eq('album', f.selectedAlbum);
+  if (f.selectedGenre) q = q.eq('genre', f.selectedGenre);
+  if (f.bitrateFilter === 'low') q = q.lt('bitrate', 192);
+  else if (f.bitrateFilter === 'medium') q = q.gte('bitrate', 192).lt('bitrate', 320);
+  else if (f.bitrateFilter === 'high') q = q.gte('bitrate', 320);
+  if (f.formatFilter) q = q.ilike('audio_format', f.formatFilter);
+  if (f.missingMetadata === 'title') q = q.is('title', null);
+  else if (f.missingMetadata === 'artist') q = q.is('artist', null);
+  else if (f.missingMetadata === 'album') q = q.is('album', null);
+  else if (f.missingMetadata === 'year') q = q.is('year', null);
+  else if (f.missingMetadata === 'genre') q = q.is('genre', null);
+  else if (f.missingMetadata === 'any') q = q.or('title.is.null,artist.is.null,album.is.null,year.is.null,genre.is.null');
+  return q as unknown as Q;
+}
+
+/** `count` is null if the count query failed; `tracks` is null if either query failed. */
+interface LocalTracksPage {
+  count: number | null;
+  tracks: LocalTrack[] | null;
+  timedOut: boolean;
+}
+
+/**
+ * Runs the count query, then the page query. Aborting `cancel` aborts whichever query is in
+ * flight (for example when a scan starts) and skips the page query.
+ */
+async function fetchLocalTracksPage(
+  userId: string,
+  filters: LocalTrackFilters,
+  sortField: LocalSortField,
+  sortDirection: 'asc' | 'desc',
+  page: number,
+  cancel: AbortSignal
+): Promise<LocalTracksPage> {
+  const countResult = await withQueryTimeout(
+    async (signal) => {
+      let query = supabase
+        .from('local_mp3s')
+        .select('*', { count: 'exact' })
+        .eq('user_id', userId);
+      query = applyLocalTrackFilters(query, filters);
+      query = query.range(0, 0);
+      return query.abortSignal(AbortSignal.any([signal, cancel]));
+    },
+    15000,
+    'LocalTracksTable:count'
+  );
+
+  if (countResult.error) return { count: null, tracks: null, timedOut: countResult.timedOut };
+  const count = countResult.data?.count || 0;
+  if (cancel.aborted) return { count, tracks: null, timedOut: false };
+
+  const dataResult = await withQueryTimeout(
+    async (signal) => {
+      let query = supabase
+        .from('local_mp3s')
+        .select('*')
+        .eq('user_id', userId);
+      query = applyLocalTrackFilters(query, filters);
+      return query
+        .order(sortField, { ascending: sortDirection === 'asc' })
+        .range((page - 1) * TRACKS_PER_PAGE, page * TRACKS_PER_PAGE - 1)
+        .abortSignal(AbortSignal.any([signal, cancel]));
+    },
+    15000,
+    'LocalTracksTable:data'
+  );
+
+  if (dataResult.error) return { count, tracks: null, timedOut: dataResult.timedOut };
+  return { count, tracks: dataResult.data?.data || [], timedOut: false };
+}
+
+interface LocalFilterOptions {
+  genres: string[];
+  artists: string[];
+  albums: string[];
+}
+
+async function fetchLocalFilterOptions(userId: string, signal: AbortSignal): Promise<LocalFilterOptions> {
+  console.log('🔄 Fetching filter options...');
+
+  // Use database functions to efficiently get distinct values
+  const [genresResult, artistsResult, albumsResult] = await Promise.all([
+    supabase.rpc('get_distinct_local_genres', { user_uuid: userId }).abortSignal(signal),
+    supabase.rpc('get_distinct_local_artists', { user_uuid: userId }).abortSignal(signal),
+    supabase.rpc('get_distinct_local_albums', { user_uuid: userId }).abortSignal(signal),
+  ]);
+
+  console.log('📊 RPC results:', {
+    genres: genresResult,
+    artists: artistsResult,
+    albums: albumsResult,
+  });
+
+  // Extract the strings from the returned objects
+  const genres = (genresResult.data || []).map(row => row.genre).filter(Boolean).sort();
+  const artists = (artistsResult.data || []).map(row => row.artist).filter(Boolean).sort();
+  const albums = (albumsResult.data || []).map(row => row.album).filter(Boolean).sort();
+
+  console.log('🗂️ Filter options loaded:', {
+    artists: artists.length,
+    albums: albums.length,
+    genres: genres.length,
+  });
+  console.log('🎵 Unique genres found:', genres);
+
+  return { genres, artists, albums };
+}
+
+/** Lowercased Spotify genres that map to `superGenre`, from the base map plus the user's overrides. */
+async function fetchMappedSpotifyGenres(userId: string, superGenre: string): Promise<string[]> {
+  const isDanceAll = superGenre === DANCE_ALL_VALUE;
+  let mappingsQuery = supabase
+    .from('spotify_genre_map_base')
+    .select('spotify_genre');
+  mappingsQuery = isDanceAll
+    ? mappingsQuery.in('super_genre', DANCE_SUPER_GENRES)
+    : mappingsQuery.eq('super_genre', superGenre as Database['public']['Enums']['super_genre']);
+  const { data: mappings } = await mappingsQuery;
+
+  let overridesQuery = supabase
+    .from('spotify_genre_map_overrides')
+    .select('spotify_genre')
+    .eq('user_id', userId);
+  overridesQuery = isDanceAll
+    ? overridesQuery.in('super_genre', DANCE_SUPER_GENRES)
+    : overridesQuery.eq('super_genre', superGenre as Database['public']['Enums']['super_genre']);
+  const { data: overrides } = await overridesQuery;
+
+  const mappedGenres = new Set<string>();
+  mappings?.forEach(m => mappedGenres.add(m.spotify_genre.toLowerCase()));
+  overrides?.forEach(o => mappedGenres.add(o.spotify_genre.toLowerCase()));
+  return Array.from(mappedGenres);
+}
+
+/** Sorted distinct artists of the user's local tracks in `genre`, or null if the query returned no data. */
+async function fetchArtistsForGenre(userId: string, genre: string): Promise<string[] | null> {
+  const { data } = await supabase
+    .from('local_mp3s')
+    .select('artist')
+    .eq('user_id', userId)
+    .eq('genre', genre);
+  if (!data) return null;
+  return [...new Set(data.map(item => item.artist).filter(Boolean))].sort() as string[];
+}
+
 const LocalTracksTable = ({ onTrackSelect, selectedTrack, refreshTrigger, isActive = true, isScanInProgress = false }: LocalTracksTableProps) => {
   const [tracks, setTracks] = useState<LocalTrack[]>([]);
   const [loading, setLoading] = useState(true);
@@ -96,307 +270,188 @@ const LocalTracksTable = ({ onTrackSelect, selectedTrack, refreshTrigger, isActi
   const [missingMetadata, setMissingMetadata] = useState<string>('');
   const [filtersOpen, setFiltersOpen] = useState(false);
 
-  // Filter options - cascading
-  const [allArtists, setAllArtists] = useState<string[]>([]); // All artists for reset
-  const [allGenres, setAllGenres] = useState<string[]>([]); // All genres for reset
-  const [artists, setArtists] = useState<string[]>([]); // Filtered by supergenre + genre
-  const [genres, setGenres] = useState<string[]>([]); // Filtered by supergenre
+  // Filter options. `genres` and `artists` (the cascaded lists) are derived from these below.
+  const [allArtists, setAllArtists] = useState<string[]>([]);
+  const [allGenres, setAllGenres] = useState<string[]>([]);
   const [albums, setAlbums] = useState<string[]>([]);
-  // Abort controller for in-flight fetch cancellation
-  const fetchAbortController = useRef<AbortController | null>(null);
-  const hasInitiallyLoaded = useRef(false);
   
-  const tracksPerPage = 100;
+  const tracksPerPage = TRACKS_PER_PAGE;
   const { toast } = useToast();
   const { user, isAuthenticated, loading: authLoading, initialDataReady, dataFetchEnabled } = useAuth();
 
-  // Abort in-flight fetch when scan starts, so the scanner's DB queries aren't
-  // competing with the table's count/data queries on the same connection pool.
-  useEffect(() => {
-    if (isScanInProgress && fetchAbortController.current) {
-      fetchAbortController.current.abort();
-      fetchAbortController.current = null;
-      setLoading(false);
-    }
-  }, [isScanInProgress]);
+  const userId = user?.id;
+
+  // Bumped after a metadata save to make the data effect run again
+  const [reloadCount, setReloadCount] = useState(0);
+  // True once a page of results has been shown
+  const [hasLoaded, setHasLoaded] = useState(false);
+
+  // Signed out: show an empty table. Uses the same guards as the data effect, so a
+  // token-refresh settle window, an inactive tab or a running scan doesn't clear it.
+  const signedOut =
+    !authLoading && dataFetchEnabled && isActive && !isScanInProgress && (!isAuthenticated || !userId);
+  if (signedOut && (tracks.length > 0 || totalTracks !== 0 || loading)) {
+    setTracks([]);
+    setTotalTracks(0);
+    setLoading(false);
+  }
 
   // Main data fetching effect - consolidated with debounce for text inputs
   // dataFetchEnabled is false during the token-refresh settle window — prevents queries firing
   // into a locked Supabase client. When it transitions back to true, this effect re-runs
   // automatically for "show stale data then auto-refresh" behaviour on tab restore.
+  //
+  // The cleanup runs when a filter changes, a scan starts or the component unmounts. It cancels
+  // the debounce and aborts any in-flight queries, so they stop competing with the scanner's
+  // queries on the same connection pool and can't overwrite newer results.
   useEffect(() => {
     // Guard: Wait for auth to be ready, token settle, AND tab to be active
     if (authLoading || !dataFetchEnabled || !isActive) return;
     // Suppress fetches while a scan is running — scanner owns the DB connection
     if (isScanInProgress) return;
+    // The signed-out state is cleared during render, above
+    if (!isAuthenticated || !userId) return;
 
-    if (!isAuthenticated || !user) {
-      setTracks([]);
-      setTotalTracks(0);
-      setLoading(false);
-      return;
-    }
+    let ignore = false;
+    const cancel = new AbortController();
+    const filters: LocalTrackFilters = {
+      searchQuery,
+      yearFrom,
+      yearTo,
+      selectedSuperGenre,
+      selectedArtist,
+      selectedAlbum,
+      selectedGenre,
+      bitrateFilter,
+      formatFilter,
+      missingMetadata,
+    };
 
     // Debounce all fetches: longer for text input, short batch window for everything else
     const delay = searchQuery || yearFrom || yearTo ? 400 : 150;
-    const timeoutId = setTimeout(() => fetchTracks(user.id), delay);
-    return () => clearTimeout(timeoutId);
-  }, [authLoading, dataFetchEnabled, isActive, isScanInProgress, isAuthenticated, user?.id, currentPage, sortField, sortDirection, selectedSuperGenre, selectedArtist, selectedAlbum, selectedGenre, bitrateFilter, formatFilter, missingMetadata, refreshTrigger, searchQuery, yearFrom, yearTo]);
+    const timeoutId = setTimeout(() => {
+      setLoading(true);
+      fetchLocalTracksPage(userId, filters, sortField, sortDirection, currentPage, cancel.signal)
+        .then((result) => {
+          if (ignore) return;
+          if (result.count !== null) setTotalTracks(result.count);
+          if (result.tracks !== null) {
+            setTracks(result.tracks);
+            setHasLoaded(true);
+          } else if (result.timedOut) {
+            toast({
+              title: "Query Timeout",
+              description: "The request took too long. Please try again.",
+              variant: "destructive",
+            });
+          }
+          setLoading(false);
+        })
+        .catch((error) => {
+          if (ignore) return;
+          console.error('Error loading local tracks:', error);
+          setLoading(false);
+        });
+    }, delay);
 
-  // Filter options fetch - only once when tab becomes active
+    return () => {
+      ignore = true;
+      clearTimeout(timeoutId);
+      cancel.abort();
+    };
+  }, [authLoading, dataFetchEnabled, isActive, isScanInProgress, isAuthenticated, userId, currentPage, sortField, sortDirection, selectedSuperGenre, selectedArtist, selectedAlbum, selectedGenre, bitrateFilter, formatFilter, missingMetadata, refreshTrigger, reloadCount, searchQuery, yearFrom, yearTo, toast]);
+
+  // Filter options: loaded once per user when the tab is active, and again after each scan
+  // (refreshTrigger). Skipped while a scan is running, like the table data.
+  const loadedOptionsKey = useRef<string | null>(null);
   useEffect(() => {
-    if (authLoading || !dataFetchEnabled || !isActive || !isAuthenticated || !user) return;
-    if (hasInitiallyLoaded.current) return; // Only fetch once
+    if (authLoading || !dataFetchEnabled || !isActive || !isAuthenticated || !userId) return;
+    if (isScanInProgress) return;
+    const key = `${userId}:${refreshTrigger ?? 0}`;
+    if (loadedOptionsKey.current === key) return;
+    loadedOptionsKey.current = key;
 
-    hasInitiallyLoaded.current = true;
-    fetchFilterOptions(user.id);
-  }, [authLoading, dataFetchEnabled, isActive, isAuthenticated, user?.id]);
+    let ignore = false;
+    let finished = false;
+    const cancel = new AbortController();
+    fetchLocalFilterOptions(userId, cancel.signal)
+      .then((options) => {
+        if (ignore) return;
+        setAllGenres(options.genres);
+        setAllArtists(options.artists);
+        setAlbums(options.albums);
+      })
+      .catch((error) => {
+        if (!ignore) console.error('💥 Error fetching filter options:', error);
+      })
+      .finally(() => {
+        finished = true;
+      });
 
-  // Re-fetch filter options when refreshTrigger changes (after scan)
-  useEffect(() => {
-    if (!refreshTrigger || !isActive || !user) return;
-    fetchFilterOptions(user.id);
-  }, [refreshTrigger]);
+    return () => {
+      ignore = true;
+      cancel.abort();
+      // Cut short before it finished, so let the next run fetch again
+      if (!finished && loadedOptionsKey.current === key) loadedOptionsKey.current = null;
+    };
+  }, [authLoading, dataFetchEnabled, isActive, isAuthenticated, userId, isScanInProgress, refreshTrigger]);
 
   // Cascade: Supergenre → Genre filtering
-  // Uses the genre mapping table to filter local genres based on selected supergenre
+  // Fetches the Spotify genres that map to the selected supergenre. The local genre list is
+  // filtered against them during render, below.
+  const [superGenreMapping, setSuperGenreMapping] = useState<{ superGenre: string; mappedGenres: string[] | null } | null>(null);
   useEffect(() => {
-    if (!user || !isAuthenticated || !initialDataReady) return;
-
-    const filterGenresBySupergenre = async () => {
-      if (!selectedSuperGenre) {
-        // Reset to all genres when no supergenre is selected
-        setGenres(allGenres);
-        return;
-      }
-
-      try {
-        // Get genres that map to this supergenre from the mapping tables
-        const isDanceAll = selectedSuperGenre === DANCE_ALL_VALUE;
-        let mappingsQuery = supabase
-          .from('spotify_genre_map_base')
-          .select('spotify_genre');
-        mappingsQuery = isDanceAll
-          ? mappingsQuery.in('super_genre', DANCE_SUPER_GENRES)
-          : mappingsQuery.eq('super_genre', selectedSuperGenre as Database['public']['Enums']['super_genre']);
-        const { data: mappings } = await mappingsQuery;
-
-        let overridesQuery = supabase
-          .from('spotify_genre_map_overrides')
-          .select('spotify_genre')
-          .eq('user_id', user.id);
-        overridesQuery = isDanceAll
-          ? overridesQuery.in('super_genre', DANCE_SUPER_GENRES)
-          : overridesQuery.eq('super_genre', selectedSuperGenre as Database['public']['Enums']['super_genre']);
-        const { data: overrides } = await overridesQuery;
-
-        // Combine mapped genres
-        const mappedGenres = new Set<string>();
-        mappings?.forEach(m => mappedGenres.add(m.spotify_genre.toLowerCase()));
-        overrides?.forEach(o => mappedGenres.add(o.spotify_genre.toLowerCase()));
-
-        // Filter local genres that match any mapped genre (case-insensitive partial match)
-        const filteredGenres = allGenres.filter(localGenre => {
-          const localLower = localGenre.toLowerCase();
-          // Check if local genre matches or is contained in any mapped genre
-          return Array.from(mappedGenres).some(mapped =>
-            localLower.includes(mapped) || mapped.includes(localLower) || localLower === mapped
-          );
-        });
-
-        setGenres(filteredGenres.length > 0 ? filteredGenres : allGenres);
-      } catch (error) {
+    if (!userId || !isAuthenticated || !initialDataReady || !selectedSuperGenre) return;
+    let ignore = false;
+    fetchMappedSpotifyGenres(userId, selectedSuperGenre)
+      .then((mappedGenres) => {
+        if (!ignore) setSuperGenreMapping({ superGenre: selectedSuperGenre, mappedGenres });
+      })
+      .catch((error) => {
+        if (ignore) return;
         console.error('Error filtering genres by supergenre:', error);
-        setGenres(allGenres);
-      }
+        setSuperGenreMapping({ superGenre: selectedSuperGenre, mappedGenres: null });
+      });
+    return () => {
+      ignore = true;
     };
+  }, [selectedSuperGenre, userId, isAuthenticated, initialDataReady]);
 
-    filterGenresBySupergenre();
-  }, [selectedSuperGenre, allGenres, user?.id, isAuthenticated, initialDataReady]);
+  // All genres when no supergenre is selected, or until its mapping has loaded
+  const genres = useMemo(() => {
+    if (!selectedSuperGenre || superGenreMapping?.superGenre !== selectedSuperGenre || !superGenreMapping.mappedGenres) {
+      return allGenres;
+    }
+    const mappedGenres = superGenreMapping.mappedGenres;
+    // Keep local genres that match any mapped genre (case-insensitive partial match)
+    const filteredGenres = allGenres.filter(localGenre => {
+      const localLower = localGenre.toLowerCase();
+      return mappedGenres.some(mapped =>
+        localLower.includes(mapped) || mapped.includes(localLower) || localLower === mapped
+      );
+    });
+    return filteredGenres.length > 0 ? filteredGenres : allGenres;
+  }, [allGenres, selectedSuperGenre, superGenreMapping]);
 
   // Cascade: Genre → Artist filtering
+  const [genreArtists, setGenreArtists] = useState<{ genre: string; artists: string[] } | null>(null);
   useEffect(() => {
-    if (!user || !isAuthenticated || !initialDataReady) return;
-
-    const fetchFilteredArtists = async () => {
-      try {
-        let query = supabase
-          .from('local_mp3s')
-          .select('artist')
-          .eq('user_id', user.id);
-
-        // Apply genre filter if selected
-        if (selectedGenre) {
-          query = query.eq('genre', selectedGenre);
-        }
-
-        const { data } = await query;
-
-        if (data) {
-          const filteredArtists = [...new Set(data.map(item => item.artist).filter(Boolean))].sort();
-          setArtists(filteredArtists as string[]);
-        }
-      } catch (error) {
-        console.error('Error fetching filtered artists:', error);
-      }
-    };
-
-    if (selectedGenre) {
-      fetchFilteredArtists();
-    } else {
-      // Reset to all artists when no genre is selected
-      setArtists(allArtists);
-    }
-  }, [selectedGenre, allArtists, user?.id, isAuthenticated, initialDataReady]);
-
-  const fetchTracks = async (userId: string) => {
-    if (!userId) {
-      setTracks([]);
-      setTotalTracks(0);
-      setLoading(false);
-      return;
-    }
-
-    // Cancel any in-flight fetch before starting a new one
-    if (fetchAbortController.current) {
-      fetchAbortController.current.abort();
-    }
-    fetchAbortController.current = new AbortController();
-    setLoading(true);
-
-    // Build filter function for reuse
-    // The builder is viewed through FilterableQuery: checking it against the interface as a
-    // generic constraint makes TypeScript give up (TS2589). The caller gets its own type back.
-    const applyFilters = <Q,>(query: Q): Q => {
-      let q = query as unknown as FilterableQuery;
-      if (searchQuery.trim()) {
-        q = q.or(`title.ilike.%${searchQuery}%,artist.ilike.%${searchQuery}%,album.ilike.%${searchQuery}%,file_path.ilike.%${searchQuery}%`);
-      }
-      if (yearFrom) q = q.gte('year', parseInt(yearFrom));
-      if (yearTo) q = q.lte('year', parseInt(yearTo));
-      q = applySuperGenreFilter(q, selectedSuperGenre);
-      if (selectedArtist) q = q.eq('artist', selectedArtist);
-      if (selectedAlbum) q = q.eq('album', selectedAlbum);
-      if (selectedGenre) q = q.eq('genre', selectedGenre);
-      if (bitrateFilter === 'low') q = q.lt('bitrate', 192);
-      else if (bitrateFilter === 'medium') q = q.gte('bitrate', 192).lt('bitrate', 320);
-      else if (bitrateFilter === 'high') q = q.gte('bitrate', 320);
-      if (formatFilter) q = q.ilike('audio_format', formatFilter);
-      if (missingMetadata === 'title') q = q.is('title', null);
-      else if (missingMetadata === 'artist') q = q.is('artist', null);
-      else if (missingMetadata === 'album') q = q.is('album', null);
-      else if (missingMetadata === 'year') q = q.is('year', null);
-      else if (missingMetadata === 'genre') q = q.is('genre', null);
-      else if (missingMetadata === 'any') q = q.or('title.is.null,artist.is.null,album.is.null,year.is.null,genre.is.null');
-      return q as unknown as Q;
-    };
-
-    // Count query with timeout
-    const countResult = await withQueryTimeout(
-      async (signal) => {
-        let query = supabase
-          .from('local_mp3s')
-          .select('*', { count: 'exact' })
-          .eq('user_id', userId);
-        query = applyFilters(query);
-        query = query.range(0, 0);
-        return query.abortSignal(signal);
-      },
-      15000,
-      'LocalTracksTable:count'
-    );
-
-    if (countResult.error) {
-      if (countResult.timedOut) {
-        toast({
-          title: "Query Timeout",
-          description: "The request took too long. Please try again.",
-          variant: "destructive",
-        });
-      }
-      setLoading(false);
-      fetchAbortController.current = null;
-      return;
-    }
-
-    setTotalTracks(countResult.data?.count || 0);
-
-    // Data query with timeout
-    const dataResult = await withQueryTimeout(
-      async (signal) => {
-        let query = supabase
-          .from('local_mp3s')
-          .select('*')
-          .eq('user_id', userId);
-        query = applyFilters(query);
-        return query
-          .order(sortField, { ascending: sortDirection === 'asc' })
-          .range((currentPage - 1) * tracksPerPage, currentPage * tracksPerPage - 1)
-          .abortSignal(signal);
-      },
-      15000,
-      'LocalTracksTable:data'
-    );
-
-    if (dataResult.error) {
-      if (dataResult.timedOut) {
-        toast({
-          title: "Query Timeout",
-          description: "The request took too long. Please try again.",
-          variant: "destructive",
-        });
-      }
-      setLoading(false);
-      fetchAbortController.current = null;
-      return;
-    }
-
-    setTracks(dataResult.data?.data || []);
-    setLoading(false);
-    fetchAbortController.current = null;
-  };
-
-  const fetchFilterOptions = async (userId: string) => {
-    try {
-      console.log('🔄 Fetching filter options...');
-      
-      if (!userId) return;
-      
-      // Use database functions to efficiently get distinct values
-      const [genresResult, artistsResult, albumsResult] = await Promise.all([
-        supabase.rpc('get_distinct_local_genres', { user_uuid: userId }),
-        supabase.rpc('get_distinct_local_artists', { user_uuid: userId }),
-        supabase.rpc('get_distinct_local_albums', { user_uuid: userId }),
-      ]);
-
-      console.log('📊 RPC results:', {
-        genres: genresResult,
-        artists: artistsResult,
-        albums: albumsResult,
+    if (!userId || !isAuthenticated || !initialDataReady || !selectedGenre) return;
+    let ignore = false;
+    fetchArtistsForGenre(userId, selectedGenre)
+      .then((found) => {
+        if (!ignore && found) setGenreArtists({ genre: selectedGenre, artists: found });
+      })
+      .catch((error) => {
+        if (!ignore) console.error('Error fetching filtered artists:', error);
       });
-      
-      // Extract the genre strings from the returned objects
-      const uniqueGenres = (genresResult.data || []).map(row => row.genre).filter(Boolean).sort();
-      const uniqueArtists = (artistsResult.data || []).map(row => row.artist).filter(Boolean).sort();
-      const uniqueAlbums = (albumsResult.data || []).map(row => row.album).filter(Boolean).sort();
+    return () => {
+      ignore = true;
+    };
+  }, [selectedGenre, userId, isAuthenticated, initialDataReady]);
 
-      console.log('🗂️ Filter options loaded:', {
-        artists: uniqueArtists.length,
-        albums: uniqueAlbums.length,
-        genres: uniqueGenres.length
-      });
-
-      console.log('🎵 Unique genres found:', uniqueGenres);
-
-      setAllArtists(uniqueArtists); // Store all artists for reset
-      setAllGenres(uniqueGenres); // Store all genres for reset
-      setArtists(uniqueArtists); // Initially show all artists
-      setAlbums(uniqueAlbums);
-      setGenres(uniqueGenres); // Initially show all genres
-    } catch (error) {
-      console.error('💥 Error fetching filter options:', error);
-    }
-  };
+  // All artists when no genre is selected, or until the genre's artists have loaded
+  const artists = selectedGenre && genreArtists?.genre === selectedGenre ? genreArtists.artists : allArtists;
 
   const formatFileSize = (bytes: number | null) => {
     if (!bytes) return 'Unknown';
@@ -421,9 +476,6 @@ const LocalTracksTable = ({ onTrackSelect, selectedTrack, refreshTrigger, isActi
     setFormatFilter('');
     setMissingMetadata('');
     setCurrentPage(1);
-    // Reset cascading filters
-    setGenres(allGenres);
-    setArtists(allArtists);
   };
 
   const handleSort = (field: 'year' | 'artist' | 'last_modified' | 'title' | 'album' | 'genre' | 'super_genre' | 'bitrate' | 'file_size') => {
@@ -520,9 +572,7 @@ const LocalTracksTable = ({ onTrackSelect, selectedTrack, refreshTrigger, isActi
       });
 
       // Refresh the table
-      if (user) {
-        fetchTracks(user.id);
-      }
+      setReloadCount((n) => n + 1);
     } catch (error) {
       console.error('Error updating track metadata:', error);
       toast({
@@ -534,7 +584,11 @@ const LocalTracksTable = ({ onTrackSelect, selectedTrack, refreshTrigger, isActi
     }
   };
 
-  if (loading) {
+  // While fetches are paused (a scan is running, or the token-refresh settle window), keep
+  // showing the current rows. The paused run's queries were aborted, so `loading` can still be
+  // true from it; the data effect fetches again when the pause ends.
+  const fetchesPaused = isScanInProgress || !dataFetchEnabled;
+  if (loading && !(hasLoaded && fetchesPaused)) {
     return (
       <Card>
         <CardContent className="p-6">
@@ -614,8 +668,6 @@ const LocalTracksTable = ({ onTrackSelect, selectedTrack, refreshTrigger, isActi
               setSelectedSuperGenre('');
               setSelectedGenre('');
               setSelectedArtist('');
-              setGenres(allGenres);
-              setArtists(allArtists);
             },
             onPageChange: setCurrentPage
           }}
