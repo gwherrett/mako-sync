@@ -24,8 +24,6 @@ export default defineConfig({
         'src/utils/reloadDebugger.ts',
         'src/utils/serviceWorkerCleanup.ts',
         'src/utils/storageIsolationTest.ts',
-        // Mock service (not production code)
-        'src/services/spotifyAuthManager.mock.service.ts',
         // Type-only files
         'src/services/__tests__/fixtures/eval-types.ts',
       ],

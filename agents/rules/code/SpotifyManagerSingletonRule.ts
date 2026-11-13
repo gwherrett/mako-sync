@@ -21,8 +21,7 @@ export class SpotifyManagerSingletonRule extends BaseRule {
         '**/build/**',
         '**/__tests__/**',
         '**/agents/**',
-        '**/spotifyAuthManager.service.ts',
-        '**/spotifyAuthManager.mock.service.ts'
+        '**/spotifyAuthManager.service.ts'
       ]
     });
   }
