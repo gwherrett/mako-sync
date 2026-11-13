@@ -38,6 +38,12 @@ export const CoverFlowView: React.FC<CoverFlowViewProps> = ({ records, onSelect 
   const [dragX, setDragX] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
 
+  // Keep the active record in range when the list shrinks (e.g. a filter is applied)
+  const lastIndex = Math.max(0, capped.length - 1);
+  if (activeIndex > lastIndex) {
+    setActiveIndex(lastIndex);
+  }
+
   // useRef so touchmove doesn't trigger re-renders on every pixel
   const touch = useRef<{ x: number; t: number } | null>(null);
 
@@ -57,9 +63,6 @@ export const CoverFlowView: React.FC<CoverFlowViewProps> = ({ records, onSelect 
     return () => window.removeEventListener('keydown', onKey);
   }, [prev, next]);
 
-  useEffect(() => {
-    if (activeIndex >= capped.length) setActiveIndex(Math.max(0, capped.length - 1));
-  }, [capped.length, activeIndex]);
 
   const onTouchStart = useCallback((e: React.TouchEvent) => {
     touch.current = { x: e.touches[0].clientX, t: Date.now() };

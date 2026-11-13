@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -40,16 +40,18 @@ export function EditTrackMetadataDialog({
   onOpenChange,
   onSave,
 }: EditTrackMetadataDialogProps) {
-  const [title, setTitle] = useState('');
-  const [artist, setArtist] = useState('');
-  const [album, setAlbum] = useState('');
-  const [genre, setGenre] = useState('');
-  const [year, setYear] = useState('');
-  const [mix, setMix] = useState('');
+  const [title, setTitle] = useState(track?.title || '');
+  const [artist, setArtist] = useState(track?.artist || '');
+  const [album, setAlbum] = useState(track?.album || '');
+  const [genre, setGenre] = useState(track?.genre || '');
+  const [year, setYear] = useState(track?.year?.toString() || '');
+  const [mix, setMix] = useState(track?.mix || '');
+  const [syncedTrack, setSyncedTrack] = useState(track);
   const [saving, setSaving] = useState(false);
 
   // Reset form when track changes
-  useEffect(() => {
+  if (track !== syncedTrack) {
+    setSyncedTrack(track);
     if (track) {
       setTitle(track.title || '');
       setArtist(track.artist || '');
@@ -58,7 +60,7 @@ export function EditTrackMetadataDialog({
       setYear(track.year?.toString() || '');
       setMix(track.mix || '');
     }
-  }, [track]);
+  }
 
   const handleSave = async () => {
     if (!track) return;

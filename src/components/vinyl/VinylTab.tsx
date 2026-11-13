@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { Disc3, Plus, Info, X, RefreshCw, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -47,11 +47,10 @@ export const VinylTab: React.FC = () => {
     superGenres: [...new Set(collection.map((r) => r.super_genre).filter((g) => g != null))].sort() as string[],
   }), [collection]);
 
-  useEffect(() => {
-    if (filterState.selectedDecade && !filterOptions.decades.includes(filterState.selectedDecade)) {
-      setFilterState((prev) => ({ ...prev, selectedDecade: '' }));
-    }
-  }, [filterOptions.decades, filterState.selectedDecade]);
+  // Clear the decade filter when the collection no longer has records from that decade
+  if (filterState.selectedDecade && !filterOptions.decades.includes(filterState.selectedDecade)) {
+    setFilterState((prev) => ({ ...prev, selectedDecade: '' }));
+  }
 
   const filteredRecords = useMemo(
     () => applyVinylFilters(collection, filterState),

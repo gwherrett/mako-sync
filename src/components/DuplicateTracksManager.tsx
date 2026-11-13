@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { ArrowLeft, Copy, Trash2, CheckCircle, AlertCircle, Music } from 'lucide-react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -37,6 +37,21 @@ function formatPath(filePath: string): string {
   return parts.slice(-2).join('/');
 }
 
+const groupKey = (g: DuplicateGroup) => `${g.normalized_artist}\0${g.normalized_title}`;
+const spotifyGroupKey = (g: SpotifyDuplicateGroup) => `${g.normalized_artist}\0${g.normalized_title}`;
+
+/** Default keep = highest bitrate, which is the first track in each group. */
+function defaultKeepSelections<G extends { tracks: Array<{ id: string }> }>(
+  found: G[],
+  keyOf: (g: G) => string
+): Record<string, string> {
+  const defaults: Record<string, string> = {};
+  for (const g of found) {
+    defaults[keyOf(g)] = g.tracks[0].id;
+  }
+  return defaults;
+}
+
 export function DuplicateTracksManager() {
   const { user, initialDataReady } = useAuth();
   const { toast } = useToast();
@@ -57,63 +72,74 @@ export function DuplicateTracksManager() {
   const [isSpotifyResolving, setIsSpotifyResolving] = useState(false);
   const [spotifyError, setSpotifyError] = useState<string | null>(null);
 
+  // Bumped by the Retry buttons to make the load effects run again
+  const [localReload, setLocalReload] = useState(0);
+  const [spotifyReload, setSpotifyReload] = useState(0);
+
   // Derive Spotify connection state on render, not in state
   const spotifyState = SpotifyAuthManager.getInstance().getState();
   const isSpotifyConnected = spotifyState.isConnected;
   const hasModifyScope = hasSpotifyScope(spotifyState.connection, 'user-library-modify');
 
-  const groupKey = (g: DuplicateGroup) => `${g.normalized_artist}\0${g.normalized_title}`;
-  const spotifyGroupKey = (g: SpotifyDuplicateGroup) => `${g.normalized_artist}\0${g.normalized_title}`;
+  useEffect(() => {
+    if (!initialDataReady || !user) return;
+    let ignore = false;
+    DuplicateDetectionService.findDuplicates(user.id)
+      .then((found) => {
+        if (ignore) return;
+        setGroups(found);
+        setKeepSelections(defaultKeepSelections(found, groupKey));
+        setResolvedKeys(new Set());
+      })
+      .catch((err) => {
+        if (ignore) return;
+        console.error('Failed to load duplicates:', err);
+        setError('Failed to load duplicates. Please try again.');
+      })
+      .finally(() => {
+        if (!ignore) setIsLoading(false);
+      });
+    return () => {
+      ignore = true;
+    };
+  }, [initialDataReady, user, localReload]);
 
-  const loadDuplicates = useCallback(async () => {
+  useEffect(() => {
+    if (!initialDataReady || !user) return;
+    let ignore = false;
+    DuplicateDetectionService.findSpotifyDuplicates(user.id)
+      .then((found) => {
+        if (ignore) return;
+        setSpotifyGroups(found);
+        setSpotifyKeepSelections(defaultKeepSelections(found, spotifyGroupKey));
+        setSpotifyResolvedKeys(new Set());
+      })
+      .catch((err) => {
+        if (ignore) return;
+        console.error('Failed to load Spotify duplicates:', err);
+        setSpotifyError('Failed to load Spotify duplicates. Please try again.');
+      })
+      .finally(() => {
+        if (!ignore) setIsSpotifyLoading(false);
+      });
+    return () => {
+      ignore = true;
+    };
+  }, [initialDataReady, user, spotifyReload]);
+
+  const loadDuplicates = () => {
     if (!user) return;
     setIsLoading(true);
     setError(null);
-    try {
-      const found = await DuplicateDetectionService.findDuplicates(user.id);
-      setGroups(found);
-      // Default keep = highest bitrate (first in each group)
-      const defaults: Record<string, string> = {};
-      for (const g of found) {
-        defaults[groupKey(g)] = g.tracks[0].id;
-      }
-      setKeepSelections(defaults);
-      setResolvedKeys(new Set());
-    } catch (err) {
-      console.error('Failed to load duplicates:', err);
-      setError('Failed to load duplicates. Please try again.');
-    } finally {
-      setIsLoading(false);
-    }
-  }, [user]);
+    setLocalReload((n) => n + 1);
+  };
 
-  const loadSpotifyDuplicates = useCallback(async () => {
+  const loadSpotifyDuplicates = () => {
     if (!user) return;
     setIsSpotifyLoading(true);
     setSpotifyError(null);
-    try {
-      const found = await DuplicateDetectionService.findSpotifyDuplicates(user.id);
-      setSpotifyGroups(found);
-      const defaults: Record<string, string> = {};
-      for (const g of found) {
-        defaults[spotifyGroupKey(g)] = g.tracks[0].id;
-      }
-      setSpotifyKeepSelections(defaults);
-      setSpotifyResolvedKeys(new Set());
-    } catch (err) {
-      console.error('Failed to load Spotify duplicates:', err);
-      setSpotifyError('Failed to load Spotify duplicates. Please try again.');
-    } finally {
-      setIsSpotifyLoading(false);
-    }
-  }, [user]);
-
-  useEffect(() => {
-    if (initialDataReady) {
-      loadDuplicates();
-      loadSpotifyDuplicates();
-    }
-  }, [initialDataReady, loadDuplicates, loadSpotifyDuplicates]);
+    setSpotifyReload((n) => n + 1);
+  };
 
   const handleResolveGroup = async (group: DuplicateGroup) => {
     const key = groupKey(group);

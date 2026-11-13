@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Loader2, Search, CheckCircle2, SkipForward } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -34,6 +34,21 @@ async function callDiscogsSearch(action: string, params: Record<string, unknown>
   return data;
 }
 
+async function searchDiscogsReleases(searchArtist: string, searchTitle: string): Promise<DiscogsSearchResult[]> {
+  const data = await callDiscogsSearch('search', { artist: searchArtist, title: searchTitle });
+  // Parse "Artist - Title" from Discogs title string
+  return (data.results || []).map((r: DiscogsSearchResult) => {
+    const parts = (r.title as string).split(' - ');
+    return {
+      ...r,
+      artist: parts.length > 1 ? parts[0] : searchArtist,
+      releaseTitle: parts.length > 1 ? parts.slice(1).join(' - ') : r.title,
+    };
+  });
+}
+
+const searchErrorMessage = (err: unknown) => (err instanceof Error ? err.message : 'Search failed');
+
 export const DiscogsReleaseSelector: React.FC<DiscogsReleaseSelectorProps> = ({
   initialArtist,
   initialTitle,
@@ -41,16 +56,20 @@ export const DiscogsReleaseSelector: React.FC<DiscogsReleaseSelectorProps> = ({
   onSkip,
   confirmDisabled = false,
 }) => {
+  // The query to auto-search with, fixed at mount
+  const [initialQuery] = useState({ artist: initialArtist, title: initialTitle });
+  const hasInitialQuery = !!(initialQuery.artist || initialQuery.title);
+
   const [artist, setArtist] = useState(initialArtist);
   const [title, setTitle] = useState(initialTitle);
   const [results, setResults] = useState<DiscogsSearchResult[]>([]);
-  const [isSearching, setIsSearching] = useState(false);
+  const [isSearching, setIsSearching] = useState(hasInitialQuery);
   const [isFetching, setIsFetching] = useState(false);
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [searchError, setSearchError] = useState<string | null>(null);
-  const [hasSearched, setHasSearched] = useState(false);
+  const [hasSearched, setHasSearched] = useState(hasInitialQuery);
 
-  const runSearch = useCallback(async (searchArtist: string, searchTitle: string) => {
+  const runSearch = async (searchArtist: string, searchTitle: string) => {
     if (!searchArtist && !searchTitle) return;
     setIsSearching(true);
     setSearchError(null);
@@ -58,28 +77,32 @@ export const DiscogsReleaseSelector: React.FC<DiscogsReleaseSelectorProps> = ({
     setSelectedId(null);
     setHasSearched(true);
     try {
-      const data = await callDiscogsSearch('search', { artist: searchArtist, title: searchTitle });
-      // Parse "Artist - Title" from Discogs title string
-      const mapped = (data.results || []).map((r: DiscogsSearchResult) => {
-        const parts = (r.title as string).split(' - ');
-        return {
-          ...r,
-          artist: parts.length > 1 ? parts[0] : searchArtist,
-          releaseTitle: parts.length > 1 ? parts.slice(1).join(' - ') : r.title,
-        };
-      });
-      setResults(mapped);
+      setResults(await searchDiscogsReleases(searchArtist, searchTitle));
     } catch (err: unknown) {
-      setSearchError(err instanceof Error ? err.message : 'Search failed');
+      setSearchError(searchErrorMessage(err));
     } finally {
       setIsSearching(false);
     }
-  }, []);
+  };
 
   // Auto-search on mount
   useEffect(() => {
-    runSearch(initialArtist, initialTitle);
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+    if (!initialQuery.artist && !initialQuery.title) return;
+    let ignore = false;
+    searchDiscogsReleases(initialQuery.artist, initialQuery.title)
+      .then((found) => {
+        if (!ignore) setResults(found);
+      })
+      .catch((err: unknown) => {
+        if (!ignore) setSearchError(searchErrorMessage(err));
+      })
+      .finally(() => {
+        if (!ignore) setIsSearching(false);
+      });
+    return () => {
+      ignore = true;
+    };
+  }, [initialQuery]);
 
   const handleConfirm = async () => {
     if (!selectedId) return;

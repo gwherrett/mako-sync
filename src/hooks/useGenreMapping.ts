@@ -8,26 +8,40 @@ export const useGenreMapping = () => {
   const [mappings, setMappings] = useState<GenreMapping[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  // Bumped by loadMappings to make the load effect run again
+  const [reloadCount, setReloadCount] = useState(0);
   const { toast } = useToast();
   const { initialDataReady, dataFetchEnabled } = useAuth();
 
-  const loadMappings = async () => {
-    try {
-      setIsLoading(true);
-      setError(null);
-      const data = await GenreMappingService.getEffectiveMapping();
-      setMappings(data);
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to load genre mappings';
-      setError(errorMessage);
-      toast({
-        title: 'Error',
-        description: errorMessage,
-        variant: 'destructive'
+  useEffect(() => {
+    if (!initialDataReady || !dataFetchEnabled) return;
+    let ignore = false;
+    GenreMappingService.getEffectiveMapping()
+      .then((data) => {
+        if (!ignore) setMappings(data);
+      })
+      .catch((err) => {
+        if (ignore) return;
+        const errorMessage = err instanceof Error ? err.message : 'Failed to load genre mappings';
+        setError(errorMessage);
+        toast({
+          title: 'Error',
+          description: errorMessage,
+          variant: 'destructive'
+        });
+      })
+      .finally(() => {
+        if (!ignore) setIsLoading(false);
       });
-    } finally {
-      setIsLoading(false);
-    }
+    return () => {
+      ignore = true;
+    };
+  }, [initialDataReady, dataFetchEnabled, reloadCount, toast]);
+
+  const loadMappings = () => {
+    setIsLoading(true);
+    setError(null);
+    setReloadCount((n) => n + 1);
   };
 
   const setOverride = async (spotifyGenre: string, superGenre: SuperGenre) => {
@@ -60,7 +74,7 @@ export const useGenreMapping = () => {
       await GenreMappingService.removeOverride(spotifyGenre);
       
       // Reload to get the base mapping value
-      await loadMappings();
+      loadMappings();
 
       toast({
         title: 'Override Removed',
@@ -79,7 +93,7 @@ export const useGenreMapping = () => {
   const setBulkOverrides = async (overrides: Array<{ spotifyGenre: string; superGenre: SuperGenre }>) => {
     try {
       await GenreMappingService.setBulkOverrides(overrides);
-      await loadMappings();
+      loadMappings();
 
       toast({
         title: 'Bulk Update Complete',
@@ -120,11 +134,6 @@ export const useGenreMapping = () => {
       });
     }
   };
-
-  useEffect(() => {
-    if (!initialDataReady || !dataFetchEnabled) return;
-    loadMappings();
-  }, [initialDataReady, dataFetchEnabled]);
 
   return {
     mappings,

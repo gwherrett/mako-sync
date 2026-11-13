@@ -28,33 +28,48 @@ interface MetadataDebugModalProps {
 const GENRE_FRAME_IDS = ['TCON', 'GENRE', 'TXXX'];
 
 export function MetadataDebugModal({ file, open, onOpenChange }: MetadataDebugModalProps) {
+  const shouldLoad = open && !!file?.file;
   const [metadata, setMetadata] = useState<FileDebugMetadata | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(shouldLoad);
   const [error, setError] = useState<string | null>(null);
   const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set(['extracted', 'common']));
   const [copied, setCopied] = useState(false);
+  const [request, setRequest] = useState({ open, file });
 
-  useEffect(() => {
-    if (open && file?.file) {
-      setIsLoading(true);
+  // Clear the previous result as soon as the modal opens or the file changes
+  if (request.open !== open || request.file !== file) {
+    setRequest({ open, file });
+    if (open) setIsLoading(shouldLoad);
+    if (shouldLoad) {
       setError(null);
       setMetadata(null);
-
-      getFileDebugMetadata(file.file)
-        .then((data) => {
-          setMetadata(data);
-          // Auto-expand native formats
-          const newExpanded = new Set(['extracted', 'common']);
-          data.nativeFormats.forEach((f) => newExpanded.add(f));
-          setExpandedSections(newExpanded);
-        })
-        .catch((err) => {
-          setError(err instanceof Error ? err.message : 'Failed to read metadata');
-        })
-        .finally(() => {
-          setIsLoading(false);
-        });
     }
+  }
+
+  useEffect(() => {
+    if (!open || !file?.file) return;
+    let ignore = false;
+
+    getFileDebugMetadata(file.file)
+      .then((data) => {
+        if (ignore) return;
+        setMetadata(data);
+        // Auto-expand native formats
+        const newExpanded = new Set(['extracted', 'common']);
+        data.nativeFormats.forEach((f) => newExpanded.add(f));
+        setExpandedSections(newExpanded);
+      })
+      .catch((err) => {
+        if (ignore) return;
+        setError(err instanceof Error ? err.message : 'Failed to read metadata');
+      })
+      .finally(() => {
+        if (!ignore) setIsLoading(false);
+      });
+
+    return () => {
+      ignore = true;
+    };
   }, [open, file]);
 
   const toggleSection = (section: string) => {

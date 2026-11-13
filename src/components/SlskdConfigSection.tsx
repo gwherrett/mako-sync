@@ -9,7 +9,7 @@
  * Configuration is stored in browser localStorage.
  */
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import {
   Card,
   CardContent,
@@ -34,20 +34,22 @@ export function SlskdConfigSection() {
     isTesting,
   } = useSlskdConfig();
 
-  const [apiEndpoint, setApiEndpoint] = useState('');
-  const [apiKey, setApiKey] = useState('');
-  const [downloadsFolder, setDownloadsFolder] = useState('');
-  const [searchFormat, setSearchFormat] = useState<'primary' | 'full'>('primary');
+  const [apiEndpoint, setApiEndpoint] = useState(config?.apiEndpoint || '');
+  const [apiKey, setApiKey] = useState(config?.apiKey || '');
+  const [downloadsFolder, setDownloadsFolder] = useState(config?.downloadsFolder || '');
+  const [searchFormat, setSearchFormat] = useState<'primary' | 'full'>(config?.searchFormat || 'primary');
+  const [syncedConfig, setSyncedConfig] = useState(config);
 
   // Sync local state with loaded config
-  useEffect(() => {
+  if (config !== syncedConfig) {
+    setSyncedConfig(config);
     if (config) {
       setApiEndpoint(config.apiEndpoint || '');
       setApiKey(config.apiKey || '');
       setDownloadsFolder(config.downloadsFolder || '');
       setSearchFormat(config.searchFormat || 'primary');
     }
-  }, [config]);
+  }
 
   const handleSave = () => {
     saveConfig({ apiEndpoint, apiKey, downloadsFolder, searchFormat });

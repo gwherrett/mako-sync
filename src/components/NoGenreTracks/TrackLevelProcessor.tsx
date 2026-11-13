@@ -54,65 +54,41 @@ export function TrackLevelProcessor() {
     ? Math.round((assignedCount / tracks.length) * 100) 
     : 0;
 
-  const exportToCsv = () => {
-    const headers = ['Artist', 'Album', 'Track', 'Year', 'Super Genre', 'Spotify ID'];
-    const rows = sortedTracks.map(track => [
-      track.artist,
-      track.album || '',
-      track.title,
-      track.year?.toString() || '',
-      track.currentSuperGenre || '',
-      track.spotify_id
-    ]);
-    
-    const csvContent = [
-      headers.join(','),
-      ...rows.map(row => row.map(cell => `"${cell.replace(/"/g, '""')}"`).join(','))
-    ].join('\n');
-    
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `track-genres-${new Date().toISOString().split('T')[0]}.csv`;
-    link.click();
-    URL.revokeObjectURL(url);
-    
-    toast({ title: 'Exported', description: `${sortedTracks.length} tracks exported to CSV` });
-  };
-
   useEffect(() => {
     if (!initialDataReady) return;
-    loadTracks();
-  }, [initialDataReady]);
-
-  const loadTracks = async () => {
-    setIsLoading(true);
-    try {
-      const data = await TrackGenreService.getAllTracksWithoutSpotifyGenre();
-      setTracks(data.map(t => ({
-        id: t.id,
-        title: t.title,
-        artist: t.artist,
-        album: t.album,
-        year: t.year,
-        spotify_id: t.spotify_id,
-        currentSuperGenre: t.super_genre as SuperGenre | null,
-        suggestion: null,
-        isProcessing: false,
-        showManualSelect: false,
-      })));
-    } catch (error) {
-      console.error('Error loading tracks:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to load tracks',
-        variant: 'destructive',
+    let ignore = false;
+    TrackGenreService.getAllTracksWithoutSpotifyGenre()
+      .then((data) => {
+        if (ignore) return;
+        setTracks(data.map(t => ({
+          id: t.id,
+          title: t.title,
+          artist: t.artist,
+          album: t.album,
+          year: t.year,
+          spotify_id: t.spotify_id,
+          currentSuperGenre: t.super_genre as SuperGenre | null,
+          suggestion: null,
+          isProcessing: false,
+          showManualSelect: false,
+        })));
+      })
+      .catch((error) => {
+        if (ignore) return;
+        console.error('Error loading tracks:', error);
+        toast({
+          title: 'Error',
+          description: 'Failed to load tracks',
+          variant: 'destructive',
+        });
+      })
+      .finally(() => {
+        if (!ignore) setIsLoading(false);
       });
-    } finally {
-      setIsLoading(false);
-    }
-  };
+    return () => {
+      ignore = true;
+    };
+  }, [initialDataReady, toast]);
 
   const sortedTracks = useMemo(() => {
     const sorted = [...tracks].sort((a, b) => {
@@ -153,6 +129,33 @@ export function TrackLevelProcessor() {
     });
     return sorted;
   }, [tracks, sortField, sortDirection]);
+
+  const exportToCsv = () => {
+    const headers = ['Artist', 'Album', 'Track', 'Year', 'Super Genre', 'Spotify ID'];
+    const rows = sortedTracks.map(track => [
+      track.artist,
+      track.album || '',
+      track.title,
+      track.year?.toString() || '',
+      track.currentSuperGenre || '',
+      track.spotify_id
+    ]);
+
+    const csvContent = [
+      headers.join(','),
+      ...rows.map(row => row.map(cell => `"${cell.replace(/"/g, '""')}"`).join(','))
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `track-genres-${new Date().toISOString().split('T')[0]}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
+
+    toast({ title: 'Exported', description: `${sortedTracks.length} tracks exported to CSV` });
+  };
 
   const handleSort = (field: SortField) => {
     if (sortField === field) {

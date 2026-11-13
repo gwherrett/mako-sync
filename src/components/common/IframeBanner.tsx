@@ -1,20 +1,15 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { ExternalLink, X, Info } from 'lucide-react';
 import { isInIframe } from '@/utils/linkUtils';
 
 export const IframeBanner = () => {
-  const [showBanner, setShowBanner] = useState(false);
+  // Show the banner if we're in an iframe and the user hasn't dismissed it
+  const [showBanner, setShowBanner] = useState(
+    () => isInIframe() && !localStorage.getItem('iframe-banner-dismissed')
+  );
   const [isDismissed, setIsDismissed] = useState(false);
-
-  useEffect(() => {
-    // Check if we're in an iframe and user hasn't dismissed the banner
-    const dismissed = localStorage.getItem('iframe-banner-dismissed');
-    if (isInIframe() && !dismissed) {
-      setShowBanner(true);
-    }
-  }, []);
 
   const handleDismiss = () => {
     setIsDismissed(true);
