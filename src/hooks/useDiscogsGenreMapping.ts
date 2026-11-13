@@ -9,22 +9,36 @@ export const useDiscogsGenreMapping = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isRecomputing, setIsRecomputing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Bumped by loadMappings to make the load effect run again
+  const [reloadCount, setReloadCount] = useState(0);
   const { toast } = useToast();
   const { initialDataReady } = useAuth();
 
-  const loadMappings = async () => {
-    try {
-      setIsLoading(true);
-      setError(null);
-      const data = await DiscogsGenreMappingService.getEffectiveMapping();
-      setMappings(data);
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'Failed to load Discogs mappings';
-      setError(message);
-      toast({ title: 'Error', description: message, variant: 'destructive' });
-    } finally {
-      setIsLoading(false);
-    }
+  useEffect(() => {
+    if (!initialDataReady) return;
+    let ignore = false;
+    DiscogsGenreMappingService.getEffectiveMapping()
+      .then((data) => {
+        if (!ignore) setMappings(data);
+      })
+      .catch((err) => {
+        if (ignore) return;
+        const message = err instanceof Error ? err.message : 'Failed to load Discogs mappings';
+        setError(message);
+        toast({ title: 'Error', description: message, variant: 'destructive' });
+      })
+      .finally(() => {
+        if (!ignore) setIsLoading(false);
+      });
+    return () => {
+      ignore = true;
+    };
+  }, [initialDataReady, reloadCount, toast]);
+
+  const loadMappings = () => {
+    setIsLoading(true);
+    setError(null);
+    setReloadCount((n) => n + 1);
   };
 
   const setOverride = async (discogsTerm: string, superGenre: SuperGenre) => {
@@ -43,7 +57,7 @@ export const useDiscogsGenreMapping = () => {
   const removeOverride = async (discogsTerm: string) => {
     try {
       await DiscogsGenreMappingService.removeOverride(discogsTerm);
-      await loadMappings();
+      loadMappings();
       toast({ title: 'Override Removed', description: `Reset ${discogsTerm} to default mapping` });
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to remove override';
@@ -63,11 +77,6 @@ export const useDiscogsGenreMapping = () => {
       setIsRecomputing(false);
     }
   };
-
-  useEffect(() => {
-    if (!initialDataReady) return;
-    loadMappings();
-  }, [initialDataReady]);
 
   return { mappings, isLoading, isRecomputing, error, setOverride, removeOverride, recomputeAll };
 };

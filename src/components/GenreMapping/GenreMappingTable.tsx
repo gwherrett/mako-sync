@@ -27,6 +27,18 @@ interface GenreMappingTableProps {
   onExport: () => void;
   isLoading?: boolean;
 }
+
+function loadReviewedGenres(): Set<string> {
+  const stored = localStorage.getItem('reviewedGenres');
+  if (!stored) return new Set();
+  try {
+    return new Set(JSON.parse(stored));
+  } catch (e) {
+    console.error('Failed to load reviewed genres', e);
+    return new Set();
+  }
+}
+
 export const GenreMappingTable: React.FC<GenreMappingTableProps> = ({
   mappings,
   onSetOverride,
@@ -41,21 +53,9 @@ export const GenreMappingTable: React.FC<GenreMappingTableProps> = ({
   const [editingRow, setEditingRow] = useState<string | null>(null);
   const [sortColumn, setSortColumn] = useState<'spotify_genre' | 'super_genre' | 'reviewed'>('spotify_genre');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
-  const [reviewedGenres, setReviewedGenres] = useState<Set<string>>(new Set());
+  const [reviewedGenres, setReviewedGenres] = useState<Set<string>>(loadReviewedGenres);
   const [isBulkUpdating, setIsBulkUpdating] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
-
-  // Load reviewed genres from localStorage
-  useEffect(() => {
-    const stored = localStorage.getItem('reviewedGenres');
-    if (stored) {
-      try {
-        setReviewedGenres(new Set(JSON.parse(stored)));
-      } catch (e) {
-        console.error('Failed to load reviewed genres', e);
-      }
-    }
-  }, []);
 
   // Save reviewed genres to localStorage
   useEffect(() => {
@@ -92,11 +92,6 @@ export const GenreMappingTable: React.FC<GenreMappingTableProps> = ({
     currentPage * PAGE_SIZE
   );
 
-  // Reset to page 1 when filters change
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [searchTerm, filterSuperGenre, sortColumn, sortDirection]);
-
   const overriddenCount = mappings.filter(m => m.is_overridden).length;
   const unmappedCount = mappings.filter(m => !m.super_genre).length;
   const handleRowSelect = (spotifyGenre: string, checked: boolean) => {
@@ -125,6 +120,17 @@ export const GenreMappingTable: React.FC<GenreMappingTableProps> = ({
     }
   };
 
+  // Search, filter and sort changes go back to page 1
+  const handleSearchChange = (value: string) => {
+    setSearchTerm(value);
+    setCurrentPage(1);
+  };
+
+  const handleFilterChange = (value: string) => {
+    setFilterSuperGenre(value);
+    setCurrentPage(1);
+  };
+
   const toggleSort = (column: 'spotify_genre' | 'super_genre' | 'reviewed') => {
     if (sortColumn === column) {
       setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
@@ -132,6 +138,7 @@ export const GenreMappingTable: React.FC<GenreMappingTableProps> = ({
       setSortColumn(column);
       setSortDirection('asc');
     }
+    setCurrentPage(1);
   };
 
   const toggleReviewed = (spotifyGenre: string) => {
@@ -182,10 +189,10 @@ export const GenreMappingTable: React.FC<GenreMappingTableProps> = ({
         <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 sm:items-center">
           <div className="relative flex-1 max-w-sm">
             <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-            <Input placeholder="Search genres..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="pl-10" />
+            <Input placeholder="Search genres..." value={searchTerm} onChange={e => handleSearchChange(e.target.value)} className="pl-10" />
           </div>
 
-          <Select value={filterSuperGenre} onValueChange={setFilterSuperGenre}>
+          <Select value={filterSuperGenre} onValueChange={handleFilterChange}>
             <SelectTrigger className="w-full sm:w-48">
               <SelectValue placeholder="Filter by Supergenre" />
             </SelectTrigger>

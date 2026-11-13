@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Search, Edit3, ArrowUpDown, RefreshCw } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -64,11 +64,15 @@ export const DiscogsGenreMappingTable: React.FC<DiscogsGenreMappingTableProps> =
   const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
   const paginated = filtered.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
 
-  useEffect(() => { setCurrentPage(1); }, [searchTerm, filterSuperGenre, filterTermType, sortColumn, sortDirection]);
+  // Search, filter and sort changes go back to page 1
+  const handleSearchChange = (value: string) => { setSearchTerm(value); setCurrentPage(1); };
+  const handleTermTypeChange = (value: string) => { setFilterTermType(value); setCurrentPage(1); };
+  const handleSuperGenreChange = (value: string) => { setFilterSuperGenre(value); setCurrentPage(1); };
 
   const toggleSort = (col: typeof sortColumn) => {
     if (sortColumn === col) setSortDirection(d => d === 'asc' ? 'desc' : 'asc');
     else { setSortColumn(col); setSortDirection('asc'); }
+    setCurrentPage(1);
   };
 
   const overriddenCount = mappings.filter(m => m.is_overridden).length;
@@ -97,9 +101,9 @@ export const DiscogsGenreMappingTable: React.FC<DiscogsGenreMappingTableProps> =
         <div className="flex flex-col sm:flex-row gap-3 sm:items-center">
           <div className="relative flex-1 max-w-sm">
             <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-            <Input placeholder="Search terms…" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="pl-10" />
+            <Input placeholder="Search terms…" value={searchTerm} onChange={e => handleSearchChange(e.target.value)} className="pl-10" />
           </div>
-          <Select value={filterTermType} onValueChange={setFilterTermType}>
+          <Select value={filterTermType} onValueChange={handleTermTypeChange}>
             <SelectTrigger className="w-full sm:w-36">
               <SelectValue placeholder="Type" />
             </SelectTrigger>
@@ -109,7 +113,7 @@ export const DiscogsGenreMappingTable: React.FC<DiscogsGenreMappingTableProps> =
               <SelectItem value="genre">Genre</SelectItem>
             </SelectContent>
           </Select>
-          <Select value={filterSuperGenre} onValueChange={setFilterSuperGenre}>
+          <Select value={filterSuperGenre} onValueChange={handleSuperGenreChange}>
             <SelectTrigger className="w-full sm:w-48">
               <SelectValue placeholder="Filter by Supergenre" />
             </SelectTrigger>

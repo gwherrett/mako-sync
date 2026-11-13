@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -43,15 +43,18 @@ export function EditSpotifyTrackGenreDialog({
   onOpenChange,
   onSaved,
 }: EditSpotifyTrackGenreDialogProps) {
-  const [selectedGenre, setSelectedGenre] = useState<SuperGenre | null>(null);
+  const [selectedGenre, setSelectedGenre] = useState<SuperGenre | null>(track?.super_genre ?? null);
+  const [syncedTrack, setSyncedTrack] = useState(track);
   const [saving, setSaving] = useState(false);
   const { toast } = useToast();
 
-  useEffect(() => {
+  // Reset the selection when a different track is passed in
+  if (track !== syncedTrack) {
+    setSyncedTrack(track);
     if (track) {
       setSelectedGenre(track.super_genre);
     }
-  }, [track]);
+  }
 
   const handleSave = async () => {
     if (!track || !selectedGenre) return;
