@@ -49,6 +49,12 @@ export interface UseUnifiedSpotifyAuthReturn {
   retryLastOperation: () => Promise<boolean>;
 }
 
+type SpotifyOperation =
+  | { type: 'connect' }
+  | { type: 'disconnect' }
+  | { type: 'refresh' }
+  | { type: 'sync'; forceFullSync: boolean };
+
 export const useUnifiedSpotifyAuth = (config: UseUnifiedSpotifyAuthConfig = {}): UseUnifiedSpotifyAuthReturn => {
   const {
     autoRefresh = true,
@@ -61,8 +67,8 @@ export const useUnifiedSpotifyAuth = (config: UseUnifiedSpotifyAuthConfig = {}):
   // Get auth context to wait for initialization
   const { loading: authLoading, initialDataReady, isAuthenticated, spotifyDataFetchEnabled } = useAuth();
 
-  // Get SpotifyAuthManager instance
-  const authManager = useRef<SpotifyAuthManager>(
+  // Get SpotifyAuthManager instance (a singleton, so this is the same object on every render)
+  const [authManager] = useState<SpotifyAuthManager>(() =>
     SpotifyAuthManager.getInstance({
       autoRefresh,
       healthMonitoring,
@@ -71,7 +77,7 @@ export const useUnifiedSpotifyAuth = (config: UseUnifiedSpotifyAuthConfig = {}):
   );
 
   // Local state
-  const [authState, setAuthState] = useState<SpotifyAuthState>(() => authManager.current.getState());
+  const [authState, setAuthState] = useState<SpotifyAuthState>(() => authManager.getState());
 
   // Track if initial check has been done to prevent multiple checks
   const initialCheckDone = useRef(false);
@@ -82,13 +88,14 @@ export const useUnifiedSpotifyAuth = (config: UseUnifiedSpotifyAuthConfig = {}):
   const [isDisconnecting, setIsDisconnecting] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [lastOperation, setLastOperation] = useState<(() => Promise<boolean>) | null>(null);
+  // The last operation started, so retryLastOperation can run it again
+  const [lastOperation, setLastOperation] = useState<SpotifyOperation | null>(null);
 
   const { toast } = useToast();
 
   // Subscribe to auth manager state changes
   useEffect(() => {
-    const unsubscribe = authManager.current.subscribe((newState) => {
+    const unsubscribe = authManager.subscribe((newState) => {
       // Only update if state has actually changed (shallow comparison)
       setAuthState((prevState) => {
         if (
@@ -115,7 +122,12 @@ export const useUnifiedSpotifyAuth = (config: UseUnifiedSpotifyAuthConfig = {}):
     });
 
     return unsubscribe;
-  }, [onConnectionChange, onError]);
+  }, [authManager, onConnectionChange, onError]);
+
+  // Not signed in: there's nothing to check, so the initial check is complete once auth is ready
+  if (!isInitialCheckComplete && !authLoading && initialDataReady && !isAuthenticated) {
+    setIsInitialCheckComplete(true);
+  }
 
   // Defer Spotify connection check until auth is fully complete
   useEffect(() => {
@@ -124,14 +136,13 @@ export const useUnifiedSpotifyAuth = (config: UseUnifiedSpotifyAuthConfig = {}):
       return;
     }
 
-    // Don't check if user is not authenticated - mark as complete immediately
+    // Not signed in: marked complete during render, above
     if (!isAuthenticated) {
-      setIsInitialCheckComplete(true);
       return;
     }
 
     // Only check connection if we don't have recent data (avoid redundant checks)
-    const currentState = authManager.current.getState();
+    const currentState = authManager.getState();
     const timeSinceLastCheck = Date.now() - currentState.lastCheck;
     const shouldCheck = timeSinceLastCheck > 30000; // 30 seconds
 
@@ -139,30 +150,30 @@ export const useUnifiedSpotifyAuth = (config: UseUnifiedSpotifyAuthConfig = {}):
       initialCheckDone.current = true;
       console.log('🎵 SPOTIFY: Checking connection...');
       // Perform the check and mark complete when done
-      authManager.current.checkConnection().finally(() => {
-        const state = authManager.current.getState();
+      authManager.checkConnection().finally(() => {
+        const state = authManager.getState();
         console.log('🎵 SPOTIFY: ✓ Ready', state.isConnected ? '(connected)' : '(not connected)');
         setIsInitialCheckComplete(true);
       });
     } else {
       // Mark as complete since we're using cached data
-      const state = authManager.current.getState();
+      const state = authManager.getState();
       console.log('🎵 SPOTIFY: ✓ Ready (cached)', state.isConnected ? '(connected)' : '(not connected)');
       setIsInitialCheckComplete(true);
     }
-  }, [authLoading, initialDataReady, isAuthenticated]);
+  }, [authManager, authLoading, initialDataReady, isAuthenticated]);
 
   // Re-check connection when spotifyDataFetchEnabled transitions false → true (token refresh settle)
   useEffect(() => {
     if (prevDataFetchEnabled.current === false && spotifyDataFetchEnabled === true && isAuthenticated) {
       console.log('🎵 SPOTIFY: spotifyDataFetchEnabled restored, re-checking connection...');
-      authManager.current.checkConnection(true).then(() => {
-        const state = authManager.current.getState();
+      authManager.checkConnection(true).then(() => {
+        const state = authManager.getState();
         console.log('🎵 SPOTIFY: ✓ Re-check complete', state.isConnected ? '(connected)' : '(not connected)');
       });
     }
     prevDataFetchEnabled.current = spotifyDataFetchEnabled;
-  }, [spotifyDataFetchEnabled, isAuthenticated]);
+  }, [authManager, spotifyDataFetchEnabled, isAuthenticated]);
 
   // Clear error function
   const clearError = useCallback(() => {
@@ -175,11 +186,11 @@ export const useUnifiedSpotifyAuth = (config: UseUnifiedSpotifyAuthConfig = {}):
     if (isConnecting) return false;
 
     setIsConnecting(true);
-    setLastOperation(() => () => connectSpotify());
+    setLastOperation({ type: 'connect' });
 
     try {
       console.log('🎵 SPOTIFY: Connecting...');
-      const result = await authManager.current.connectSpotify();
+      const result = await authManager.connectSpotify();
 
       if (result.success) {
         toast({
@@ -207,18 +218,18 @@ export const useUnifiedSpotifyAuth = (config: UseUnifiedSpotifyAuthConfig = {}):
     } finally {
       setIsConnecting(false);
     }
-  }, [isConnecting, toast]);
+  }, [authManager, isConnecting, toast]);
 
   // Disconnect from Spotify
   const disconnectSpotify = useCallback(async (): Promise<boolean> => {
     if (isDisconnecting) return false;
 
     setIsDisconnecting(true);
-    setLastOperation(() => () => disconnectSpotify());
+    setLastOperation({ type: 'disconnect' });
 
     try {
       console.log('🎵 SPOTIFY: Disconnecting...');
-      const result = await authManager.current.disconnectSpotify();
+      const result = await authManager.disconnectSpotify();
 
       if (result.success) {
         console.log('🎵 SPOTIFY: ✓ Disconnected');
@@ -247,17 +258,17 @@ export const useUnifiedSpotifyAuth = (config: UseUnifiedSpotifyAuthConfig = {}):
     } finally {
       setIsDisconnecting(false);
     }
-  }, [isDisconnecting, toast]);
+  }, [authManager, isDisconnecting, toast]);
 
   // Refresh tokens
   const refreshTokens = useCallback(async (): Promise<boolean> => {
     if (isRefreshing) return false;
 
     setIsRefreshing(true);
-    setLastOperation(() => () => refreshTokens());
+    setLastOperation({ type: 'refresh' });
 
     try {
-      const result = await authManager.current.refreshTokens();
+      const result = await authManager.refreshTokens();
 
       if (result.success) {
         toast({
@@ -283,17 +294,17 @@ export const useUnifiedSpotifyAuth = (config: UseUnifiedSpotifyAuthConfig = {}):
     } finally {
       setIsRefreshing(false);
     }
-  }, [isRefreshing, toast]);
+  }, [authManager, isRefreshing, toast]);
 
   // Sync liked songs
   const syncLikedSongs = useCallback(async (forceFullSync: boolean = false): Promise<boolean> => {
     if (isSyncing) return false;
 
     setIsSyncing(true);
-    setLastOperation(() => () => syncLikedSongs(forceFullSync));
+    setLastOperation({ type: 'sync', forceFullSync });
 
     try {
-      const result = await authManager.current.syncLikedSongs(forceFullSync);
+      const result = await authManager.syncLikedSongs(forceFullSync);
 
       if (result.success) {
         if (result.data?.genre_health_warning) {
@@ -327,23 +338,23 @@ export const useUnifiedSpotifyAuth = (config: UseUnifiedSpotifyAuthConfig = {}):
     } finally {
       setIsSyncing(false);
     }
-  }, [isSyncing, toast]);
+  }, [authManager, isSyncing, toast]);
 
   // Check connection
   const checkConnection = useCallback(async (force: boolean = false): Promise<boolean> => {
     try {
-      const result = await authManager.current.checkConnection(force);
+      const result = await authManager.checkConnection(force);
       return result.success;
     } catch (error: unknown) {
       console.error('🎵 SPOTIFY: Connection check failed:', errorFields(error).message);
       return false;
     }
-  }, []);
+  }, [authManager]);
 
   // Perform health check
   const performHealthCheck = useCallback(async (): Promise<boolean> => {
     try {
-      const result = await authManager.current.performHealthCheck();
+      const result = await authManager.performHealthCheck();
 
       if (result.success) {
         toast({
@@ -367,12 +378,12 @@ export const useUnifiedSpotifyAuth = (config: UseUnifiedSpotifyAuthConfig = {}):
       });
       return false;
     }
-  }, [toast]);
+  }, [authManager, toast]);
 
   // Validate security
   const validateSecurity = useCallback(async (): Promise<boolean> => {
     try {
-      const result = await authManager.current.validateSecurity();
+      const result = await authManager.validateSecurity();
 
       if (result.success) {
         toast({
@@ -396,7 +407,7 @@ export const useUnifiedSpotifyAuth = (config: UseUnifiedSpotifyAuthConfig = {}):
       });
       return false;
     }
-  }, [toast]);
+  }, [authManager, toast]);
 
   // Retry last operation
   const retryLastOperation = useCallback(async (): Promise<boolean> => {
@@ -410,7 +421,16 @@ export const useUnifiedSpotifyAuth = (config: UseUnifiedSpotifyAuthConfig = {}):
     }
 
     try {
-      return await lastOperation();
+      switch (lastOperation.type) {
+        case 'connect':
+          return await connectSpotify();
+        case 'disconnect':
+          return await disconnectSpotify();
+        case 'refresh':
+          return await refreshTokens();
+        case 'sync':
+          return await syncLikedSongs(lastOperation.forceFullSync);
+      }
     } catch (error: unknown) {
       toast({
         title: "Retry Failed",
@@ -419,7 +439,7 @@ export const useUnifiedSpotifyAuth = (config: UseUnifiedSpotifyAuthConfig = {}):
       });
       return false;
     }
-  }, [lastOperation, toast]);
+  }, [lastOperation, connectSpotify, disconnectSpotify, refreshTokens, syncLikedSongs, toast]);
 
   return {
     // Connection state
