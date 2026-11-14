@@ -11,7 +11,29 @@
 
 This doc records how slskd behaves today, checked against its source, so the slskd Reintegration project (MAK-211 to MAK-217) builds on facts, not on the February 2026 plan. Read it before you install slskd, change `src/services/slskdClient.service.ts`, or change the push in Review Matches.
 
-**Version checked:** slskd **0.26.2** (released 23 October 2026, commit `e472ecd`). The wishlist question was also checked against 0.24.0 and 0.24.5. Answers come from reading the source and docs. Items marked **confirm live** still need a check against a running slskd (Reint 1 and Reint 2a).
+**Version checked:** slskd **0.26.2** (released 23 October 2026, commit `e472ecd`). The wishlist question was also checked against 0.24.0 and 0.24.5. Answers come from reading the source and docs. Items marked **confirmed live** were checked against the slskd installed on this PC on 14 November 2026. Items marked **confirm live** still need that check (Reint 2a).
+
+This PC's setup is recorded in [Install on Windows](#install-on-windows).
+
+---
+
+## Quick reference
+
+Run the commands in PowerShell.
+
+| What | How |
+|------|-----|
+| Web UI | <http://localhost:5030> |
+| API docs (Swagger) | <http://localhost:5030/swagger> |
+| Endpoint to enter on Mako's Options page | `http://localhost:5030` |
+| Start | `Start-ScheduledTask slskd` |
+| Stop | `Stop-Process -Name slskd`. `Stop-ScheduledTask` doesn't stop it |
+| Restart, for example after a config change | `Stop-Process -Name slskd; Start-Sleep 3; Start-ScheduledTask slskd` |
+| Check it's running | `Get-Process slskd` |
+| Config | `%LOCALAPPDATA%\slskd\slskd.yml` |
+| Logs | `%LOCALAPPDATA%\slskd\logs` (one file per day) |
+
+Port 5030 is the web UI and API. Port 50300 is for other Soulseek users to connect to you; don't open it in a browser.
 
 ---
 
@@ -28,6 +50,7 @@ This doc records how slskd behaves today, checked against its source, so the sls
 - The feature request is still open: [slskd #957](https://github.com/slskd/slskd/issues/957), from 2023. The maintainer plans automatic downloads under a "Guided Search" milestone.
 - 0.26.0 added transfer batches, which "paves the way for features like a wishlist" ([PR #1720](https://github.com/slskd/slskd/pull/1720)).
 - The old plan's "Options → Downloads → Auto-download wishlist results" setting doesn't exist.
+- **Confirmed live:** the running 0.26.2's Swagger definition lists 71 endpoints, and none of them is a wishlist endpoint.
 
 **What we use instead: saved searches.** Every search is saved to slskd's search list with its results ([SearchService.cs:237](https://github.com/slskd/slskd/blob/0.26.2/src/slskd/Search/SearchService.cs#L237)). By default it stays there indefinitely: `retention.search` defaults to unset ([Options.cs:1499](https://github.com/slskd/slskd/blob/0.26.2/src/slskd/Core/Options.cs#L1499)). Nothing runs it again. The only background work on searches is pruning when `retention.search` is set, and cleaning up searches left unfinished at startup ([Application.cs:1379](https://github.com/slskd/slskd/blob/0.26.2/src/slskd/Application.cs#L1379)). This is enough for Mako: see [Decision for Reint 3a](#decision-for-reint-3a).
 
@@ -40,7 +63,7 @@ It starts **one search** on the Soulseek network and returns straight away. The 
 - Only one `POST` can be in progress at a time. A second one gets `429`. Mako sends them one after another, so this is fine.
 - If slskd isn't connected to Soulseek, the call fails with `409 Conflict` (`InvalidOperationException`) or `500`.
 
-**Search state is a set of flags.** `state` is the `[Flags]` enum `SearchStates` ([Soulseek.NET](https://github.com/jpdillingham/Soulseek.NET/blob/master/src/SearchStates.cs)): `Requested`, `InProgress`, `Completed`, `Cancelled`, `TimedOut`, `ResponseLimitReached`, `FileLimitReached`, `Errored`, `Queued`. slskd serialises it with `JsonStringEnumConverter` ([Program.cs:993](https://github.com/slskd/slskd/blob/0.26.2/src/slskd/Program.cs#L993)), so a finished search comes back as text like `"Completed, TimedOut"` or `"Completed, ResponseLimitReached"`, not `"Completed"`. Each search also has an `isComplete` boolean ([Search.cs:52](https://github.com/slskd/slskd/blob/0.26.2/src/slskd/Search/Types/Search.cs#L52)). See [Bug: duplicate check](#bug-the-duplicate-check-misses-finished-searches). **Confirm live:** run one search, then look at `GET /api/v0/searches`.
+**Search state is a set of flags.** `state` is the `[Flags]` enum `SearchStates` ([Soulseek.NET](https://github.com/jpdillingham/Soulseek.NET/blob/master/src/SearchStates.cs)): `Requested`, `InProgress`, `Completed`, `Cancelled`, `TimedOut`, `ResponseLimitReached`, `FileLimitReached`, `Errored`, `Queued`. slskd serialises it with `JsonStringEnumConverter` ([Program.cs:993](https://github.com/slskd/slskd/blob/0.26.2/src/slskd/Program.cs#L993)), so a finished search comes back as text like `"Completed, TimedOut"` or `"Completed, ResponseLimitReached"`, not `"Completed"`. Each search also has an `isComplete` boolean ([Search.cs:52](https://github.com/slskd/slskd/blob/0.26.2/src/slskd/Search/Types/Search.cs#L52)). See [Bug: duplicate check](#bug-the-duplicate-check-misses-finished-searches). **Confirmed live:** a test search for `Bicep Glue` came back from the `POST` as `InProgress`, and later as `Completed, ResponseLimitReached` in `GET /api/v0/searches`. It stopped at 250 responses, not at the documented default of 100.
 
 ### 4. Which endpoint shows the Soulseek login?
 
@@ -52,6 +75,13 @@ The other candidates don't work:
 |----------|---------|
 | `GET /api/v0/session` | Returns `200` with no body. It only checks that the key or token is valid ([SessionController.cs:80](https://github.com/slskd/slskd/blob/0.26.2/src/slskd/Core/API/Controllers/SessionController.cs#L80)). It has no `isLoggedIn`. |
 | `GET /api/v0/server` | Returns the same server state, but the controller is limited to the `Administrator` role ([ServerController.cs:51](https://github.com/slskd/slskd/blob/0.26.2/src/slskd/Core/API/Controllers/ServerController.cs#L51)). |
+
+**Confirmed live**, with the `ReadWrite` key `mako-sync`:
+
+- `GET /api/v0/application` returned `server.isLoggedIn: true`, with `server.state` `"Connected, LoggedIn"`.
+- `GET /api/v0/session` returned `200`.
+- `GET /api/v0/server` returned `403`.
+- A call without the key returned `401`.
 
 ### 5. Which endpoint queues a download?
 
@@ -81,6 +111,7 @@ web:
 - **`role`** can be `ReadOnly` (the default), `ReadWrite` or `Administrator` ([Options.cs:2266](https://github.com/slskd/slskd/blob/0.26.2/src/slskd/Core/Options.cs#L2266)). In 0.26.2, roles are only checked on the application admin actions, debug, logs, options, server and relay endpoints. So even `ReadOnly` can create searches and queue downloads. Use `ReadWrite` anyway: Mako writes, and a later release could start enforcing roles on searches.
 - **`cidr`** defaults to any address. Mako calls slskd from the browser on the same PC, so limit the key to loopback. slskd's docs warn against sending API keys over plain HTTP without a CIDR limit.
 - The key is sent in the `X-API-Key` header.
+- Swagger UI is at `/swagger`, and the definition at `/swagger/v0/swagger.json`. Both need `feature.swagger: true`, but no key.
 
 ### 7. CORS
 
@@ -126,11 +157,131 @@ Reint 3a still needs to:
 
 ---
 
+## Install on Windows
+
+Installed on 14 November 2026 (MAK-212).
+
+| What | Where |
+|------|-------|
+| Version | 0.26.2, from `slskd-0.26.2-win-x64.zip`. Its SHA-256 (`ffe186ec…5cd9c48f0`) matched the digest on the GitHub release |
+| Program files | `C:\Tools\slskd`. No version in the folder name, so the startup task path never changes |
+| Config | `%LOCALAPPDATA%\slskd\slskd.yml`, slskd's default app directory |
+| Data and logs | `%LOCALAPPDATA%\slskd\data` and `%LOCALAPPDATA%\slskd\logs` |
+| Downloads | `C:\Supercollection\99_TO_BE_CLEANED\Soulseek Downloads\complete`. The MM5 Cleanup project monitors this folder (MAK-194, MAK-201) |
+| Incomplete | `C:\Supercollection\99_TO_BE_CLEANED\Soulseek Downloads\downloading` |
+| Share | `C:\Supercrates` without its `.claude` and `.vscode` folders: 68 directories, 9,020 files |
+| Web UI and API | `http://localhost:5030`, with HTTPS off. It's bound to `127.0.0.1` and `::1`, so other devices on the network can't reach it, even though the firewall allows `slskd.exe` in |
+| Soulseek listen port | 50300 |
+
+### Starting with Windows
+
+slskd runs from a Task Scheduler task named `slskd`. It starts at logon for your account and runs `conhost.exe --headless "C:\Tools\slskd\slskd.exe"` from `C:\Tools\slskd`, so no console window opens. It has no time limit, and it restarts up to 3 times, 1 minute apart, if the task fails.
+
+| To | Run |
+|----|-----|
+| Start | `Start-ScheduledTask slskd` |
+| Stop | `Stop-Process -Name slskd`. `Stop-ScheduledTask` only stops the `conhost` wrapper and leaves `slskd.exe` running |
+| Apply a config change | Stop, then start. slskd rereads most options while it runs, but share changes only take effect after the rescan at startup |
+
+### Upgrading
+
+1. Download the new `win-x64` zip. Check its SHA-256 against the digest on the GitHub release.
+2. Stop slskd: `Stop-Process -Name slskd`.
+3. Replace the contents of `C:\Tools\slskd`. The config and data in `%LOCALAPPDATA%\slskd` aren't touched.
+4. Start it: `Start-ScheduledTask slskd`. Then check the newest file in `%LOCALAPPDATA%\slskd\logs` for config errors. slskd exits at startup when a config key has moved, as it did in 0.25.0.
+
+### Config
+
+The config was migrated from the April 2026 backup in `G:\My Drive\Dev-Config-Backup\slskd\slskd.yml`, which used the 0.24 layout. Don't restore that backup unchanged: 0.26.2 won't start with it. The changes were:
+
+- **Moved `global` to `transfers` and `groups` to `transfers.groups`.** From 0.25.0, slskd refuses to start with the old keys ([0.25.0 release notes](https://github.com/slskd/slskd/releases/tag/0.25.0)).
+- **Dropped five keys that never existed:** `searches.response_limit`, `downloads.maximum_downloads`, `downloads.retry_attempts`, `logger.level` and `logger.file`. They aren't options in 0.24.5 or 0.26.2, so slskd always ignored them. Download retries are now set with `transfers.download.retry.attempts: 3`.
+- **Share path written with backslashes,** `.claude` and `.vscode` excluded, and a filter for any dot-folder (see below).
+- **API key `mako-sync`:** the same key as before, now with `role: ReadWrite` and a loopback-only `cidr`.
+- **Added `feature.swagger: true`.**
+- **Added `web.ip_address: "127.0.0.1,::1"`.** By default slskd listens on every network interface, and the network here is marked Public. Mako runs in a browser on this PC, so nothing else needs access.
+
+The full file, with secrets removed:
+
+```yaml
+soulseek:
+  username: <redacted>
+  password: <redacted>
+  listen_port: 50300
+
+directories:
+  downloads: "C:/Supercollection/99_TO_BE_CLEANED/Soulseek Downloads/complete"
+  incomplete: "C:/Supercollection/99_TO_BE_CLEANED/Soulseek Downloads/downloading"
+
+shares:
+  # Windows paths need backslashes: with C:/ slskd fails to mask file paths and shares 0 files.
+  directories:
+    - 'C:\Supercrates'
+    - '!C:\Supercrates\.claude'
+    - '!C:\Supercrates\.vscode'
+  filters:
+    - \.ini$
+    - Thumbs.db$
+    - desktop.ini$
+    - '\\\.[^\\]+(\\|$)' # anything in a dot-folder, and dotfiles
+
+transfers:
+  upload:
+    slots: 20
+    speed_limit: 1000 # KiB/s
+  download:
+    slots: 500
+    retry:
+      attempts: 3
+  groups:
+    default:
+      upload:
+        priority: 500
+        strategy: roundrobin
+        slots: 10
+    leechers:
+      thresholds:
+        files: 1
+        directories: 1
+      upload:
+        priority: 999
+        strategy: roundrobin
+        slots: 1
+        speed_limit: 100
+
+web:
+  port: 5030
+  ip_address: "127.0.0.1,::1" # web UI and API only reachable from this PC
+  https:
+    disabled: true
+  authentication:
+    username: <redacted>
+    password: <redacted>
+    api_keys:
+      mako-sync:
+        key: <redacted>
+        role: ReadWrite
+        cidr: 127.0.0.1/32,::1/128
+
+feature:
+  swagger: true
+
+# retention.search is deliberately left unset, so saved searches are kept
+# and Mako's duplicate check can see them.
+```
+
+### Windows pitfalls
+
+- **Use backslashes in share paths.** With `C:/Supercrates`, slskd 0.26.2 scanned 9,022 files but shared 0. It converts directory names to the share name (`Supercrates\…`) from paths that keep the configured prefix. File names come from `FileInfo.FullName`, which Windows rewrites with backslashes, so `ReplaceFirst("C:/Supercrates", …)` never matched ([ShareScanner.cs:340](https://github.com/slskd/slskd/blob/0.26.2/src/slskd/Shares/ShareScanner.cs#L340)). Browsing then shows no files, and search results can still return files under their full local path.
+- **Keep non-music folders out of the share.** `C:\Supercrates` has `.claude` and `.vscode` folders with editor settings in them. They're excluded by name, and the dot-folder filter catches any new one. Check `GET /api/v0/shares/{id}/contents` after changing the share.
+
+---
+
 ## Changes to the other Reint issues
 
 | Issue | Change |
 |-------|--------|
-| MAK-212 (Reint 1, install) | Drop the CORS step. Put keys under `web.authentication.api_keys` with `role` and `cidr` ([answer 6](#6-api-keys-in-slskdyml)). Add `feature: swagger: true` (it's off by default) if you want `/swagger`. Leave `retention.search` unset. |
+| MAK-212 (Reint 1, install) | Done: see [Install on Windows](#install-on-windows). |
 | MAK-213 (Reint 2a, connect) | Expect the Chrome loopback prompt on the Vercel site, and none on dev. Watch for a mixed-content error ([answer 8](#8-can-httpsvercel-app-call-httplocalhost5030-in-chrome)). |
 | MAK-214 (Reint 2b, login check) | Read `server.isLoggedIn` from `GET /api/v0/application`. Don't use `/session` or `/server`. |
 | MAK-215 (Reint 3a, push) | Option A, plus the duplicate-check fix. |
@@ -148,6 +299,9 @@ Reint 3a still needs to:
 | `401` on every call | Wrong API key, or the caller's IP is outside the key's `cidr`. |
 | `403` on `/api/v0/server` | Expected for non-Administrator keys. Use `/api/v0/application`. |
 | `/swagger` returns 404 | `feature.swagger` is `false` by default. |
+| slskd exits at startup, and the log says `global` and `groups` have moved | The config still uses the 0.24 layout. See [Config](#config). |
+| The share shows 0 files after a scan that found files | The share path uses forward slashes. Use `C:\…`. See [Windows pitfalls](#windows-pitfalls). |
+| slskd is still running after `Stop-ScheduledTask` | Expected: that only stops the `conhost` wrapper. Use `Stop-Process -Name slskd`. |
 
 ---
 
