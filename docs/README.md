@@ -15,6 +15,7 @@
 ### Reference Guides
 - [Authentication Reference](reference/authentication-reference.md) - Auth implementation, debugging, and testing
 - [Spotify Reference](reference/spotify-reference.md) - Spotify integration, OAuth, and troubleshooting
+- [slskd Reference](reference/slskd.md) - What slskd 0.26 does with Mako's push, API keys, login check, browser access
 - [Production Deployment](reference/production-deployment.md) - Environment setup, configuration, and deployment
 
 ### Feature Plans
@@ -46,6 +47,7 @@ docs/
 ├── reference/                         # Implementation & operations
 │   ├── authentication-reference.md    # Auth: impl + debugging + testing
 │   ├── spotify-reference.md           # Spotify: impl + config + troubleshooting
+│   ├── slskd.md                       # slskd: API behaviour, config, browser access
 │   └── production-deployment.md       # Deployment: env vars + config + checklist
 │
 ├── plans/                             # Active feature plans
