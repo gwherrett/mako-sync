@@ -1,6 +1,6 @@
 # Mako Sync Documentation
 
-**Last Updated**: February 2026
+**Last Updated**: November 2026
 
 ---
 
@@ -15,11 +15,10 @@
 ### Reference Guides
 - [Authentication Reference](reference/authentication-reference.md) - Auth implementation, debugging, and testing
 - [Spotify Reference](reference/spotify-reference.md) - Spotify integration, OAuth, and troubleshooting
-- [slskd Reference](reference/slskd.md) - Web UI URL and start/stop commands (Quick reference), install on this PC, what slskd 0.26 does with Mako's push
+- [slskd Reference](reference/slskd.md) - Install and configure slskd, connect Mako to it, push missing tracks and download them
 - [Production Deployment](reference/production-deployment.md) - Environment setup, configuration, and deployment
 
 ### Feature Plans
-- [slskd Integration](plans/slskd-complete-implementation.md) - Complete slskd implementation guide
 - [FLAC/M4A Tag Writing](plans/flac-m4a-tag-writing-plan.md) - Tag writing for non-MP3 formats
 - [UI Changes](plans/plan-ui-changes.md) - Planned UI improvements
 - [Test Improvement](plans/test-improvement-plan.md) - Test coverage improvement plan
@@ -47,11 +46,10 @@ docs/
 ├── reference/                         # Implementation & operations
 │   ├── authentication-reference.md    # Auth: impl + debugging + testing
 │   ├── spotify-reference.md           # Spotify: impl + config + troubleshooting
-│   ├── slskd.md                       # slskd: API behaviour, config, browser access
+│   ├── slskd.md                       # slskd: install + config + connect + push + troubleshooting
 │   └── production-deployment.md       # Deployment: env vars + config + checklist
 │
 ├── plans/                             # Active feature plans
-│   ├── slskd-complete-implementation.md
 │   ├── flac-m4a-tag-writing-plan.md
 │   ├── plan-ui-changes.md
 │   └── test-improvement-plan.md
@@ -67,7 +65,8 @@ docs/
     ├── current-status-assessment.md
     ├── debugging-task-strategy.md
     ├── authentication-system-status.md
-    └── spotify-integration-status.md
+    ├── spotify-integration-status.md
+    └── slskd-complete-implementation.md
 ```
 
 ---
