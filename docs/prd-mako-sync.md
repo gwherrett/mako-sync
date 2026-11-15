@@ -453,7 +453,7 @@ As a user, I want clear feedback when operations fail so that I can understand w
 ### **4.10 Epic 10: slskd Integration for Missing Track Acquisition**
 
 **User Story:**
-As a DJ, I want to automatically push missing tracks to my slskd wishlist so that they can be automatically downloaded via Soulseek.
+As a DJ, I want to push missing tracks to slskd as searches so that I can download them via Soulseek without typing each one in again. slskd has no wishlist and doesn't download search results by itself: I pick the files on slskd's Searches page (see [slskd Reference](reference/slskd.md#downloading-pushed-tracks)).
 
 **Acceptance Criteria:**
 
@@ -472,20 +472,20 @@ As a DJ, I want to automatically push missing tracks to my slskd wishlist so tha
   - Checkbox per artist for multi-select
   - Display track count per artist (e.g., "15 tracks")
   - Show genres associated with artist
-* **FR-10.4:** System SHALL provide "Push to slskd Wishlist" button that:
+* **FR-10.4:** System SHALL provide "Push to slskd" button that:
   - Is enabled only when slskd is connected and artists are selected
   - Displays count of tracks to be synced
   - Shows confirmation dialog before syncing
 * **FR-10.5:** For each approved missing track, system SHALL:
   - Format search query as: `"[Artist] - [Track Title] 320 MP3"`
-  - Check slskd wishlist for existing entries (skip duplicates)
+  - Check slskd's saved searches for existing entries (skip duplicates)
   - POST new search to slskd API endpoint `/api/v0/searches`
   - Track sync status (pending/synced/failed) per track
   - Handle errors gracefully with retry logic
-* **FR-10.6:** System SHALL prevent duplicate wishlist entries:
+* **FR-10.6:** System SHALL prevent duplicate searches:
   - Query existing slskd searches via GET `/api/v0/searches`
   - Compare normalized search text before adding
-  - Skip tracks already in wishlist
+  - Skip tracks whose search is waiting, running or finished, and allow a retry after a cancelled or errored search
   - Report skipped duplicates to user
 * **FR-10.7:** System SHALL display sync progress and results:
   - Progress bar showing X/Y tracks synced

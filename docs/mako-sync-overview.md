@@ -32,7 +32,7 @@ flowchart TD
     subgraph step4["Step 4: Review Matches"]
         J[Compare Libraries] --> K[Review Suggested Matches]
         K --> K2[Confirm Missing Tracks]
-        K2 --> L[Push to Slskd Wishlist]
+        K2 --> L[Push to Slskd as Searches]
     end
 
     subgraph step5["Step 5: Process Downloads"]
@@ -73,7 +73,7 @@ Some Spotify tracks lack genre data from Spotify's artist metadata. Use AI-power
 ### Step 4: Review Matches
 Compare your Spotify library against local files. Exact matches are confirmed for you. For the rest, confirm the suggested local file, pick another one, or confirm the track is missing. Each decision is saved, so the next review skips tracks you've already decided.
 
-Tracks you confirm as missing are listed under **Confirmed Missing**, grouped by artist. Select artists to export them as CSV or push their tracks to your Slskd wishlist for automatic download.
+Tracks you confirm as missing are listed under **Confirmed Missing**, grouped by artist. Select artists to export them as CSV or push their tracks to Slskd as searches. You then download the results from Slskd's Searches page.
 
 **What you get:** A reviewed list of gaps, grouped by artist, with one-click Slskd integration.
 
@@ -122,5 +122,5 @@ Matching uses normalized text comparison:
 4. **Fix No Genre Tracks** - Dashboard → No Genre tab → Assign missing Supergenres
 5. **Review Matches** - Dashboard → Review Matches tab → "Load Review Queue" → confirm matches or confirm tracks missing
 6. **Configure Slskd** - Settings → Add API endpoint and key
-7. **Push to Wishlist** - Confirmed Missing → select artists → "Push to Slskd"
+7. **Push to Slskd** - Confirmed Missing → select artists → "Push to Slskd", then download from Slskd's Searches page
 8. **Process Downloads** - Dashboard → Downloads tab → Scan and write tags

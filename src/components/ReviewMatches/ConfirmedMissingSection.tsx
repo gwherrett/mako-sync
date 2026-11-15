@@ -65,7 +65,7 @@ function downloadCsv(content: string, fileName: string) {
 export function ConfirmedMissingSection({ tracks, onUndo, onUnlike, onGenreSaved }: ConfirmedMissingSectionProps) {
   const { toast } = useToast();
   const { isConfigured } = useSlskdConfig();
-  const { syncToSlskd, syncAlbumToSlskd, isSyncing, syncResult, progress, reset } = useSlskdSync();
+  const { syncToSlskd, syncAlbumToSlskd, isSyncing, syncResult, syncError, progress, reset } = useSlskdSync();
 
   const [selectedArtists, setSelectedArtists] = useState<ReadonlySet<string>>(new Set());
   const [showSyncModal, setShowSyncModal] = useState(false);
@@ -192,7 +192,7 @@ export function ConfirmedMissingSection({ tracks, onUndo, onUnlike, onGenreSaved
         )}
         {tracks.length > 0 && !isConfigured && (
           <p className="mt-2 text-sm text-muted-foreground">
-            Configure slskd in Settings → Security to enable pushing tracks to wishlist.
+            Configure slskd in Settings → Security to push tracks to slskd as searches.
           </p>
         )}
       </CardHeader>
@@ -340,7 +340,9 @@ export function ConfirmedMissingSection({ tracks, onUndo, onUnlike, onGenreSaved
       )}
 
       <SlskdSyncProgress
-        isOpen={showSyncModal}
+        // A push that fails before it starts (slskd stopped, key rejected) closes the dialog.
+        // The hook's "Push failed" toast says why.
+        isOpen={showSyncModal && !syncError}
         onClose={handleCloseSyncModal}
         isSyncing={isSyncing}
         progress={progress}

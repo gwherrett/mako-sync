@@ -543,7 +543,7 @@ tailwind.config.ts         # Tailwind configuration with design tokens
 │                                                     │
 │ Selected: 12 tracks from 1 artist                   │
 │                                                     │
-│ [Push to slskd Wishlist]                            │
+│ [Push to slskd]                                     │
 └─────────────────────────────────────────────────────┘
 ```
 
@@ -558,14 +558,14 @@ tailwind.config.ts         # Tailwind configuration with design tokens
 - **Track Count Badge**: `<Badge variant="secondary">`
 - **Genre Pills**: `<Badge variant="outline" className="text-xs">`
 - **Action Button**:
-  - Label: "Push to slskd Wishlist"
+  - Label: "Push to slskd"
   - Style: Primary button with icon
   - Disabled state: When no slskd config or no artists selected
   - Icon: Download or arrow icon from lucide-react
 
 ### 14.3 Sync Progress Modal
 
-**Trigger**: When user clicks "Push to slskd Wishlist"
+**Trigger**: When user clicks "Push to slskd"
 
 **Visual Design**:
 ```
@@ -605,15 +605,15 @@ tailwind.config.ts         # Tailwind configuration with design tokens
 **Visual Design**:
 ```
 ┌─────────────────────────────────────────────────────┐
-│ Sync Complete                             [X Close] │
+│ Push complete                             [X Close] │
 ├─────────────────────────────────────────────────────┤
 │                                                     │
 │ ✓ Successfully Added: 115 tracks                    │
 │ ⊘ Skipped (duplicates): 5 tracks                   │
 │ ✗ Failed: 0 tracks                                  │
 │                                                     │
-│ All missing tracks have been added to your slskd    │
-│ wishlist and will be downloaded automatically.      │
+│ Each added track is now a search in slskd.          │
+│ Download the results from slskd's Searches page.    │
 │                                                     │
 │ [Close]                                             │
 └─────────────────────────────────────────────────────┘
@@ -690,10 +690,10 @@ Or if disconnected:  [⊘ slskd: Not configured]
 />
 
 <Button
-  aria-label="Push selected tracks to slskd wishlist"
+  aria-label="Push selected tracks to slskd as searches"
   aria-disabled={!canSync}
 >
-  Push to slskd Wishlist
+  Push to slskd
 </Button>
 ```
 

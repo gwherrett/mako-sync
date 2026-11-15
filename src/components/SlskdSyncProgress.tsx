@@ -1,8 +1,8 @@
 /**
  * SlskdSyncProgress Component
  *
- * Modal dialog showing progress and results of syncing tracks to slskd wishlist.
- * Displays real-time progress during sync and final results when complete.
+ * Modal dialog showing progress and results of pushing tracks to slskd as searches.
+ * Displays real-time progress during the push and final results when complete.
  */
 
 import {
@@ -50,12 +50,12 @@ export function SlskdSyncProgress({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             {isSyncing && <Loader2 className="h-5 w-5 animate-spin" />}
-            {isSyncing ? 'Pushing to slskd' : 'Sync Complete'}
+            {isSyncing ? 'Pushing to slskd' : 'Push complete'}
           </DialogTitle>
           <DialogDescription>
             {isSyncing
-              ? 'Adding tracks to slskd wishlist...'
-              : 'Wishlist sync results'}
+              ? 'Starting a search in slskd for each track...'
+              : 'Download the results from the Searches page in slskd. It runs about two searches at a time, so the last ones can take a few minutes to finish.'}
           </DialogDescription>
         </DialogHeader>
 
@@ -84,7 +84,7 @@ export function SlskdSyncProgress({
                 </div>
                 <div className="flex items-center gap-2 text-sm">
                   <AlertCircle className="h-4 w-4 text-yellow-600" />
-                  <span>Skipped (already in wishlist): {result.skippedCount}</span>
+                  <span>Skipped (already searched in slskd): {result.skippedCount}</span>
                 </div>
                 <div className="flex items-center gap-2 text-sm">
                   <XCircle className="h-4 w-4 text-red-600" />

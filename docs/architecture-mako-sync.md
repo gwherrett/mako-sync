@@ -485,13 +485,16 @@ CREATE TABLE IF NOT EXISTS public.user_preferences (
 // Client-side service (no edge function)
 export class SlskdClientService {
   // All methods are static (stateless)
-  static async testConnection(config: SlskdConfig): Promise<boolean>
+  static async testConnection(config: SlskdConfig): Promise<SlskdConnectionResult>
   static async getExistingSearches(config: SlskdConfig): Promise<SlskdSearchResponse[]>
-  static async addToWishlist(config: SlskdConfig, searchText: string): Promise<SlskdSearchResponse>
+  static async startSearch(config: SlskdConfig, searchText: string): Promise<SlskdSearchResponse>
+  static async pushTracks(config: SlskdConfig, tracks: SlskdTrackToSync[], onProgress?): Promise<SlskdSyncResult>
   static formatSearchQuery(artist: string, title: string): string
   static isSearchDuplicate(existing: SlskdSearchResponse[], newSearch: string): boolean
 }
 ```
+
+slskd has no wishlist. Each pushed track becomes a saved search in slskd, and you download from its results on slskd's Searches page. `isSearchDuplicate` reads the search's `state` flags (for example `Completed, TimedOut`): it skips searches that are waiting, running or finished, and allows a retry after `Cancelled` or `Errored`. See [slskd Reference](reference/slskd.md#the-rule-now).
 
 #### **UI Integration Points**
 
@@ -517,7 +520,7 @@ export class SlskdClientService {
 
 - Small delay (100ms) between API calls to avoid rate limiting
 - Batch processing with progress updates in component state
-- No pagination needed (slskd handles wishlist management)
+- No pagination: a push reads slskd's saved searches once, then checks each track against that list
 - No database writes during sync (only reads slskd API)
 
 #### **Limitations & Future Enhancements**

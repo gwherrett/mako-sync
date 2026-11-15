@@ -18,21 +18,53 @@ export interface SlskdConfig {
 }
 
 /**
- * Request body for creating a new search/wishlist item
+ * Request body for POST /api/v0/searches, which starts a search
  */
 export interface SlskdSearchRequest {
   searchText: string;
 }
 
 /**
- * Response from slskd search API
+ * One flag of a search's state: the SearchStates [Flags] enum from Soulseek.NET.
+ * See docs/reference/slskd.md, answer 3.
+ */
+export type SlskdSearchStateFlag =
+  | 'None'
+  | 'Requested'
+  | 'Queued'
+  | 'InProgress'
+  | 'Completed'
+  | 'Cancelled'
+  | 'TimedOut'
+  | 'ResponseLimitReached'
+  | 'FileLimitReached'
+  | 'Errored';
+
+/**
+ * A search as slskd returns it from GET and POST /api/v0/searches
  */
 export interface SlskdSearchResponse {
   id: string;
   searchText: string;
-  state: 'InProgress' | 'Completed' | 'Errored' | 'TimedOut' | 'Cancelled';
+  /**
+   * Comma-separated SlskdSearchStateFlag names. One flag while the search waits or runs
+   * ("Queued", "InProgress"), and Completed plus the reason once it ends
+   * ("Completed, TimedOut", "Completed, Errored"). Read it with
+   * SlskdClientService.searchStateFlags(), not ===.
+   */
+  state: string;
+  isComplete?: boolean;
   responseCount?: number;
   fileCount?: number;
+}
+
+/**
+ * Progress of a push, reported once per track
+ */
+export interface SlskdPushProgress {
+  current: number;
+  total: number;
+  currentTrack: string;
 }
 
 /**
@@ -64,7 +96,7 @@ export type SlskdConnectionResult =
   | { status: 'unexpected-response'; detail: string };
 
 /**
- * Result of syncing tracks to slskd wishlist
+ * Result of pushing tracks to slskd as searches
  */
 export interface SlskdSyncResult {
   totalTracks: number;
