@@ -6,10 +6,21 @@
  */
 
 import type {
+  SlskdApplicationResponse,
   SlskdConfig,
+  SlskdConnectionResult,
   SlskdSearchResponse,
-  SlskdSessionResponse,
 } from '@/types/slskd';
+
+const CONNECTION_TEST_TIMEOUT_MS = 10000;
+
+/**
+ * AbortSignal.timeout() rejects with a TimeoutError DOMException. Some browsers report AbortError.
+ */
+function isTimeoutError(error: unknown): boolean {
+  const name = (error as { name?: unknown } | null)?.name;
+  return name === 'TimeoutError' || name === 'AbortError';
+}
 
 export class SlskdClientService {
   /**
@@ -48,40 +59,67 @@ export class SlskdClientService {
   }
 
   /**
-   * Test connection to slskd instance
-   * Returns true if connected and logged in to Soulseek network
+   * Test connection to slskd instance.
+   *
+   * Reads server.isConnected and server.isLoggedIn from GET /api/v0/application, so
+   * "connected" means pushed searches will reach the Soulseek network, not just that
+   * the slskd API answered. See docs/reference/slskd.md, answer 4.
    */
-  static async testConnection(config: SlskdConfig): Promise<boolean> {
+  static async testConnection(config: SlskdConfig): Promise<SlskdConnectionResult> {
+    let response: Response;
     try {
-      // Try /api/v0/application first - it's a simple endpoint that should work with API key
-      const url = `${config.apiEndpoint}/api/v0/application`;
-      const response = await fetch(url, {
+      response = await fetch(`${config.apiEndpoint}/api/v0/application`, {
         method: 'GET',
         headers: {
           'X-API-Key': config.apiKey,
         },
-        signal: AbortSignal.timeout(10000),
+        signal: AbortSignal.timeout(CONNECTION_TEST_TIMEOUT_MS),
       });
-
-      if (!response.ok) {
-        console.error('slskd connection test failed:', response.status, response.statusText);
-        return false;
-      }
-
-      // Check content type to ensure we got JSON
-      const contentType = response.headers.get('content-type');
-      if (!contentType || !contentType.includes('application/json')) {
-        console.error('slskd returned non-JSON response:', contentType);
-        return false;
-      }
-
-      const data = await response.json();
-      // If we got a valid response, connection is working
-      return Boolean(data);
     } catch (error) {
       console.error('slskd connection test failed:', error);
-      return false;
+      return { status: 'unreachable', reason: isTimeoutError(error) ? 'timeout' : 'network' };
     }
+
+    if (response.status === 401) {
+      return { status: 'unauthorized' };
+    }
+
+    if (!response.ok) {
+      console.error('slskd connection test failed:', response.status, response.statusText);
+      return { status: 'unexpected-response', detail: `HTTP ${response.status}` };
+    }
+
+    // A wrong endpoint can return the app's own HTML page instead of slskd's JSON
+    const contentType = response.headers.get('content-type');
+    if (!contentType || !contentType.includes('application/json')) {
+      console.error('slskd returned non-JSON response:', contentType);
+      return { status: 'unexpected-response', detail: `content type ${contentType ?? 'missing'}` };
+    }
+
+    let data: SlskdApplicationResponse | null;
+    try {
+      data = await response.json();
+    } catch (error) {
+      console.error('slskd returned unreadable JSON:', error);
+      if (isTimeoutError(error)) {
+        return { status: 'unreachable', reason: 'timeout' };
+      }
+      return { status: 'unexpected-response', detail: 'invalid JSON' };
+    }
+
+    const server = data?.server;
+    if (!server || typeof server.isLoggedIn !== 'boolean') {
+      return { status: 'unexpected-response', detail: 'no Soulseek server state' };
+    }
+
+    if (server.isConnected === true && server.isLoggedIn) {
+      return { status: 'connected' };
+    }
+
+    return {
+      status: 'not-logged-in',
+      serverState: typeof server.state === 'string' && server.state ? server.state : null,
+    };
   }
 
   /**
