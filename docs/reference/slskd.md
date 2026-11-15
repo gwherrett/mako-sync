@@ -11,9 +11,9 @@
 
 This doc records how slskd behaves today, checked against its source, so the slskd Reintegration project (MAK-211 to MAK-217) builds on facts, not on the February 2026 plan. Read it before you install slskd, change `src/services/slskdClient.service.ts`, or change the push in Review Matches.
 
-**Version checked:** slskd **0.26.2** (released 23 October 2026, commit `e472ecd`). The wishlist question was also checked against 0.24.0 and 0.24.5. Answers come from reading the source and docs. Items marked **confirmed live** were checked against the slskd installed on this PC on 14 November 2026. Items marked **confirm live** still need that check (Reint 2a).
+**Version checked:** slskd **0.26.2** (released 23 October 2026, commit `e472ecd`). The wishlist question was also checked against 0.24.0 and 0.24.5. Answers come from reading the source and docs. Items marked **confirmed live** were checked against the slskd installed on this PC on 14 November 2026.
 
-This PC's setup is recorded in [Install on Windows](#install-on-windows).
+This PC's setup is recorded in [Install on Windows](#install-on-windows). How to connect Mako to it is in [Connecting Mako Sync](#connecting-mako-sync).
 
 ---
 
@@ -121,9 +121,11 @@ web:
 
 ### 8. Can `https://<vercel-app>` call `http://localhost:5030` in Chrome?
 
+**Yes. Confirmed live** in Chrome 157 (MAK-213). See [Connecting Mako Sync](#connecting-mako-sync).
+
 - **Local Network Access prompt: yes, once per site.** Since Chrome 142, a public HTTPS page calling a loopback address (`localhost`, `127.0.0.1`, `::1`) needs the `loopback-network` permission. Chrome asks the first time; the answer is saved per site and can be changed in site settings ([Chrome guide](https://developer.chrome.com/docs/modern-web-guidance/guides/security/local-network-access), [Chrome blog](https://developer.chrome.com/blog/local-network-access)). If you deny it, `fetch` fails with a `TypeError`, which Mako's connection test reports as a failed connection, the same as slskd being off.
 - **Dev server: no prompt.** A page served from `http://localhost:8080` calling localhost isn't checked.
-- **Mixed content: unknown, confirm live.** Chrome's docs don't say whether `http://localhost` from an HTTPS page counts as mixed content. They document `fetch(url, { targetAddressSpace: 'loopback' })` as the way to exempt an `https://` → `http://` loopback request. If the production check in Reint 2a fails with a mixed-content error, add that option in `SlskdClientService`.
+- **Mixed content: not a problem.** Chrome doesn't block `http://localhost:5030` from the HTTPS site, so `SlskdClientService` doesn't need `targetAddressSpace: 'loopback'`.
 
 ---
 
@@ -283,12 +285,59 @@ feature:
 
 ---
 
+## Connecting Mako Sync
+
+Checked on 14 November 2026 (MAK-213) with Chrome 157, on dev (`http://localhost:8080`) and production (`https://mako-sync.vercel.app`). Both connect with no change to slskd or Mako.
+
+Mako calls slskd from the browser, so this only works in a browser on the PC that runs slskd. slskd only listens on loopback, and on any other device `localhost` means that device.
+
+### Steps
+
+Do these once on dev and once on production. Each site keeps its own copy of the config.
+
+1. Check slskd is running: `Get-Process slskd`. If it isn't, run `Start-ScheduledTask slskd`.
+2. Copy the API key to the clipboard. In PowerShell:
+
+   ```powershell
+   (Select-String "$env:LOCALAPPDATA\slskd\slskd.yml" -Pattern '^\s+key:\s*[''"]?([^''"\s]+)').Matches[0].Groups[1].Value | Set-Clipboard
+   ```
+
+   This takes the first `key:` line, which is the `mako-sync` key under `web.authentication.api_keys`. You can also open `slskd.yml` and copy the value without the quotes.
+3. Open the Options page (`/security`). In **slskd Integration**, enter `http://localhost:5030` as the API Endpoint, and paste the key.
+4. Click **Save**. It tests the connection, saves the config, and shows the **Connected** badge. **Test Connection** only tests: it doesn't save or change the badge.
+5. **Production only:** the first time, Chrome shows a Local Network Access prompt by the address bar, asking to let the site reach apps on this device. Click **Allow**. Answer within 10 seconds: Mako stops waiting for slskd after 10 seconds, including while the prompt is open. If Save shows "Connection Failed" right after you allow it, click Save again. The permission is saved by then.
+
+Dev shows no prompt.
+
+### What a new machine needs
+
+- **Chrome 142 or later.** You only need to allow the one prompt in step 5. No flags or browser settings to change.
+- **Nothing in slskd for CORS.** slskd allows every origin (see [answer 7](#7-cors)). Checked: preflights from both origins return `204` and allow the `x-api-key` and `content-type` headers.
+- **Nothing for mixed content.** Chrome treats `http://localhost` as trustworthy, so the HTTPS site can call it.
+- **Nothing on Vercel.** The production site sends no Content-Security-Policy or Permissions-Policy header that would block the call.
+
+### Vercel preview deployments
+
+Each preview URL (`mako-sync-git-<branch>-…vercel.app`) is a separate site to Chrome. On a preview, enter the config again and allow the prompt again. The production permission doesn't carry over.
+
+### Clearing the config
+
+The config is saved in the browser's localStorage under `mako-sync:slskd-config`, separately for each site. The Options page has no Clear button. To clear it, open DevTools on the site and run this in the Console:
+
+```js
+localStorage.removeItem('mako-sync:slskd-config')
+```
+
+Then reload the page. Clearing the config doesn't reset Chrome's permission. To be asked again, reset it in site settings (lock icon → Site settings).
+
+---
+
 ## Changes to the other Reint issues
 
 | Issue | Change |
 |-------|--------|
 | MAK-212 (Reint 1, install) | Done: see [Install on Windows](#install-on-windows). |
-| MAK-213 (Reint 2a, connect) | Expect the Chrome loopback prompt on the Vercel site, and none on dev. Watch for a mixed-content error ([answer 8](#8-can-httpsvercel-app-call-httplocalhost5030-in-chrome)). |
+| MAK-213 (Reint 2a, connect) | Done: see [Connecting Mako Sync](#connecting-mako-sync). No code or slskd change was needed. |
 | MAK-214 (Reint 2b, login check) | Read `server.isLoggedIn` from `GET /api/v0/application`. Don't use `/session` or `/server`. |
 | MAK-215 (Reint 3a, push) | Option A, plus the duplicate-check fix. |
 | MAK-216 (Reint 3b, test) | Step 4 (push again, everything skipped) fails until the duplicate check is fixed. Step 7 is a manual download in slskd. |
@@ -303,6 +352,8 @@ feature:
 | Push returns `409` | slskd isn't connected or logged in to Soulseek. |
 | Push returns `429` | Another search request was still starting. Retry. |
 | `401` on every call | Wrong API key, or the caller's IP is outside the key's `cidr`. |
+| "Connection Failed", and the slskd log says `Unknown API key beginning with: …` | The key in Mako's form is wrong, often an old one saved in the browser. Copy it again ([Steps](#steps), step 2) and click Save. |
+| "Connection Failed" right after allowing the Chrome prompt | The prompt was open for more than 10 seconds. Click Save again. |
 | `403` on `/api/v0/server` | Expected for non-Administrator keys. Use `/api/v0/application`. |
 | `/swagger` returns 404 | `feature.swagger` is `false` by default. |
 | slskd exits at startup, and the log says `global` and `groups` have moved | The config still uses the 0.24 layout. See [Config](#config). |
