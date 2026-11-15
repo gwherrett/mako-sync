@@ -65,6 +65,8 @@ It starts **one search** on the Soulseek network and returns straight away. The 
 
 **Search state is a set of flags.** `state` is the `[Flags]` enum `SearchStates` ([Soulseek.NET](https://github.com/jpdillingham/Soulseek.NET/blob/master/src/SearchStates.cs)): `Requested`, `InProgress`, `Completed`, `Cancelled`, `TimedOut`, `ResponseLimitReached`, `FileLimitReached`, `Errored`, `Queued`. slskd serialises it with `JsonStringEnumConverter` ([Program.cs:993](https://github.com/slskd/slskd/blob/0.26.2/src/slskd/Program.cs#L993)), so a finished search comes back as text like `"Completed, TimedOut"` or `"Completed, ResponseLimitReached"`, not `"Completed"`. Each search also has an `isComplete` boolean ([Search.cs:52](https://github.com/slskd/slskd/blob/0.26.2/src/slskd/Search/Types/Search.cs#L52)). See [Bug: duplicate check](#bug-the-duplicate-check-misses-finished-searches). **Confirmed live:** a test search for `Bicep Glue` came back from the `POST` as `InProgress`, and later as `Completed, ResponseLimitReached` in `GET /api/v0/searches`. It stopped at 250 responses, not at the documented default of 100.
 
+**Confirmed live, batches:** slskd runs about two searches at a time. When 7 searches were sent 2 seconds apart, the rest came back as `Queued` and started as the first ones finished. Each search takes 15 seconds or more, so a batch of 100 tracks from Mako takes several minutes to finish in slskd, even though the push itself returns quickly.
+
 ### 4. Which endpoint shows the Soulseek login?
 
 **`GET /api/v0/application`**, which Mako's connection test already calls. It returns the application state, including `server.isConnected` and `server.isLoggedIn` ([ApplicationController.cs:82](https://github.com/slskd/slskd/blob/0.26.2/src/slskd/Core/API/Controllers/ApplicationController.cs#L82), [State.cs:91](https://github.com/slskd/slskd/blob/0.26.2/src/slskd/Core/State.cs#L91)). Any API key role can call it.
@@ -196,7 +198,7 @@ The config was migrated from the April 2026 backup in `G:\My Drive\Dev-Config-Ba
 
 - **Moved `global` to `transfers` and `groups` to `transfers.groups`.** From 0.25.0, slskd refuses to start with the old keys ([0.25.0 release notes](https://github.com/slskd/slskd/releases/tag/0.25.0)).
 - **Dropped five keys that never existed:** `searches.response_limit`, `downloads.maximum_downloads`, `downloads.retry_attempts`, `logger.level` and `logger.file`. They aren't options in 0.24.5 or 0.26.2, so slskd always ignored them. Download retries are now set with `transfers.download.retry.attempts: 3`.
-- **Share path written with backslashes,** `.claude` and `.vscode` excluded, and a filter for any dot-folder (see below).
+- **Every Windows path written with backslashes** (share, downloads and incomplete), `.claude` and `.vscode` excluded, and a filter for any dot-folder (see below).
 - **API key `mako-sync`:** the same key as before, now with `role: ReadWrite` and a loopback-only `cidr`.
 - **Added `feature.swagger: true`.**
 - **Added `web.ip_address: "127.0.0.1,::1"`.** By default slskd listens on every network interface, and the network here is marked Public. Mako runs in a browser on this PC, so nothing else needs access.
@@ -210,8 +212,9 @@ soulseek:
   listen_port: 50300
 
 directories:
-  downloads: "C:/Supercollection/99_TO_BE_CLEANED/Soulseek Downloads/complete"
-  incomplete: "C:/Supercollection/99_TO_BE_CLEANED/Soulseek Downloads/downloading"
+  # Backslashes required: slskd rejects every download with 'Only absolute paths may be specified' if these use C:/
+  downloads: 'C:\Supercollection\99_TO_BE_CLEANED\Soulseek Downloads\complete'
+  incomplete: 'C:\Supercollection\99_TO_BE_CLEANED\Soulseek Downloads\downloading'
 
 shares:
   # Windows paths need backslashes: with C:/ slskd fails to mask file paths and shares 0 files.
@@ -272,7 +275,10 @@ feature:
 
 ### Windows pitfalls
 
-- **Use backslashes in share paths.** With `C:/Supercrates`, slskd 0.26.2 scanned 9,022 files but shared 0. It converts directory names to the share name (`Supercrates\…`) from paths that keep the configured prefix. File names come from `FileInfo.FullName`, which Windows rewrites with backslashes, so `ReplaceFirst("C:/Supercrates", …)` never matched ([ShareScanner.cs:340](https://github.com/slskd/slskd/blob/0.26.2/src/slskd/Shares/ShareScanner.cs#L340)). Browsing then shows no files, and search results can still return files under their full local path.
+- **Use backslashes in every Windows path in `slskd.yml`.** Forward slashes broke two things on first start, in different ways:
+  - **Downloads:** with `C:/…` download folders, searches work but every download fails straight away with "Only absolute paths may be specified (Parameter 'filename')". In the web UI, the queue-position request then returns `500`. Before writing a file, slskd checks `Path.GetFullPath(filename) != filename` ([FileService.cs:142](https://github.com/slskd/slskd/blob/0.26.2/src/slskd/Files/FileService.cs#L142)). On Windows, `GetFullPath` rewrites `/` as `\`, so the two never match.
+  - **Share:** see the next point.
+- **Share path in detail.** With `C:/Supercrates`, slskd 0.26.2 scanned 9,022 files but shared 0. It converts directory names to the share name (`Supercrates\…`) from paths that keep the configured prefix. File names come from `FileInfo.FullName`, which Windows rewrites with backslashes, so `ReplaceFirst("C:/Supercrates", …)` never matched ([ShareScanner.cs:340](https://github.com/slskd/slskd/blob/0.26.2/src/slskd/Shares/ShareScanner.cs#L340)). Browsing then shows no files, and search results can still return files under their full local path.
 - **Keep non-music folders out of the share.** `C:\Supercrates` has `.claude` and `.vscode` folders with editor settings in them. They're excluded by name, and the dot-folder filter catches any new one. Check `GET /api/v0/shares/{id}/contents` after changing the share.
 
 ---
@@ -301,6 +307,7 @@ feature:
 | `/swagger` returns 404 | `feature.swagger` is `false` by default. |
 | slskd exits at startup, and the log says `global` and `groups` have moved | The config still uses the 0.24 layout. See [Config](#config). |
 | The share shows 0 files after a scan that found files | The share path uses forward slashes. Use `C:\…`. See [Windows pitfalls](#windows-pitfalls). |
+| Searches work, but every download fails with "Only absolute paths may be specified" | The `directories.downloads` or `directories.incomplete` path uses forward slashes. Use `C:\…`. See [Windows pitfalls](#windows-pitfalls). |
 | slskd is still running after `Stop-ScheduledTask` | Expected: that only stops the `conhost` wrapper. Use `Stop-Process -Name slskd`. |
 
 ---
