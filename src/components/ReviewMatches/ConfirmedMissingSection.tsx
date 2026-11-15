@@ -192,7 +192,7 @@ export function ConfirmedMissingSection({ tracks, onUndo, onUnlike, onGenreSaved
         )}
         {tracks.length > 0 && !isConfigured && (
           <p className="mt-2 text-sm text-muted-foreground">
-            Configure slskd in Settings → Security to enable pushing tracks to wishlist.
+            Configure slskd in Settings → Security to push tracks to slskd as searches.
           </p>
         )}
       </CardHeader>

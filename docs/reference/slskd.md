@@ -13,7 +13,7 @@ This doc records how slskd behaves today, checked against its source, so the sls
 
 **Version checked:** slskd **0.26.2** (released 23 October 2026, commit `e472ecd`). The wishlist question was also checked against 0.24.0 and 0.24.5. Answers come from reading the source and docs. Items marked **confirmed live** were checked against the slskd installed on this PC on 14 November 2026.
 
-This PC's setup is recorded in [Install on Windows](#install-on-windows). How to connect Mako to it is in [Connecting Mako Sync](#connecting-mako-sync).
+This PC's setup is recorded in [Install on Windows](#install-on-windows). How to connect Mako to it is in [Connecting Mako Sync](#connecting-mako-sync), and how to download what Mako pushes is in [Downloading pushed tracks](#downloading-pushed-tracks).
 
 ---
 
@@ -131,15 +131,30 @@ web:
 
 ## Bug: the duplicate check misses finished searches
 
-`SlskdClientService.isSearchDuplicate()` blocks a search only when `state === 'InProgress' || state === 'Completed'`. Finished searches come back as flag strings such as `"Completed, TimedOut"` (see [answer 3](#3-what-post-apiv0searches-does)), so neither test matches. In practice:
+**Fixed in MAK-215 (Reint 3a).**
 
-- Pushing the same tracks again starts every search again, instead of skipping them.
-- The "retry TimedOut, Cancelled and Errored" rule from MAK-16 never runs as written. Every finished search is retried.
-- Searches that are still `Requested` or `Queued` aren't blocked either.
+`SlskdClientService.isSearchDuplicate()` used to block a search only when `state === 'InProgress' || state === 'Completed'`. Finished searches come back as flag strings such as `"Completed, TimedOut"` (see [answer 3](#3-what-post-apiv0searches-does)), so neither test matched. In practice:
 
-The unit tests mock bare `'Completed'` and `'TimedOut'` strings (`src/services/__tests__/slskdClient.service.test.ts`), so they pass. The `SlskdSearchResponse.state` type in `src/types/slskd.ts` has the same mistake.
+- Pushing the same tracks again started every search again, instead of skipping them.
+- The "retry TimedOut, Cancelled and Errored" rule from MAK-16 never ran as written. Every finished search was retried.
+- Searches that were still `Requested` or `Queued` weren't blocked either.
 
-**Fix (Reint 3a):** split `state` on `", "` and test the flags, or use `isComplete`. Block a search that isn't complete yet, or that completed without `Cancelled` or `Errored`. Allow a retry for `Cancelled` and `Errored`. Decide whether `TimedOut` with zero responses counts as a retry: it's the normal way a search ends, so `fileCount === 0` is a better signal. Update the tests to use the real strings.
+The unit tests mocked bare `'Completed'` and `'TimedOut'` strings, so they passed. The `SlskdSearchResponse.state` type had the same mistake.
+
+### The rule now
+
+`SlskdClientService.searchStateFlags()` splits `state` on commas. `isSearchDuplicate()` skips a track when any saved search has the same text (compared without case or punctuation) and isn't retryable:
+
+| Saved search's `state` | Push again? |
+|------------------------|-------------|
+| `Requested`, `Queued`, `InProgress` | No: it's waiting or running |
+| `Completed, TimedOut`, `Completed, ResponseLimitReached`, `Completed, FileLimitReached` | No: it finished normally |
+| `Completed, Cancelled`, `Completed, Errored` | Yes |
+| Anything else, or no state | No, so an unclear search isn't pushed twice |
+
+**A search that found nothing still blocks.** Most searches end with `TimedOut`, whether they found files or not, so Mako doesn't treat `TimedOut` or `fileCount === 0` as a reason to retry. A repeat push then skips every track (Reint 3b, step 4). To push a track again after its search found nothing, delete that search on slskd's Searches page first.
+
+The tests in `src/services/__tests__/slskdClient.service.test.ts` use the real strings. The push loop lives in `SlskdClientService.pushTracks()`, so those tests cover adding, skipping, retrying and a failed search against a mocked slskd.
 
 ---
 
@@ -153,11 +168,11 @@ The unit tests mock bare `'Completed'` and `'TimedOut'` strings (`src/services/_
 | B. slskd wishlist endpoint | Not possible: there is no wishlist endpoint. |
 | C. Mako queues downloads | Possible with the endpoints in [answer 5](#5-which-endpoint-queues-a-download), but much bigger: polling searches, picking files, and the tab must stay open. Revisit if downloading by hand becomes the bottleneck, or when slskd ships Guided Search. |
 
-Reint 3a still needs to:
+What Reint 3a did:
 
-1. Fix the duplicate check (above).
-2. Decide on the wording. Mako's UI says "wishlist". slskd calls them searches. Either keep "wishlist" for the Mako-side idea, or rename the button, toasts and Options description to "searches".
-3. Leave `retention.search` unset in `slskd.yml`. If searches were pruned, the duplicate check would forget them and they would be pushed again.
+1. Fixed the duplicate check (above).
+2. **Wording: searches.** Mako no longer says "wishlist". The Options page description, the Confirmed Missing hint, the push dialog and the toasts say Mako pushes tracks to slskd as searches. In code, `addToWishlist()` is now `startSearch()`.
+3. Kept `retention.search` unset in `slskd.yml`. If searches were pruned, the duplicate check would forget them and they would be pushed again.
 
 ---
 
@@ -332,6 +347,18 @@ Then reload the page. Clearing the config doesn't reset Chrome's permission. To 
 
 ---
 
+## Downloading pushed tracks
+
+A push only starts searches. slskd downloads nothing by itself (see [answer 2](#2-is-there-a-wishlist)), so you download each track by hand in slskd.
+
+1. In Review Matches, under **Confirmed Missing**, select artists and click **Push to slskd**. Or click **Push album** next to an album. The dialog shows how many searches were added, skipped or failed.
+2. Open the slskd web UI (<http://localhost:5030>) and go to **Searches**. Each pushed track is a search named `Artist - Title`. Each pushed album is `Artist - Album`.
+3. Wait for the searches to finish. slskd runs about two at a time and queues the rest, so a push of 100 tracks takes several minutes to finish (see [answer 3](#3-what-post-apiv0searches-does)).
+4. Open a search and pick a result: MP3 320 or FLAC, with the right title and artist. Download the files from that user. They go to the downloads folder (`C:\Supercollection\99_TO_BE_CLEANED\Soulseek Downloads\complete`).
+5. Leave the search in the list. Mako reads the list to skip tracks it has already pushed. Delete a search only when you want Mako to push that track again, for example after it found nothing.
+
+---
+
 ## Changes to the other Reint issues
 
 | Issue | Change |
@@ -339,8 +366,8 @@ Then reload the page. Clearing the config doesn't reset Chrome's permission. To 
 | MAK-212 (Reint 1, install) | Done: see [Install on Windows](#install-on-windows). |
 | MAK-213 (Reint 2a, connect) | Done: see [Connecting Mako Sync](#connecting-mako-sync). No code or slskd change was needed. |
 | MAK-214 (Reint 2b, login check) | Done: the connection test reads `server.isConnected` and `server.isLoggedIn` from `GET /api/v0/application`, and each failure has its own message (see [Troubleshooting](#troubleshooting)). |
-| MAK-215 (Reint 3a, push) | Option A, plus the duplicate-check fix. |
-| MAK-216 (Reint 3b, test) | Step 4 (push again, everything skipped) fails until the duplicate check is fixed. Step 7 is a manual download in slskd. |
+| MAK-215 (Reint 3a, push) | Done: option A. The duplicate check reads the state flags (see [The rule now](#the-rule-now)), and the UI says searches, not wishlist. |
+| MAK-216 (Reint 3b, test) | Step 4 (push again, everything skipped) works with the MAK-215 fix. Step 7 is a manual download in slskd: see [Downloading pushed tracks](#downloading-pushed-tracks). |
 
 ---
 
@@ -353,6 +380,7 @@ Then reload the page. Clearing the config doesn't reset Chrome's permission. To 
 | "Not logged in to Soulseek" | slskd is running, but isn't logged in to the Soulseek network, so every pushed search returns no results. The message includes slskd's `server.state`. Connect from the slskd web UI. If it won't stay logged in, check the Soulseek username and password in `slskd.yml`. |
 | "Unexpected response" | Something answered at the API Endpoint, but not with slskd's JSON. Usually the endpoint points at the wrong port or app. |
 | Push returns `409` | slskd isn't connected or logged in to Soulseek. |
+| A push skips a track whose earlier search found nothing | Expected: a finished search blocks the track, even with no results (see [The rule now](#the-rule-now)). Delete the search on slskd's Searches page, then push again. |
 | Push returns `429` | Another search request was still starting. Retry. |
 | `401` on every call | Wrong API key, or the caller's IP is outside the key's `cidr`. |
 | "API key rejected", and the slskd log says `Unknown API key beginning with: …` | The key in Mako's form is wrong, often an old one saved in the browser. Copy it again ([Steps](#steps), step 2) and click Save. |

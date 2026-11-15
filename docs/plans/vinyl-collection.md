@@ -16,7 +16,7 @@ Adds physical media (vinyl record) tracking to Mako Sync. The vinyl table drives
 3. Discogs API (full OAuth 1.0a) searches for and confirms the exact release + returns tracklist
 4. Record saved to `physical_media` Supabase table
 5. Tracklist cross-referenced against `local_mp3s` to find missing digital tracks
-6. Missing tracks pushed to slskd wishlist for automated download
+6. Missing tracks pushed to slskd as searches, to download from slskd's Searches page
 
 ---
 
@@ -154,5 +154,5 @@ await crypto.subtle.sign(
 3. `curl` `vinyl-image-identify` with a known sleeve JPEG; confirm structured JSON returned
 4. Add a record via `AddVinylDialog`; confirm row in `physical_media`
 5. Open `VinylDetailPanel`; confirm tracklist cross-reference shows matched/missing correctly
-6. Click "Push missing to slskd"; confirm `SlskdSyncProgress` modal and wishlist entries
+6. Click "Push missing to slskd"; confirm `SlskdSyncProgress` modal and the new searches in slskd
 7. `npx vitest run` — no regressions

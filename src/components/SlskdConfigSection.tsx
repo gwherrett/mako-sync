@@ -85,8 +85,8 @@ export function SlskdConfigSection() {
             <div>
               <CardTitle>slskd Integration</CardTitle>
               <CardDescription>
-                Connect to your slskd instance to push missing tracks to
-                wishlist
+                Connect to your slskd instance to push missing tracks to it
+                as searches. You download the results in slskd.
               </CardDescription>
             </div>
           </div>

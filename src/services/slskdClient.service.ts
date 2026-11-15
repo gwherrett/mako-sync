@@ -9,10 +9,20 @@ import type {
   SlskdApplicationResponse,
   SlskdConfig,
   SlskdConnectionResult,
+  SlskdPushProgress,
   SlskdSearchResponse,
+  SlskdSearchStateFlag,
+  SlskdSyncResult,
+  SlskdTrackToSync,
 } from '@/types/slskd';
 
 const CONNECTION_TEST_TIMEOUT_MS = 10000;
+
+/** Gap between searches in a push */
+const PUSH_DELAY_MS = 100;
+
+/** A saved search with one of these flags can be pushed again */
+const RETRYABLE_SEARCH_FLAGS: readonly SlskdSearchStateFlag[] = ['Cancelled', 'Errored'];
 
 /**
  * AbortSignal.timeout() rejects with a TimeoutError DOMException. Some browsers report AbortError.
@@ -123,7 +133,7 @@ export class SlskdClientService {
   }
 
   /**
-   * Get existing searches from slskd wishlist
+   * Get every search saved in slskd: waiting, running and finished
    */
   static async getExistingSearches(
     config: SlskdConfig
@@ -134,9 +144,10 @@ export class SlskdClientService {
   }
 
   /**
-   * Add track to slskd wishlist (creates a search)
+   * Start a search in slskd. slskd has no wishlist: the search is saved to its Searches
+   * page, where you download from the results. See docs/reference/slskd.md, answer 3.
    */
-  static async addToWishlist(
+  static async startSearch(
     config: SlskdConfig,
     searchText: string
   ): Promise<SlskdSearchResponse> {
@@ -144,6 +155,77 @@ export class SlskdClientService {
       method: 'POST',
       body: JSON.stringify({ searchText }),
     });
+  }
+
+  /**
+   * Start a search unless one with the same text is already in existingSearches (see
+   * isSearchDuplicate). A started search is added to existingSearches, so one push can't
+   * start the same search twice. Throws when slskd rejects the search.
+   */
+  static async startSearchUnlessDuplicate(
+    config: SlskdConfig,
+    existingSearches: SlskdSearchResponse[],
+    searchText: string
+  ): Promise<'started' | 'skipped'> {
+    if (this.isSearchDuplicate(existingSearches, searchText)) {
+      return 'skipped';
+    }
+    const created = await this.startSearch(config, searchText);
+    existingSearches.push({ id: created?.id ?? '', searchText, state: 'Requested' });
+    return 'started';
+  }
+
+  /**
+   * Push tracks to slskd as searches, one at a time. Reads slskd's saved searches once, then
+   * skips each track that already has one. A search slskd rejects is counted as failed and
+   * the push carries on. Throws only when the saved searches can't be read.
+   */
+  static async pushTracks(
+    config: SlskdConfig,
+    tracks: SlskdTrackToSync[],
+    onProgress?: (progress: SlskdPushProgress) => void,
+    delayMs = PUSH_DELAY_MS
+  ): Promise<SlskdSyncResult> {
+    const existingSearches = await this.getExistingSearches(config);
+
+    const result: SlskdSyncResult = {
+      totalTracks: tracks.length,
+      addedCount: 0,
+      skippedCount: 0,
+      failedCount: 0,
+      errors: [],
+    };
+
+    for (let i = 0; i < tracks.length; i++) {
+      const track = tracks[i];
+      const artist = track.primary_artist || track.artist;
+      const label = `${artist} - ${track.title}`;
+      const searchText = this.formatSearchQuery(artist, track.title, config.searchFormat);
+
+      onProgress?.({ current: i + 1, total: tracks.length, currentTrack: label });
+
+      try {
+        const outcome = await this.startSearchUnlessDuplicate(config, existingSearches, searchText);
+        if (outcome === 'skipped') {
+          result.skippedCount++;
+          continue;
+        }
+        result.addedCount++;
+      } catch (error) {
+        result.failedCount++;
+        result.errors.push({
+          track: label,
+          error: error instanceof Error ? error.message : 'Unknown error',
+        });
+      }
+
+      // slskd answers 429 if a search is still starting. Space the requests out.
+      if (delayMs > 0) {
+        await new Promise(resolve => setTimeout(resolve, delayMs));
+      }
+    }
+
+    return result;
   }
 
   /**
@@ -216,9 +298,30 @@ export class SlskdClientService {
   }
 
   /**
-   * Check if a search already exists and should not be re-added.
-   * Blocks InProgress (currently running) and Completed (already found results).
-   * Allows retry for TimedOut, Cancelled, and Errored searches.
+   * Split a search's state into its flags: "Completed, TimedOut" → ['Completed', 'TimedOut']
+   */
+  static searchStateFlags(state: string | null | undefined): string[] {
+    if (typeof state !== 'string') return [];
+    return state
+      .split(',')
+      .map((flag) => flag.trim())
+      .filter(Boolean);
+  }
+
+  /**
+   * Whether a saved search ended in a way worth trying again: slskd cancelled it or it errored.
+   */
+  static canRetrySearch(search: SlskdSearchResponse): boolean {
+    const flags = this.searchStateFlags(search.state);
+    return RETRYABLE_SEARCH_FLAGS.some((flag) => flags.includes(flag));
+  }
+
+  /**
+   * Check if a search already exists and should not be started again.
+   * Blocks searches that are waiting or running (Requested, Queued, InProgress), and searches
+   * that finished normally (Completed with TimedOut, ResponseLimitReached or
+   * FileLimitReached), even with no results. Allows a retry after Cancelled or Errored.
+   * A state Mako doesn't recognise counts as blocking, so an unclear search isn't pushed twice.
    */
   static isSearchDuplicate(
     existingSearches: SlskdSearchResponse[],
@@ -227,7 +330,7 @@ export class SlskdClientService {
     const normalizedNew = this.normalizeSearchText(newSearchText);
     return existingSearches.some(
       (search) =>
-        (search.state === 'InProgress' || search.state === 'Completed') &&
+        !this.canRetrySearch(search) &&
         this.normalizeSearchText(search.searchText) === normalizedNew
     );
   }
