@@ -304,8 +304,8 @@ Do these once on dev and once on production. Each site keeps its own copy of the
 
    This takes the first `key:` line, which is the `mako-sync` key under `web.authentication.api_keys`. You can also open `slskd.yml` and copy the value without the quotes.
 3. Open the Options page (`/security`). In **slskd Integration**, enter `http://localhost:5030` as the API Endpoint, and paste the key.
-4. Click **Save**. It tests the connection, saves the config, and shows the **Connected** badge. **Test Connection** only tests: it doesn't save or change the badge.
-5. **Production only:** the first time, Chrome shows a Local Network Access prompt by the address bar, asking to let the site reach apps on this device. Click **Allow**. Answer within 10 seconds: Mako stops waiting for slskd after 10 seconds, including while the prompt is open. If Save shows "Connection Failed" right after you allow it, click Save again. The permission is saved by then.
+4. Click **Save**. It tests the connection, saves the config, and shows the **Connected** badge. **Test Connection** only tests: it doesn't save or change the badge. Both show the result under the buttons. "Connected" means slskd is running and logged in to Soulseek (`server.isConnected` and `server.isLoggedIn`, see [answer 4](#4-which-endpoint-shows-the-soulseek-login)), so pushes will work. Any other result has its own message: see [Troubleshooting](#troubleshooting).
+5. **Production only:** the first time, Chrome shows a Local Network Access prompt by the address bar, asking to let the site reach apps on this device. Click **Allow**. Answer within 10 seconds: Mako stops waiting for slskd after 10 seconds, including while the prompt is open. If Save shows "slskd didn't answer" right after you allow it, click Save again. The permission is saved by then.
 
 Dev shows no prompt.
 
@@ -338,7 +338,7 @@ Then reload the page. Clearing the config doesn't reset Chrome's permission. To 
 |-------|--------|
 | MAK-212 (Reint 1, install) | Done: see [Install on Windows](#install-on-windows). |
 | MAK-213 (Reint 2a, connect) | Done: see [Connecting Mako Sync](#connecting-mako-sync). No code or slskd change was needed. |
-| MAK-214 (Reint 2b, login check) | Read `server.isLoggedIn` from `GET /api/v0/application`. Don't use `/session` or `/server`. |
+| MAK-214 (Reint 2b, login check) | Done: the connection test reads `server.isConnected` and `server.isLoggedIn` from `GET /api/v0/application`, and each failure has its own message (see [Troubleshooting](#troubleshooting)). |
 | MAK-215 (Reint 3a, push) | Option A, plus the duplicate-check fix. |
 | MAK-216 (Reint 3b, test) | Step 4 (push again, everything skipped) fails until the duplicate check is fixed. Step 7 is a manual download in slskd. |
 
@@ -348,12 +348,15 @@ Then reload the page. Clearing the config doesn't reset Chrome's permission. To 
 
 | Symptom | Likely cause |
 |---------|--------------|
-| Test Connection fails from the Vercel site but works on dev | The Chrome loopback prompt was denied. Reset it in site settings (lock icon → Site settings). |
+| "Can't reach slskd" on the Vercel site, but dev connects | The Chrome loopback prompt was denied. Reset it in site settings (lock icon → Site settings). |
+| "Can't reach slskd" everywhere | slskd isn't running (`Get-Process slskd`), or the API Endpoint is wrong. |
+| "Not logged in to Soulseek" | slskd is running, but isn't logged in to the Soulseek network, so every pushed search returns no results. The message includes slskd's `server.state`. Connect from the slskd web UI. If it won't stay logged in, check the Soulseek username and password in `slskd.yml`. |
+| "Unexpected response" | Something answered at the API Endpoint, but not with slskd's JSON. Usually the endpoint points at the wrong port or app. |
 | Push returns `409` | slskd isn't connected or logged in to Soulseek. |
 | Push returns `429` | Another search request was still starting. Retry. |
 | `401` on every call | Wrong API key, or the caller's IP is outside the key's `cidr`. |
-| "Connection Failed", and the slskd log says `Unknown API key beginning with: …` | The key in Mako's form is wrong, often an old one saved in the browser. Copy it again ([Steps](#steps), step 2) and click Save. |
-| "Connection Failed" right after allowing the Chrome prompt | The prompt was open for more than 10 seconds. Click Save again. |
+| "API key rejected", and the slskd log says `Unknown API key beginning with: …` | The key in Mako's form is wrong, often an old one saved in the browser. Copy it again ([Steps](#steps), step 2) and click Save. |
+| "slskd didn't answer" right after allowing the Chrome prompt | The prompt was open for more than 10 seconds. Click Save again. |
 | `403` on `/api/v0/server` | Expected for non-Administrator keys. Use `/api/v0/application`. |
 | `/swagger` returns 404 | `feature.swagger` is `false` by default. |
 | slskd exits at startup, and the log says `global` and `groups` have moved | The config still uses the 0.24 layout. See [Config](#config). |

@@ -36,12 +36,32 @@ export interface SlskdSearchResponse {
 }
 
 /**
- * slskd session info returned from /api/v0/session
+ * The part of GET /api/v0/application that Mako reads: the Soulseek server state.
+ * Any API key role can call this endpoint (unlike /api/v0/server, which needs Administrator).
  */
-export interface SlskdSessionResponse {
-  username: string;
-  isLoggedIn: boolean;
+export interface SlskdApplicationResponse {
+  server?: {
+    state?: string;          // Flags, e.g. "Connected, LoggedIn" or "Disconnected"
+    isConnected?: boolean;
+    isLoggedIn?: boolean;
+  };
 }
+
+/**
+ * Result of SlskdClientService.testConnection()
+ *
+ * - connected: slskd answered and is logged in to Soulseek, so pushes will work
+ * - not-logged-in: slskd answered but isn't logged in to Soulseek, so searches return nothing
+ * - unauthorized: slskd rejected the API key (401)
+ * - unreachable: the request failed (slskd not running, Chrome blocked it) or took over 10s
+ * - unexpected-response: something answered, but not the way slskd does
+ */
+export type SlskdConnectionResult =
+  | { status: 'connected' }
+  | { status: 'not-logged-in'; serverState: string | null }
+  | { status: 'unauthorized' }
+  | { status: 'unreachable'; reason: 'network' | 'timeout' }
+  | { status: 'unexpected-response'; detail: string };
 
 /**
  * Result of syncing tracks to slskd wishlist

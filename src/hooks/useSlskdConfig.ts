@@ -8,14 +8,25 @@
 import { useState, useEffect, useCallback } from 'react';
 import { SlskdStorageService } from '@/services/slskdStorage.service';
 import { SlskdClientService } from '@/services/slskdClient.service';
-import type { SlskdConfig } from '@/types/slskd';
+import type { SlskdConfig, SlskdConnectionResult } from '@/types/slskd';
 import { useToast } from '@/hooks/use-toast';
+
+/**
+ * The most recent connection test, with the endpoint and key it used, so the
+ * UI can hide the result once either field changes.
+ */
+export interface SlskdConnectionTest {
+  apiEndpoint: string;
+  apiKey: string;
+  result: SlskdConnectionResult;
+}
 
 export function useSlskdConfig() {
   const { toast } = useToast();
   const [config, setConfig] = useState<SlskdConfig>(SlskdStorageService.getConfig);
   const [isSaving, setIsSaving] = useState(false);
   const [isTesting, setIsTesting] = useState(false);
+  const [lastTest, setLastTest] = useState<SlskdConnectionTest | null>(null);
 
   // Reload config if localStorage changes (e.g., from another tab)
   useEffect(() => {
@@ -29,11 +40,13 @@ export function useSlskdConfig() {
   }, []);
 
   /**
-   * Save configuration and test connection
+   * Save configuration and test connection.
+   * The config is saved whatever the result; connectionStatus is true only when
+   * slskd is connected and logged in to Soulseek.
    */
   const saveConfig = useCallback(async (
     newConfig: Omit<SlskdConfig, 'connectionStatus' | 'lastConnectionTest'>
-  ) => {
+  ): Promise<SlskdConnectionResult | null> => {
     setIsSaving(true);
 
     try {
@@ -43,25 +56,20 @@ export function useSlskdConfig() {
         connectionStatus: false,
         lastConnectionTest: undefined,
       };
-      const isValid = await SlskdClientService.testConnection(testConfig);
+      const result = await SlskdClientService.testConnection(testConfig);
+      setLastTest({ apiEndpoint: newConfig.apiEndpoint, apiKey: newConfig.apiKey, result });
 
       const updated = SlskdStorageService.saveConfig({
         ...newConfig,
-        connectionStatus: isValid,
+        connectionStatus: result.status === 'connected',
         lastConnectionTest: new Date().toISOString(),
       });
 
       setConfig(updated);
 
-      toast({
-        title: isValid ? 'Connection Successful' : 'Connection Failed',
-        description: isValid
-          ? 'slskd configuration saved'
-          : 'Could not connect to slskd. Check your endpoint and API key.',
-        variant: isValid ? 'default' : 'destructive',
-      });
+      toast({ title: 'slskd configuration saved' });
 
-      return isValid;
+      return result;
     } catch (error) {
       console.error('Failed to save slskd config:', error);
       toast({
@@ -69,7 +77,7 @@ export function useSlskdConfig() {
         description: error instanceof Error ? error.message : 'Unknown error',
         variant: 'destructive',
       });
-      return false;
+      return null;
     } finally {
       setIsSaving(false);
     }
@@ -80,7 +88,7 @@ export function useSlskdConfig() {
    */
   const testConnection = useCallback(async (
     testConfig: Pick<SlskdConfig, 'apiEndpoint' | 'apiKey'>
-  ) => {
+  ): Promise<SlskdConnectionResult> => {
     setIsTesting(true);
 
     try {
@@ -88,29 +96,13 @@ export function useSlskdConfig() {
         ...SlskdStorageService.getConfig(),
         ...testConfig,
       };
-      const isValid = await SlskdClientService.testConnection(fullConfig);
-
-      toast({
-        title: isValid ? 'Connection Successful' : 'Connection Failed',
-        description: isValid
-          ? 'Successfully connected to slskd'
-          : 'Could not connect to slskd. Check your endpoint and API key.',
-        variant: isValid ? 'default' : 'destructive',
-      });
-
-      return isValid;
-    } catch (error) {
-      console.error('slskd connection test failed:', error);
-      toast({
-        title: 'Connection Test Failed',
-        description: error instanceof Error ? error.message : 'Unknown error',
-        variant: 'destructive',
-      });
-      return false;
+      const result = await SlskdClientService.testConnection(fullConfig);
+      setLastTest({ apiEndpoint: testConfig.apiEndpoint, apiKey: testConfig.apiKey, result });
+      return result;
     } finally {
       setIsTesting(false);
     }
-  }, [toast]);
+  }, []);
 
   /**
    * Clear all configuration
@@ -118,6 +110,7 @@ export function useSlskdConfig() {
   const clearConfig = useCallback(() => {
     SlskdStorageService.clearConfig();
     setConfig(SlskdStorageService.getConfig());
+    setLastTest(null);
     toast({
       title: 'Configuration Cleared',
       description: 'slskd configuration has been removed',
@@ -134,5 +127,6 @@ export function useSlskdConfig() {
     isSaving,
     testConnection,
     isTesting,
+    lastTest,
   };
 }

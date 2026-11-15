@@ -21,8 +21,9 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useSlskdConfig } from '@/hooks/useSlskdConfig';
+import { describeSlskdConnection } from '@/components/slskdConnection.utils';
 import { Loader2, Server, CheckCircle2, XCircle, Info } from 'lucide-react';
 
 export function SlskdConfigSection() {
@@ -32,6 +33,7 @@ export function SlskdConfigSection() {
     isSaving,
     testConnection,
     isTesting,
+    lastTest,
   } = useSlskdConfig();
 
   const [apiEndpoint, setApiEndpoint] = useState(config?.apiEndpoint || '');
@@ -67,6 +69,12 @@ export function SlskdConfigSection() {
       searchFormat !== config.searchFormat);
 
   const canSave = apiEndpoint.trim() && apiKey.trim();
+
+  // Show the last test result only while the endpoint and key still match what was tested
+  const connectionMessage =
+    lastTest && lastTest.apiEndpoint === apiEndpoint && lastTest.apiKey === apiKey
+      ? describeSlskdConnection(lastTest.result)
+      : null;
 
   return (
     <Card>
@@ -187,6 +195,18 @@ export function SlskdConfigSection() {
             Test Connection
           </Button>
         </div>
+
+        {connectionMessage && (
+          <Alert variant={connectionMessage.tone === 'success' ? 'default' : 'destructive'}>
+            {connectionMessage.tone === 'success' ? (
+              <CheckCircle2 className="h-4 w-4 !text-green-600" />
+            ) : (
+              <XCircle className="h-4 w-4" />
+            )}
+            <AlertTitle>{connectionMessage.title}</AlertTitle>
+            <AlertDescription>{connectionMessage.description}</AlertDescription>
+          </Alert>
+        )}
 
         {hasChanges && (
           <p className="text-xs text-amber-600">

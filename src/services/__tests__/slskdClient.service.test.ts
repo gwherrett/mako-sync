@@ -11,6 +11,7 @@ function mockResponse(init: {
   body?: string;
   contentType?: string | null;
   json?: unknown;
+  jsonRejects?: Error;
   textRejects?: boolean;
 }): Response {
   return {
@@ -21,8 +22,15 @@ function mockResponse(init: {
     text: init.textRejects
       ? () => Promise.reject(new Error('stream error'))
       : () => Promise.resolve(init.body ?? ''),
-    json: () => Promise.resolve(init.json),
+    json: init.jsonRejects
+      ? () => Promise.reject(init.jsonRejects)
+      : () => Promise.resolve(init.json),
   } as unknown as Response;
+}
+
+/** A GET /api/v0/application reply with the given Soulseek server state */
+function applicationResponse(server: unknown): Response {
+  return mockResponse({ contentType: 'application/json; charset=utf-8', json: { version: { current: '0.26.2' }, server } });
 }
 
 describe('SlskdClientService HTTP calls', () => {
@@ -38,40 +46,136 @@ describe('SlskdClientService HTTP calls', () => {
   });
 
   describe('testConnection', () => {
-    it('returns true for a JSON response from the application endpoint', async () => {
+    it('returns connected when slskd is connected and logged in to Soulseek', async () => {
       fetchMock.mockResolvedValue(
-        mockResponse({ contentType: 'application/json; charset=utf-8', json: { version: '1' } })
+        applicationResponse({ state: 'Connected, LoggedIn', isConnected: true, isLoggedIn: true })
       );
 
-      await expect(SlskdClientService.testConnection(config)).resolves.toBe(true);
+      await expect(SlskdClientService.testConnection(config)).resolves.toEqual({ status: 'connected' });
       expect(fetchMock).toHaveBeenCalledWith(
         'http://slskd.local:5030/api/v0/application',
         expect.objectContaining({ method: 'GET', headers: { 'X-API-Key': 'key-123' } })
       );
     });
 
-    it('returns false for a non-OK status', async () => {
+    it('keeps the 10 second timeout', async () => {
+      const timeoutSpy = vi.spyOn(AbortSignal, 'timeout');
+      fetchMock.mockResolvedValue(
+        applicationResponse({ state: 'Connected, LoggedIn', isConnected: true, isLoggedIn: true })
+      );
+
+      await SlskdClientService.testConnection(config);
+
+      expect(timeoutSpy).toHaveBeenCalledWith(10000);
+      expect(fetchMock.mock.calls[0][1].signal).toBe(timeoutSpy.mock.results[0].value);
+      timeoutSpy.mockRestore();
+    });
+
+    it('returns not-logged-in when slskd is disconnected from Soulseek', async () => {
+      fetchMock.mockResolvedValue(
+        applicationResponse({ state: 'Disconnected', isConnected: false, isLoggedIn: false })
+      );
+
+      await expect(SlskdClientService.testConnection(config))
+        .resolves.toEqual({ status: 'not-logged-in', serverState: 'Disconnected' });
+    });
+
+    it('returns not-logged-in when slskd is connected to the server but not logged in', async () => {
+      fetchMock.mockResolvedValue(
+        applicationResponse({ state: 'Connected, LoggingIn', isConnected: true, isLoggedIn: false })
+      );
+
+      await expect(SlskdClientService.testConnection(config))
+        .resolves.toEqual({ status: 'not-logged-in', serverState: 'Connected, LoggingIn' });
+    });
+
+    it('requires isConnected as well as isLoggedIn', async () => {
+      fetchMock.mockResolvedValue(applicationResponse({ isConnected: false, isLoggedIn: true }));
+
+      await expect(SlskdClientService.testConnection(config))
+        .resolves.toEqual({ status: 'not-logged-in', serverState: null });
+    });
+
+    it('returns unauthorized for a 401', async () => {
       fetchMock.mockResolvedValue(mockResponse({ ok: false, status: 401, statusText: 'Unauthorized' }));
 
-      await expect(SlskdClientService.testConnection(config)).resolves.toBe(false);
+      await expect(SlskdClientService.testConnection(config)).resolves.toEqual({ status: 'unauthorized' });
     });
 
-    it('returns false when the response is not JSON', async () => {
-      fetchMock.mockResolvedValue(mockResponse({ contentType: 'text/html' }));
-
-      await expect(SlskdClientService.testConnection(config)).resolves.toBe(false);
-    });
-
-    it('returns false when there is no content type', async () => {
-      fetchMock.mockResolvedValue(mockResponse({ contentType: null }));
-
-      await expect(SlskdClientService.testConnection(config)).resolves.toBe(false);
-    });
-
-    it('returns false when fetch throws', async () => {
+    it('returns unreachable (network) when fetch fails', async () => {
       fetchMock.mockRejectedValue(new TypeError('Failed to fetch'));
 
-      await expect(SlskdClientService.testConnection(config)).resolves.toBe(false);
+      await expect(SlskdClientService.testConnection(config))
+        .resolves.toEqual({ status: 'unreachable', reason: 'network' });
+    });
+
+    it('returns unreachable (timeout) when the request times out', async () => {
+      fetchMock.mockRejectedValue(
+        new DOMException('The operation was aborted due to timeout', 'TimeoutError')
+      );
+
+      await expect(SlskdClientService.testConnection(config))
+        .resolves.toEqual({ status: 'unreachable', reason: 'timeout' });
+    });
+
+    it('returns unreachable (timeout) when the request is aborted', async () => {
+      fetchMock.mockRejectedValue(new DOMException('The user aborted a request.', 'AbortError'));
+
+      await expect(SlskdClientService.testConnection(config))
+        .resolves.toEqual({ status: 'unreachable', reason: 'timeout' });
+    });
+
+    it('returns unreachable (timeout) when the body times out', async () => {
+      fetchMock.mockResolvedValue(
+        mockResponse({
+          contentType: 'application/json',
+          jsonRejects: new DOMException('The operation was aborted due to timeout', 'TimeoutError'),
+        })
+      );
+
+      await expect(SlskdClientService.testConnection(config))
+        .resolves.toEqual({ status: 'unreachable', reason: 'timeout' });
+    });
+
+    it('returns unexpected-response for another error status', async () => {
+      fetchMock.mockResolvedValue(mockResponse({ ok: false, status: 500, statusText: 'Internal Server Error' }));
+
+      await expect(SlskdClientService.testConnection(config))
+        .resolves.toEqual({ status: 'unexpected-response', detail: 'HTTP 500' });
+    });
+
+    it('returns unexpected-response when the response is not JSON', async () => {
+      fetchMock.mockResolvedValue(mockResponse({ contentType: 'text/html' }));
+
+      await expect(SlskdClientService.testConnection(config))
+        .resolves.toEqual({ status: 'unexpected-response', detail: 'content type text/html' });
+    });
+
+    it('returns unexpected-response when there is no content type', async () => {
+      fetchMock.mockResolvedValue(mockResponse({ contentType: null }));
+
+      await expect(SlskdClientService.testConnection(config))
+        .resolves.toEqual({ status: 'unexpected-response', detail: 'content type missing' });
+    });
+
+    it('returns unexpected-response for invalid JSON', async () => {
+      fetchMock.mockResolvedValue(
+        mockResponse({ contentType: 'application/json', jsonRejects: new SyntaxError('Unexpected token') })
+      );
+
+      await expect(SlskdClientService.testConnection(config))
+        .resolves.toEqual({ status: 'unexpected-response', detail: 'invalid JSON' });
+    });
+
+    it.each([
+      ['no server field', { version: '1' }],
+      ['a null body', null],
+      ['a server field without isLoggedIn', { server: { state: 'Connected' } }],
+    ])('returns unexpected-response for JSON with %s', async (_label, json) => {
+      fetchMock.mockResolvedValue(mockResponse({ contentType: 'application/json', json }));
+
+      await expect(SlskdClientService.testConnection(config))
+        .resolves.toEqual({ status: 'unexpected-response', detail: 'no Soulseek server state' });
     });
   });
 
