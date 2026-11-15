@@ -86,12 +86,8 @@ export function useSlskdSync() {
       return;
     }
 
-    const artist = track.primary_artist || track.artist;
-    const searchText = SlskdClientService.formatAlbumSearchQuery(artist, album, config.searchFormat);
-
     try {
-      const existingSearches = await SlskdClientService.getExistingSearches(config);
-      const outcome = await SlskdClientService.startSearchUnlessDuplicate(config, existingSearches, searchText);
+      const { outcome, searchText } = await SlskdClientService.pushAlbum(config, { ...track, album });
       if (outcome === 'skipped') {
         toast({ title: 'Already searched', description: `"${searchText}" is already in slskd's searches.` });
         return;

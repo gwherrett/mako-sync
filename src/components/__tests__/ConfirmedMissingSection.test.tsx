@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach, type MockInstance } from 'vitest';
 import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { ConfirmedMissingSection } from '@/components/ReviewMatches/ConfirmedMissingSection';
@@ -15,7 +15,9 @@ import {
 } from '@/components/ReviewMatches/confirmedMissing.utils';
 import { useSlskdConfig } from '@/hooks/useSlskdConfig';
 import type { ConfirmedMissingTrack } from '@/services/manualMatch.service';
+import { SlskdClientService } from '@/services/slskdClient.service';
 import type { SpotifyTrack } from '@/services/trackMatchingEngine';
+import type { SlskdConfig, SlskdSearchResponse } from '@/types/slskd';
 
 /**
  * Tests for the Confirmed Missing section (MAK-181). The CSV, grouping and slskd cases moved
@@ -30,6 +32,7 @@ vi.mock('@/hooks/useSlskdSync', () => ({
     syncAlbumToSlskd: vi.fn(),
     isSyncing: false,
     syncResult: undefined,
+    syncError: null,
     progress: null,
     reset: vi.fn(),
   }),
@@ -163,6 +166,15 @@ describe('slskd payload', () => {
     ]);
   });
 
+  it('sends all of a selected artist\'s tracks across their albums, and none of the other artists', () => {
+    const payload = slskdTracksForGroups(selectedGroups(groups, new Set(['Kerri Chandler'])));
+    expect(payload.map(t => [t.title, t.artist])).toEqual([
+      ['Bar A Thym', 'Kerri Chandler'],
+      ['Atmosphere', 'Kerri Chandler'],
+      ['Rain', 'Kerri Chandler'],
+    ]);
+  });
+
   it('sends nothing when no artist is selected', () => {
     expect(slskdTracksForGroups(selectedGroups(groups, new Set()))).toEqual([]);
   });
@@ -176,6 +188,80 @@ describe('slskd payload', () => {
     expect(slskdAlbumTrack(computerGames.tracks, 'Computer Games')).toEqual({
       id: 's3', title: 'Atmosphere', artist: 'Kerri Chandler', primary_artist: 'Kerri Chandler', album: 'Computer Games',
     });
+  });
+});
+
+/**
+ * The Confirmed Missing payload run through the real push code (MAK-216), against a stand-in for
+ * slskd's /api/v0/searches that keeps each search Mako starts. Without a DOM the buttons can't be
+ * clicked, so these start from the helpers the buttons call.
+ */
+describe('pushing Confirmed Missing tracks to slskd', () => {
+  const slskdConfig = { apiEndpoint: 'http://localhost:5030', apiKey: 'key', searchFormat: 'primary' } as SlskdConfig;
+
+  // Kerri Chandler has three tracks over two albums. The other two artists have one each.
+  const groups = groupByArtist([
+    missing('p1', 'Rain', 'Kerri Chandler', 'Computer Games'),
+    missing('p2', 'Atmosphere', 'Kerri Chandler', 'Computer Games'),
+    missing('p3', 'Bar A Thym', 'Kerri Chandler', 'Atmosphere EP'),
+    missing('p4', 'Shades of Jae', 'Moodymann feat. Andrés', 'Silence in the Secret Garden'),
+    missing('p5', 'Strings of Life', 'Rhythim Is Rhythim', null),
+  ]);
+
+  let saved: SlskdSearchResponse[];
+  let fetchSpy: MockInstance<typeof fetch>;
+  const postedSearchTexts = () =>
+    fetchSpy.mock.calls
+      .filter(([, init]) => init?.method === 'POST')
+      .map(([, init]) => JSON.parse(String(init?.body)).searchText);
+
+  beforeEach(() => {
+    saved = [];
+    fetchSpy = vi.spyOn(globalThis, 'fetch').mockImplementation(async (_input, init) => {
+      if (init?.method === 'POST') {
+        const { searchText } = JSON.parse(String(init.body));
+        const search = { id: `search-${saved.length + 1}`, searchText, state: 'InProgress' };
+        // By the next push it has finished, the way most slskd searches end.
+        saved.push({ ...search, state: 'Completed, TimedOut' });
+        return new Response(JSON.stringify(search));
+      }
+      return new Response(JSON.stringify(saved));
+    });
+  });
+
+  afterEach(() => {
+    fetchSpy.mockRestore();
+  });
+
+  it('pushes every track of the 2 selected artists as `Primary Artist - Title`, then skips them all on a second push', async () => {
+    const payload = slskdTracksForGroups(selectedGroups(groups, new Set(['Kerri Chandler', 'Moodymann feat. Andrés'])));
+
+    const first = await SlskdClientService.pushTracks(slskdConfig, payload, undefined, 0);
+    expect(first).toEqual({ totalTracks: 4, addedCount: 4, skippedCount: 0, failedCount: 0, errors: [] });
+    expect(postedSearchTexts()).toEqual([
+      'Kerri Chandler - Bar A Thym',
+      'Kerri Chandler - Atmosphere',
+      'Kerri Chandler - Rain',
+      'Moodymann - Shades of Jae',
+    ]);
+    expect(postedSearchTexts().join('\n')).not.toMatch(/feat|320|mp3|flac/i);
+
+    const second = await SlskdClientService.pushTracks(slskdConfig, payload, undefined, 0);
+    expect(second).toEqual({ totalTracks: 4, addedCount: 0, skippedCount: 4, failedCount: 0, errors: [] });
+    expect(postedSearchTexts()).toHaveLength(4);
+  });
+
+  it('pushes an album as one `Artist - Album` search, however many tracks it has', async () => {
+    const [, computerGames] = groupTracksByAlbum(groups[0].tracks);
+    expect(computerGames.tracks).toHaveLength(2);
+
+    const { outcome } = await SlskdClientService.pushAlbum(slskdConfig, {
+      ...slskdAlbumTrack(computerGames.tracks, 'Computer Games'),
+      album: 'Computer Games',
+    });
+
+    expect(outcome).toBe('started');
+    expect(postedSearchTexts()).toEqual(['Kerri Chandler - Computer Games']);
   });
 });
 

@@ -154,7 +154,7 @@ The unit tests mocked bare `'Completed'` and `'TimedOut'` strings, so they passe
 
 **A search that found nothing still blocks.** Most searches end with `TimedOut`, whether they found files or not, so Mako doesn't treat `TimedOut` or `fileCount === 0` as a reason to retry. A repeat push then skips every track (Reint 3b, step 4). To push a track again after its search found nothing, delete that search on slskd's Searches page first.
 
-The tests in `src/services/__tests__/slskdClient.service.test.ts` use the real strings. The push loop lives in `SlskdClientService.pushTracks()`, so those tests cover adding, skipping, retrying and a failed search against a mocked slskd.
+The tests in `src/services/__tests__/slskdClient.service.test.ts` use the real strings. The track push (`SlskdClientService.pushTracks()`) and the album push (`pushAlbum()`) live in the service, so those tests cover adding, skipping, retrying and a failed search against a mocked slskd.
 
 ---
 
@@ -367,7 +367,7 @@ A push only starts searches. slskd downloads nothing by itself (see [answer 2](#
 | MAK-213 (Reint 2a, connect) | Done: see [Connecting Mako Sync](#connecting-mako-sync). No code or slskd change was needed. |
 | MAK-214 (Reint 2b, login check) | Done: the connection test reads `server.isConnected` and `server.isLoggedIn` from `GET /api/v0/application`, and each failure has its own message (see [Troubleshooting](#troubleshooting)). |
 | MAK-215 (Reint 3a, push) | Done: option A. The duplicate check reads the state flags (see [The rule now](#the-rule-now)), and the UI says searches, not wishlist. |
-| MAK-216 (Reint 3b, test) | Step 4 (push again, everything skipped) works with the MAK-215 fix. Step 7 is a manual download in slskd: see [Downloading pushed tracks](#downloading-pushed-tracks). |
+| MAK-216 (Reint 3b, test) | Step 4 (push again, everything skipped) works with the MAK-215 fix. In step 6 (slskd stopped), the push fails with "Can't reach slskd at …" and the progress dialog closes. Step 7 is a manual download in slskd: see [Downloading pushed tracks](#downloading-pushed-tracks). |
 
 ---
 
@@ -380,6 +380,7 @@ A push only starts searches. slskd downloads nothing by itself (see [answer 2](#
 | "Not logged in to Soulseek" | slskd is running, but isn't logged in to the Soulseek network, so every pushed search returns no results. The message includes slskd's `server.state`. Connect from the slskd web UI. If it won't stay logged in, check the Soulseek username and password in `slskd.yml`. |
 | "Unexpected response" | Something answered at the API Endpoint, but not with slskd's JSON. Usually the endpoint points at the wrong port or app. |
 | Push returns `409` | slskd isn't connected or logged in to Soulseek. |
+| "Push failed" with "Can't reach slskd at …" | slskd isn't running, or on the Vercel site, Chrome's local network access prompt was denied. Nothing was pushed, and the progress dialog closes. |
 | A push skips a track whose earlier search found nothing | Expected: a finished search blocks the track, even with no results (see [The rule now](#the-rule-now)). Delete the search on slskd's Searches page, then push again. |
 | Push returns `429` | Another search request was still starting. Retry. |
 | `401` on every call | Wrong API key, or the caller's IP is outside the key's `cidr`. |

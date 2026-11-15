@@ -18,6 +18,9 @@ import type {
 
 const CONNECTION_TEST_TIMEOUT_MS = 10000;
 
+/** How long a search or search-list request waits for slskd */
+const REQUEST_TIMEOUT_MS = 10000;
+
 /** Gap between searches in a push */
 const PUSH_DELAY_MS = 100;
 
@@ -30,6 +33,16 @@ const RETRYABLE_SEARCH_FLAGS: readonly SlskdSearchStateFlag[] = ['Cancelled', 'E
 function isTimeoutError(error: unknown): boolean {
   const name = (error as { name?: unknown } | null)?.name;
   return name === 'TimeoutError' || name === 'AbortError';
+}
+
+/**
+ * An Error that keeps the error it replaces as `cause`. new Error(message, { cause }) needs the
+ * ES2022 lib, and tsconfig.app.json uses ES2020.
+ */
+function errorWithCause(message: string, cause: unknown): Error {
+  const error = new Error(message);
+  (error as Error & { cause?: unknown }).cause = cause;
+  return error;
 }
 
 export class SlskdClientService {
@@ -48,11 +61,23 @@ export class SlskdClientService {
       ...options.headers,
     };
 
-    const response = await fetch(url, {
-      ...options,
-      headers,
-      signal: AbortSignal.timeout(10000), // 10s timeout
-    });
+    let response: Response;
+    try {
+      response = await fetch(url, {
+        ...options,
+        headers,
+        signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+      });
+    } catch (error) {
+      // When slskd isn't running, the browser only says "Failed to fetch". Say what to check.
+      console.error('slskd request failed:', error);
+      throw errorWithCause(
+        isTimeoutError(error)
+          ? `slskd didn't answer within ${REQUEST_TIMEOUT_MS / 1000} seconds. Check that slskd is running.`
+          : `Can't reach slskd at ${config.apiEndpoint}. Check that slskd is running and the API endpoint is right.`,
+        error
+      );
+    }
 
     if (!response.ok) {
       const errorMessage = await response.text().catch(() => 'Unknown error');
@@ -226,6 +251,22 @@ export class SlskdClientService {
     }
 
     return result;
+  }
+
+  /**
+   * Push one album to slskd as a single `Artist - Album` search, unless slskd already has it.
+   * Returns the search text for the toast. Throws when slskd's saved searches can't be read
+   * or slskd rejects the search.
+   */
+  static async pushAlbum(
+    config: SlskdConfig,
+    track: SlskdTrackToSync & { album: string }
+  ): Promise<{ outcome: 'started' | 'skipped'; searchText: string }> {
+    const artist = track.primary_artist || track.artist;
+    const searchText = this.formatAlbumSearchQuery(artist, track.album, config.searchFormat);
+    const existingSearches = await this.getExistingSearches(config);
+    const outcome = await this.startSearchUnlessDuplicate(config, existingSearches, searchText);
+    return { outcome, searchText };
   }
 
   /**

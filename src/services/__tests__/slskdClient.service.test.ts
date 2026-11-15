@@ -45,6 +45,28 @@ describe('SlskdClientService HTTP calls', () => {
     fetchMock.mockReset();
   });
 
+  const pushConfig = { ...config, searchFormat: 'primary' } as SlskdConfig;
+
+  /** slskd answers GET /api/v0/searches with savedSearches, and each POST with postReplies[searchText] or a new search */
+  function slskdWith(savedSearches: unknown[], postReplies: Record<string, Response> = {}) {
+    fetchMock.mockImplementation((_url: string, init: RequestInit) => {
+      if (init.method === 'GET') {
+        return Promise.resolve(mockResponse({ body: JSON.stringify(savedSearches) }));
+      }
+      const { searchText } = JSON.parse(String(init.body));
+      return Promise.resolve(
+        postReplies[searchText] ??
+          mockResponse({ body: JSON.stringify({ id: `new ${searchText}`, searchText, state: 'InProgress' }) })
+      );
+    });
+  }
+
+  function postedSearchTexts(): string[] {
+    return fetchMock.mock.calls
+      .filter(([, init]) => init.method === 'POST')
+      .map(([, init]) => JSON.parse(String(init.body)).searchText);
+  }
+
   describe('testConnection', () => {
     it('returns connected when slskd is connected and logged in to Soulseek', async () => {
       fetchMock.mockResolvedValue(
@@ -213,6 +235,39 @@ describe('SlskdClientService HTTP calls', () => {
       await expect(SlskdClientService.getExistingSearches(config))
         .rejects.toThrow('slskd API error (502): Unknown error');
     });
+
+    it("says it can't reach slskd when the request fails, as it does with slskd stopped", async () => {
+      const failure = new TypeError('Failed to fetch');
+      fetchMock.mockRejectedValue(failure);
+
+      const error = await SlskdClientService.getExistingSearches(config).catch((e: unknown) => e);
+
+      expect(error).toBeInstanceOf(Error);
+      expect((error as Error).message).toBe(
+        "Can't reach slskd at http://slskd.local:5030. Check that slskd is running and the API endpoint is right."
+      );
+      expect((error as Error & { cause?: unknown }).cause).toBe(failure);
+    });
+
+    it("says slskd didn't answer when the request times out", async () => {
+      fetchMock.mockRejectedValue(
+        new DOMException('The operation was aborted due to timeout', 'TimeoutError')
+      );
+
+      await expect(SlskdClientService.getExistingSearches(config)).rejects.toThrow(
+        "slskd didn't answer within 10 seconds. Check that slskd is running."
+      );
+    });
+
+    it('keeps the 10 second timeout', async () => {
+      const timeoutSpy = vi.spyOn(AbortSignal, 'timeout');
+      fetchMock.mockResolvedValue(mockResponse({ body: '[]' }));
+
+      await SlskdClientService.getExistingSearches(config);
+
+      expect(timeoutSpy).toHaveBeenCalledWith(10000);
+      timeoutSpy.mockRestore();
+    });
   });
 
   describe('startSearch', () => {
@@ -269,8 +324,6 @@ describe('SlskdClientService HTTP calls', () => {
   });
 
   describe('pushTracks', () => {
-    const pushConfig = { ...config, searchFormat: 'primary' } as SlskdConfig;
-
     const moodymann: SlskdTrackToSync = { id: 's1', artist: 'Moodymann', title: 'Shades of Jae' };
     const kerri: SlskdTrackToSync = {
       id: 's2',
@@ -278,26 +331,6 @@ describe('SlskdClientService HTTP calls', () => {
       primary_artist: 'Kerri Chandler',
       title: 'Rain',
     };
-
-    /** slskd answers GET /api/v0/searches with savedSearches, and each POST with postReplies[searchText] or a new search */
-    function slskdWith(savedSearches: unknown[], postReplies: Record<string, Response> = {}) {
-      fetchMock.mockImplementation((_url: string, init: RequestInit) => {
-        if (init.method === 'GET') {
-          return Promise.resolve(mockResponse({ body: JSON.stringify(savedSearches) }));
-        }
-        const { searchText } = JSON.parse(String(init.body));
-        return Promise.resolve(
-          postReplies[searchText] ??
-            mockResponse({ body: JSON.stringify({ id: `new ${searchText}`, searchText, state: 'InProgress' }) })
-        );
-      });
-    }
-
-    function postedSearchTexts(): string[] {
-      return fetchMock.mock.calls
-        .filter(([, init]) => init.method === 'POST')
-        .map(([, init]) => JSON.parse(String(init.body)).searchText);
-    }
 
     it('starts a search for each track, reading the saved searches once', async () => {
       slskdWith([]);
@@ -402,16 +435,51 @@ describe('SlskdClientService HTTP calls', () => {
       expect(postedSearchTexts()).toEqual(['Moodymann - Shades of Jae', 'Kerri Chandler - Rain']);
     });
 
-    it('reports "Unknown error" when the failure is not an Error', async () => {
+    it('fails each search with a clear message when slskd stops during the push', async () => {
       fetchMock.mockImplementation((_url: string, init: RequestInit) =>
         init.method === 'GET'
           ? Promise.resolve(mockResponse({ body: '[]' }))
-          : Promise.reject('connection reset')
+          : Promise.reject(new TypeError('Failed to fetch'))
       );
 
       const result = await SlskdClientService.pushTracks(pushConfig, [moodymann], undefined, 0);
 
+      expect(result).toMatchObject({ addedCount: 0, failedCount: 1 });
+      expect(result.errors).toEqual([{
+        track: 'Moodymann - Shades of Jae',
+        error: "Can't reach slskd at http://slskd.local:5030. Check that slskd is running and the API endpoint is right.",
+      }]);
+    });
+
+    it('reports "Unknown error" when the failure is not an Error', async () => {
+      slskdWith([]);
+      const startSpy = vi.spyOn(SlskdClientService, 'startSearch').mockRejectedValueOnce('connection reset');
+
+      const result = await SlskdClientService.pushTracks(pushConfig, [moodymann], undefined, 0);
+
       expect(result.errors).toEqual([{ track: 'Moodymann - Shades of Jae', error: 'Unknown error' }]);
+      startSpy.mockRestore();
+    });
+
+    it('strips featured artists when primary_artist holds the full artist, as Confirmed Missing sends it', async () => {
+      slskdWith([]);
+
+      await SlskdClientService.pushTracks(
+        pushConfig,
+        [{ id: 's3', artist: 'Kerri Chandler feat. Arnold Jarvis', primary_artist: 'Kerri Chandler feat. Arnold Jarvis', title: 'Rain' }],
+        undefined,
+        0
+      );
+
+      expect(postedSearchTexts()).toEqual(['Kerri Chandler - Rain']);
+    });
+
+    it("rejects with a clear message, and starts nothing, when slskd isn't running", async () => {
+      fetchMock.mockRejectedValue(new TypeError('Failed to fetch'));
+
+      await expect(SlskdClientService.pushTracks(pushConfig, [moodymann], undefined, 0))
+        .rejects.toThrow("Can't reach slskd at http://slskd.local:5030.");
+      expect(postedSearchTexts()).toEqual([]);
     });
 
     it('rejects without starting any search when the saved searches cannot be read', async () => {
@@ -430,6 +498,46 @@ describe('SlskdClientService HTTP calls', () => {
 
       expect(timeoutSpy.mock.calls.filter(([, ms]) => ms === 100)).toHaveLength(1);
       timeoutSpy.mockRestore();
+    });
+  });
+
+  describe('pushAlbum', () => {
+    const album = { id: 's3', artist: 'Kerri Chandler', primary_artist: 'Kerri Chandler', title: 'Atmosphere', album: 'Computer Games' };
+
+    it('starts one `Artist - Album` search', async () => {
+      slskdWith([]);
+
+      await expect(SlskdClientService.pushAlbum(pushConfig, album))
+        .resolves.toEqual({ outcome: 'started', searchText: 'Kerri Chandler - Computer Games' });
+      expect(postedSearchTexts()).toEqual(['Kerri Chandler - Computer Games']);
+    });
+
+    it('strips featured artists in primary format, and keeps them in full format', async () => {
+      slskdWith([]);
+      const featured = { ...album, artist: 'Kerri Chandler feat. Arnold Jarvis', primary_artist: 'Kerri Chandler feat. Arnold Jarvis' };
+
+      await SlskdClientService.pushAlbum(pushConfig, featured);
+      await SlskdClientService.pushAlbum({ ...pushConfig, searchFormat: 'full' }, featured);
+
+      expect(postedSearchTexts()).toEqual([
+        'Kerri Chandler - Computer Games',
+        'Kerri Chandler feat. Arnold Jarvis - Computer Games',
+      ]);
+    });
+
+    it('skips an album slskd already has a search for', async () => {
+      slskdWith([{ id: '1', searchText: 'Kerri Chandler - Computer Games', state: 'Completed, ResponseLimitReached' }]);
+
+      await expect(SlskdClientService.pushAlbum(pushConfig, album))
+        .resolves.toEqual({ outcome: 'skipped', searchText: 'Kerri Chandler - Computer Games' });
+      expect(postedSearchTexts()).toEqual([]);
+    });
+
+    it("rejects with a clear message when slskd isn't running", async () => {
+      fetchMock.mockRejectedValue(new TypeError('Failed to fetch'));
+
+      await expect(SlskdClientService.pushAlbum(pushConfig, album))
+        .rejects.toThrow("Can't reach slskd at http://slskd.local:5030.");
     });
   });
 });
