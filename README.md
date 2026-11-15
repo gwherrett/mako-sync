@@ -28,7 +28,7 @@ These three integrations work independently — connect whichever ones are relev
 - OAuth sync of Liked songs
 - Auto-map artists to Supergenres via Spotify genre data
 - AI-assisted genre suggestions for unclassified tracks
-- Compare Spotify library vs local files — push missing tracks to Slskd wishlist
+- Compare Spotify library vs local files — push missing tracks to slskd as searches, then download them in slskd
 
 ### Discogs Integration
 - OAuth sync of your Discogs vinyl collection
@@ -68,6 +68,7 @@ See the [docs/](docs/) folder for detailed documentation:
 - [Mako Sync Overview](docs/mako-sync-overview.md) - Product overview and architecture
 - [Architecture](docs/architecture-mako-sync.md) - System design and technical details
 - [Deployment Guide](docs/reference/production-deployment.md) - Configuration and deployment
+- [slskd Reference](docs/reference/slskd.md) - Install slskd, connect Mako to it, push and download missing tracks
 
 ## Development
 
@@ -102,7 +103,7 @@ npm run agents:fix       # Auto-fix violations
 ### Integrations
 - **Spotify Web API** - Music metadata and OAuth
 - **Discogs API** - Vinyl collection sync and release data
-- **Slskd** - P2P download automation
+- **slskd** - Soulseek client: Mako pushes missing tracks to it as searches ([slskd Reference](docs/reference/slskd.md))
 - **MediaMonkey** - File organization via custom tags
 
 ## Security

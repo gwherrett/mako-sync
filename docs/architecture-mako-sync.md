@@ -1,7 +1,7 @@
 # **mako-sync Architecture Document**
 
 **Document Version:** 1.0  
-**Last Updated:** December 5, 2025
+**Last Updated:** November 14, 2026
 
 ---
 
@@ -403,141 +403,111 @@ All colors must use HSL-based semantic tokens from `index.css`:
 
 ### **10.1 slskd Integration (One-Way)**
 
-**Architecture Pattern:** Direct REST API integration from client-side
+**Architecture Pattern:** Direct REST calls from the browser to slskd on the same PC
 
-The slskd integration enables users to push missing tracks to their Soulseek download queue via the slskd REST API.
+Mako pushes the tracks you confirmed missing to slskd as searches. slskd has no wishlist and downloads nothing by itself: you download from each search on slskd's Searches page. Setup, the push rules and troubleshooting are in [slskd Reference](reference/slskd.md).
 
 #### **Integration Flow**
 
 ```
-┌──────────────────┐
-│ Confirmed Missing│
-│ Tracks (Client)  │
-└────────┬─────────┘
-         │
-         ▼
-┌──────────────────┐
-│ User Preferences │ (slskd config + RLS)
-│ (Supabase Table) │
-└────────┬─────────┘
-         │
-         ▼
-┌──────────────────┐
-│ slskdClient      │ (fetch API calls)
-│ Service          │
-└────────┬─────────┘
-         │
-         ▼
-┌──────────────────┐
-│ slskd REST API   │ (user's local/remote instance)
-│ /api/v0/searches │
-└──────────────────┘
+Confirmed Missing (Review Matches tab)
+        │  tracks of the selected artists, or one album
+        ▼
+useSlskdSync  ◄──  SlskdStorageService (localStorage: mako-sync:slskd-config)
+        │
+        ▼
+SlskdClientService.pushTracks() / pushAlbum()
+        │  GET /api/v0/searches once, then POST /api/v0/searches per track
+        ▼
+slskd REST API (http://localhost:5030, loopback only)
+        │  each search is saved in slskd with its results
+        ▼
+slskd Searches page: you pick a file and download it
+        │
+        ▼
+Downloads folder → Step 5 (Process Downloads)
 ```
 
 #### **Key Architectural Decisions**
 
 1. **Client-Side Integration**
-   - No edge function required (public slskd API, user-provided credentials)
-   - Direct fetch calls from browser to slskd instance
-   - User responsible for CORS configuration on slskd
+   - No edge function: the browser calls slskd directly. slskd only listens on loopback, so the push only works in a browser on the PC that runs slskd.
+   - No CORS setup: slskd allows every origin and has no option for it.
+   - On production (HTTPS on Vercel), Chrome asks once per site for Local Network Access before the page can call `localhost`. Dev doesn't ask.
 
 2. **Data Storage**
-   - `user_preferences` table stores slskd API endpoint + API key per user
-   - No sync state tracking (operations are ephemeral)
-   - Duplicate prevention via real-time slskd API queries
-   - User preferences protected by RLS (user isolation)
+   - The config (endpoint, API key, search format, last test result) is kept in the browser's localStorage under `mako-sync:slskd-config` by `SlskdStorageService`. It isn't stored in Supabase.
+   - The `user_preferences` table (migration `20260117190334_create_user_preferences.sql`) has slskd columns, but nothing reads or writes them.
+   - No sync state: Mako saves nothing about a push. slskd's saved searches are the record, and every push reads them to skip duplicates. This is why `retention.search` stays unset in `slskd.yml`.
 
 3. **Security Model**
-   - **No encryption** of slskd credentials (user responsibility)
-   - Stored in Supabase table (not Vault) as user's local service
-   - RLS prevents cross-user access
-   - API key transmitted in `X-API-Key` header
+   - The API key is sent in the `X-API-Key` header, over plain HTTP to `localhost`.
+   - In `slskd.yml`, the key is limited to loopback addresses with `cidr`, and the web UI and API listen only on `127.0.0.1` and `::1`.
+   - The key is stored unencrypted in localStorage.
 
 4. **Error Handling**
-   - Network failures: Stop processing, preserve state, allow retry
-   - 401 Unauthorized: Prompt credential re-entry
-   - 429 Rate Limit: Exponential backoff with user feedback
-   - Connection timeout: 10 second timeout per request
-
-#### **Database Schema**
-
-```sql
--- User preferences (includes slskd config)
-CREATE TABLE IF NOT EXISTS public.user_preferences (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id UUID NOT NULL,
-  slskd_api_endpoint TEXT,
-  slskd_api_key TEXT,
-  slskd_last_connection_test TIMESTAMPTZ,
-  slskd_connection_status BOOLEAN DEFAULT false,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  UNIQUE(user_id)
-);
-
--- Note: No separate sync state table needed
--- Duplicate detection handled via real-time slskd API queries
-```
+   - Every request to slskd times out after 10 seconds.
+   - The connection test (`GET /api/v0/application`) tells apart: connected and logged in to Soulseek, not logged in, API key rejected (`401`), unreachable or timed out, and an unexpected response. Each has its own message.
+   - If the saved searches can't be read, the push stops before starting any search, the progress dialog closes, and the toast says what to check.
+   - A search slskd rejects (`409`, `429`, `500`) counts as Failed, and the push moves on to the next track. There's no automatic retry. A failed track has no saved search, so the next push tries it again.
 
 #### **Service Pattern**
 
 ```typescript
-// Client-side service (no edge function)
+// Client-side service (no edge function). All methods are static.
 export class SlskdClientService {
-  // All methods are static (stateless)
   static async testConnection(config: SlskdConfig): Promise<SlskdConnectionResult>
   static async getExistingSearches(config: SlskdConfig): Promise<SlskdSearchResponse[]>
   static async startSearch(config: SlskdConfig, searchText: string): Promise<SlskdSearchResponse>
   static async pushTracks(config: SlskdConfig, tracks: SlskdTrackToSync[], onProgress?): Promise<SlskdSyncResult>
-  static formatSearchQuery(artist: string, title: string): string
+  static async pushAlbum(config: SlskdConfig, track: SlskdTrackToSync & { album: string }): Promise<{ outcome; searchText }>
+  static formatSearchQuery(artist: string, title: string, format?: 'primary' | 'full'): string
+  static formatAlbumSearchQuery(artist: string, album: string, format?: 'primary' | 'full'): string
   static isSearchDuplicate(existing: SlskdSearchResponse[], newSearch: string): boolean
 }
 ```
 
-slskd has no wishlist. Each pushed track becomes a saved search in slskd, and you download from its results on slskd's Searches page. `isSearchDuplicate` reads the search's `state` flags (for example `Completed, TimedOut`): it skips searches that are waiting, running or finished, and allows a retry after `Cancelled` or `Errored`. See [slskd Reference](reference/slskd.md#the-rule-now).
+A track's search text is `Primary Artist - Title`, with no bitrate or format. `isSearchDuplicate` reads the search's `state` flags (for example `Completed, TimedOut`): it skips searches that are waiting, running or finished, and allows a retry after `Cancelled` or `Errored`. See [slskd Reference](reference/slskd.md#the-duplicate-rule).
 
 #### **UI Integration Points**
 
-1. **Settings Page** (`src/pages/Security.tsx`)
-   - Add slskd configuration section
-   - API endpoint + API key inputs
-   - Test connection button
-   - Connection status indicator
+1. **Options page** (`src/pages/Security.tsx`, route `/security`) renders `SlskdConfigSection`:
+   - API endpoint, API key and search query format
+   - **Save** tests the connection, then saves. **Test Connection** only tests.
+   - **Connected** badge and the last test result
 
 2. **Confirmed Missing section** (`src/components/ReviewMatches/ConfirmedMissingSection.tsx`, in the Review Matches tab)
    - Artist-level checkboxes (multi-select)
-   - "Push to slskd" button, plus a per-album push
-   - Sync progress UI (`SlskdSyncProgress`)
+   - "Push to slskd" button, plus a per-album "Push album" button
+   - Push progress dialog (`SlskdSyncProgress`)
    - Works on tracks the user confirmed missing in the review queue
+   - The buttons need a saved endpoint and key
 
 #### **Multi-User Isolation**
 
-- Each user has separate slskd configuration
-- Different users can connect to different slskd instances
-- RLS policies ensure users only see their own configuration (`user_preferences.user_id`)
+- The config belongs to the browser and the site, not to the Mako user. Dev, production and each Vercel preview have their own copy.
+- Two Mako users signed in to the same browser and site share one slskd config.
 
 #### **Performance Considerations**
 
-- Small delay (100ms) between API calls to avoid rate limiting
-- Batch processing with progress updates in component state
-- No pagination: a push reads slskd's saved searches once, then checks each track against that list
-- No database writes during sync (only reads slskd API)
+- 100 ms between searches in a push, because slskd answers `429` while a search is still starting
+- A push reads slskd's saved searches once, then checks each track against that list
+- No database writes during a push
+- slskd runs about two searches at a time and queues the rest, so a 100-track push takes several minutes to finish in slskd, though Mako's push returns once every search has started
 
 #### **Limitations & Future Enhancements**
 
-**Current Scope (V1):**
-- ✓ One-way sync (Mako → slskd only)
-- ✓ Artist-level approval workflow
-- ✓ Duplicate prevention
-- ✓ Error handling and retry
-- ✓ Multi-user support
+**Current Scope:**
+- ✓ One-way push (Mako → slskd only)
+- ✓ Artist-level push, and a per-album push
+- ✓ Duplicate check against slskd's saved searches
+- ✓ Connection test that checks the Soulseek login
 
 **Out of Scope (Future):**
-- ✗ Bi-directional sync (download status tracking)
-- ✗ Quality preferences (320 MP3 only)
-- ✗ Album-level or track-level approval
-- ✗ Automatic periodic sync
-- ✗ Download progress monitoring
+- ✗ Mako picking files and queuing downloads (option C in [slskd Reference](reference/slskd.md#why-the-push-only-starts-searches))
+- ✗ Download status tracking
+- ✗ Automatic periodic push
+- ✗ Track-level selection
 
 ---
 

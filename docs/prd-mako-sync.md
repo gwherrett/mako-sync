@@ -1,7 +1,7 @@
 # **Product Requirements Document: mako-sync**
 
 **Document Version:** 1.0  
-**Last Updated:** December 4, 2025
+**Last Updated:** November 14, 2026
 **Product Owner:** [To be assigned]  
 **Engineering Lead:** [To be assigned]
 
@@ -48,7 +48,7 @@ mako-sync is a web-based tool that bridges the gap between Spotify libraries and
 
 * Other streaming services (Apple Music, Tidal, Amazon Music)
 * Playlist sync (only liked songs)
-* Auto-download or acquisition of missing tracks
+* Auto-download of missing tracks (Epic 10 pushes them to slskd as searches, and you download them in slskd)
 * Native mobile applications (iOS/Android)
 * Multi-user collaboration features
 * Offline mode or PWA capabilities
@@ -457,74 +457,68 @@ As a DJ, I want to push missing tracks to slskd as searches so that I can downlo
 
 **Acceptance Criteria:**
 
-* **FR-10.1:** System SHALL provide slskd configuration interface allowing users to:
-  - Enter slskd API endpoint URL (e.g., `http://localhost:5030`)
-  - Enter slskd API key for authentication
-  - Test connection to validate credentials
-  - Save connection settings per user
-  - Display connection status (connected/disconnected/error)
-* **FR-10.2:** System SHALL store slskd configuration securely:
-  - API endpoint and API key stored in user_preferences table
-  - Row Level Security (RLS) enforced for user isolation
-  - No encryption required (user responsibility to secure slskd instance)
-* **FR-10.3:** Missing Tracks Analyzer SHALL display artist-level selection interface:
-  - Grouped missing tracks by artist (existing functionality)
-  - Checkbox per artist for multi-select
-  - Display track count per artist (e.g., "15 tracks")
-  - Show genres associated with artist
-* **FR-10.4:** System SHALL provide "Push to slskd" button that:
-  - Is enabled only when slskd is connected and artists are selected
-  - Displays count of tracks to be synced
-  - Shows confirmation dialog before syncing
-* **FR-10.5:** For each approved missing track, system SHALL:
-  - Format search query as: `"[Artist] - [Track Title] 320 MP3"`
-  - Check slskd's saved searches for existing entries (skip duplicates)
-  - POST new search to slskd API endpoint `/api/v0/searches`
-  - Track sync status (pending/synced/failed) per track
-  - Handle errors gracefully with retry logic
+* **FR-10.1:** System SHALL provide an slskd configuration section on the Options page (`/security`) allowing users to:
+  - Enter the slskd API endpoint URL (e.g., `http://localhost:5030`)
+  - Enter the slskd API key
+  - Choose the search query format: primary artist only (default) or the full artist string
+  - Test the connection without saving, or Save, which tests and then saves
+  - See the connection status (Connected or Disconnected) and the last test result, including whether slskd is logged in to Soulseek
+* **FR-10.2:** System SHALL store the slskd configuration in the browser:
+  - Endpoint, API key and search format kept in localStorage under `mako-sync:slskd-config`, separately for each site
+  - Not stored in Supabase
+  - No encryption (the key is limited to loopback addresses in `slskd.yml`)
+* **FR-10.3:** The Confirmed Missing section of Review Matches SHALL display an artist-level selection interface:
+  - Confirmed-missing tracks grouped by artist, then album
+  - Checkbox per artist for multi-select, with Select All and Deselect All
+  - Track count per artist (e.g., "15 tracks")
+  - Genres associated with the artist
+* **FR-10.4:** System SHALL provide a "Push to slskd" button that:
+  - Is enabled only when an slskd endpoint and key are saved and at least one artist is selected
+  - Shows how many artists and tracks are selected
+  - Opens a progress dialog when clicked
+* **FR-10.5:** For each track pushed, system SHALL:
+  - Format the search text as `[Primary Artist] - [Track Title]`, with no bitrate or format
+  - Skip the track if slskd's saved searches already have it (see FR-10.6)
+  - Otherwise start a search with POST `/api/v0/searches`
+  - Count a search slskd rejects as failed and carry on with the next track
 * **FR-10.6:** System SHALL prevent duplicate searches:
-  - Query existing slskd searches via GET `/api/v0/searches`
+  - Query existing slskd searches once per push via GET `/api/v0/searches`
   - Compare normalized search text before adding
   - Skip tracks whose search is waiting, running or finished, and allow a retry after a cancelled or errored search
   - Report skipped duplicates to user
-* **FR-10.7:** System SHALL display sync progress and results:
-  - Progress bar showing X/Y tracks synced
-  - Count of successfully added tracks
+* **FR-10.7:** System SHALL display push progress and results:
+  - Progress bar and the track being pushed (X of Y)
+  - Count of added searches
   - Count of skipped duplicates
-  - Count of failed additions with error messages
-  - Option to retry failed tracks
+  - Count of failed searches, with the first 5 error messages
 * **FR-10.8:** System SHALL handle slskd connectivity issues:
-  - Connection timeout: Stop processing, show error, preserve state
-  - 401 Unauthorized: Prompt to re-enter credentials
-  - 429 Rate Limited: Exponential backoff and retry
-  - 500 Server Error: Log error, allow manual retry
-  - Network errors: Show user-friendly message and stop
-* **FR-10.9:** System SHALL support multi-user scenarios:
-  - Each user maintains separate slskd configuration
-  - Different users can connect to different slskd instances
+  - Every request times out after 10 seconds
+  - If slskd can't be reached at the start of a push, push nothing, close the progress dialog, and say what to check
+  - Connection test: separate messages for not logged in to Soulseek, API key rejected (401), unreachable or timed out, and an unexpected response
+* **FR-10.9:** System SHALL provide a per-album push:
+  - A "Push album" button next to each album in Confirmed Missing, shown when slskd is configured
+  - Starts one `[Primary Artist] - [Album]` search, with the same duplicate check
 * **FR-10.10:** System SHALL handle special characters in track names:
-  - Sanitize quotes, dashes, and special characters
-  - URL encode query strings for API calls
-  - Example: `Artist - "Song" (Remix)` → `Artist - Song (Remix) 320 MP3`
+  - Remove double quotes from the search text
+  - Example: `Artist - "Song" (Remix)` → `Artist - Song (Remix)`
 
 **Priority:** P2 (Medium)
-**Dependencies:** Missing Tracks Analysis (Epic 6), slskd instance running
+**Dependencies:** Review Matches (confirmed-missing tracks), slskd running on the same PC
 **Estimated Effort:** 21 story points
 
 **Integration Architecture:**
 - One-way integration: Mako Sync → slskd only
-- No bi-directional sync (download status not tracked)
-- REST API communication using fetch/axios
-- Retry logic for transient failures
-- State persistence in Supabase tables
+- No download status tracking
+- Browser `fetch` calls to slskd on `localhost`, so the push works only in a browser on the PC that runs slskd
+- No state kept in Supabase: slskd's saved searches are the record
+- slskd downloads nothing by itself: the user downloads from each search on slskd's Searches page
 
 **Future Enhancements (Out of Scope):**
+- Mako picking files from search results and queuing downloads
 - Bi-directional sync (import download status from slskd)
-- Quality preferences beyond 320 MP3 (FLAC, variable bitrates)
 - Download progress monitoring within Mako Sync
-- Automatic periodic sync of new missing tracks
-- Album-level approval workflow
-- Priority queue for track downloads
+- Automatic periodic push of new missing tracks
+- Track-level selection
 
 ---
 

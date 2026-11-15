@@ -581,7 +581,7 @@ tailwind.config.ts         # Tailwind configuration with design tokens
 │ ✗ Failed: 0                                         │
 │                                                     │
 │ Currently processing:                               │
-│ Pink Floyd - Comfortably Numb 320 MP3              │
+│ Pink Floyd - Comfortably Numb                      │
 │                                                     │
 └─────────────────────────────────────────────────────┘
 ```
@@ -630,11 +630,11 @@ tailwind.config.ts         # Tailwind configuration with design tokens
 │ ✗ Failed: 3 tracks                                  │
 │                                                     │
 │ Errors:                                             │
-│ • Pink Floyd - Echoes 320 MP3                       │
+│ • Pink Floyd - Echoes                               │
 │   Network timeout                                   │
-│ • Radiohead - Creep 320 MP3                         │
+│ • Radiohead - Creep                                 │
 │   Connection refused                                │
-│ • The Beatles - Let It Be 320 MP3                   │
+│ • The Beatles - Let It Be                           │
 │   Rate limited                                      │
 │                                                     │
 │ [Retry Failed Tracks]    [Close]                    │

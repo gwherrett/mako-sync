@@ -1,3 +1,5 @@
+> **Archived 14 November 2026, out of date: slskd has no wishlist or auto-download. For how the integration works now, see [slskd Reference](../reference/slskd.md).**
+
 # Mako Sync slskd Complete Implementation Guide
 
 **Document Version:** 5.0

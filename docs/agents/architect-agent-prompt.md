@@ -54,12 +54,11 @@ Before proposing any option, check each of these. If an option would break one, 
 
 1. Check docs/plans/ for an existing plan that covers this feature or a closely related one. The following plans exist:
    - docs/plans/vinyl-collection.md — Vinyl Collection feature (backlog, MAK-51–63)
-   - docs/plans/slskd-complete-implementation.md — slskd download integration (complete)
    - docs/plans/flac-m4a-tag-writing-plan.md — FLAC/M4A tag writing (implemented)
    - docs/plans/remove-spotify-duplicates.md — Spotify duplicate removal (implemented)
    - docs/plans/test-improvement-plan.md — test coverage improvements
    - docs/plans/plan-ui-changes.md — UI improvement backlog
-   If a relevant plan exists, say so and build on it rather than starting from scratch.
+   If a relevant plan exists, say so and build on it rather than starting from scratch. For slskd, read docs/reference/slskd.md: it describes the integration as built.
 
 2. Check whether the feature touches the track matching pipeline or normalization. If so, flag the eval requirement in every option that modifies that code.
 
