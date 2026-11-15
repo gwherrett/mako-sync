@@ -130,7 +130,7 @@ export function SlskdConfigSection() {
             onChange={(e) => setApiKey(e.target.value)}
           />
           <p className="text-sm text-muted-foreground">
-            Found in slskd Options → API. Enable the API and copy your key.
+            The key under web.authentication.api_keys in slskd.yml.
           </p>
         </div>
 
