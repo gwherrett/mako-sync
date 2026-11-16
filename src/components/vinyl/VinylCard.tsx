@@ -4,6 +4,7 @@ import { Card, CardContent } from '@/components/ui/card';
 
 import { Disc3 } from 'lucide-react';
 import type { PhysicalMediaRecord } from '@/types/discogs';
+import { formatCAD } from '@/utils/formatCAD';
 
 interface VinylCardProps {
   record: PhysicalMediaRecord;
@@ -46,6 +47,14 @@ export const VinylCard: React.FC<VinylCardProps> = ({ record, onClick }) => {
           )}
           {record.format && (
             <Badge variant="outline" className="text-xs px-1.5 py-0">{record.format}</Badge>
+          )}
+          {record.suggested_price_cad != null && (
+            <span
+              className="ml-auto text-xs font-medium tabular-nums"
+              title="VG price (Discogs suggestion)"
+            >
+              {formatCAD(record.suggested_price_cad)}
+            </span>
           )}
         </div>
       </CardContent>
