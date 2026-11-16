@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Disc3, ChevronUp, ChevronDown, ChevronsUpDown } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import type { PhysicalMediaRecord } from '@/types/discogs';
+import { formatCAD } from '@/utils/formatCAD';
 
 interface VinylListViewProps {
   records: PhysicalMediaRecord[];
@@ -10,11 +11,6 @@ interface VinylListViewProps {
 
 type SortField = 'artist' | 'title' | 'year' | 'label' | 'lowest_price_cad' | 'suggested_price_cad' | 'created_at';
 type SortDir = 'asc' | 'desc';
-
-function formatCAD(value: number | null): string {
-  if (value === null) return '—';
-  return new Intl.NumberFormat('en-CA', { style: 'currency', currency: 'CAD', maximumFractionDigits: 0 }).format(value);
-}
 
 function SortIcon({ field, sortField, sortDir }: { field: SortField; sortField: SortField; sortDir: SortDir }) {
   if (field !== sortField) return <ChevronsUpDown className="h-3.5 w-3.5 text-muted-foreground/50" />;
