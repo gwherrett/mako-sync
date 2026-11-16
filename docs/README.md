@@ -16,6 +16,7 @@
 - [Authentication Reference](reference/authentication-reference.md) - Auth implementation, debugging, and testing
 - [Spotify Reference](reference/spotify-reference.md) - Spotify integration, OAuth, and troubleshooting
 - [slskd Reference](reference/slskd.md) - Install and configure slskd, connect Mako to it, push missing tracks and download them
+- [MediaMonkey 5 Reference](reference/mediamonkey-5.md) - What MediaMonkey's add-on API, Auto-Organize and Gold features can do for download cleanup
 - [Production Deployment](reference/production-deployment.md) - Environment setup, configuration, and deployment
 
 ### Feature Plans
@@ -47,6 +48,7 @@ docs/
 │   ├── authentication-reference.md    # Auth: impl + debugging + testing
 │   ├── spotify-reference.md           # Spotify: impl + config + troubleshooting
 │   ├── slskd.md                       # slskd: install + config + connect + push + troubleshooting
+│   ├── mediamonkey-5.md               # MediaMonkey: add-on API + Auto-Organize + Gold features
 │   └── production-deployment.md       # Deployment: env vars + config + checklist
 │
 ├── plans/                             # Active feature plans
