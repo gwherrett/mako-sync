@@ -516,12 +516,14 @@ describe('AuthStateRecoveryService – setupAutoBackup()', () => {
 
     expect(capturedCallback).not.toBeNull();
 
-    await capturedCallback!('SIGNED_IN', mockSession);
+    capturedCallback!('SIGNED_IN', mockSession);
 
-    expect(localStorage.setItem).toHaveBeenCalledWith(
-      'mako_auth_backup',
-      expect.any(String)
-    );
+    await vi.waitFor(() => {
+      expect(localStorage.setItem).toHaveBeenCalledWith(
+        'mako_auth_backup',
+        expect.any(String)
+      );
+    });
   });
 
   it('calls backupAuthState when TOKEN_REFRESHED event fires', async () => {
@@ -534,12 +536,44 @@ describe('AuthStateRecoveryService – setupAutoBackup()', () => {
 
     AuthStateRecoveryService.setupAutoBackup();
 
-    await capturedCallback!('TOKEN_REFRESHED', mockSession);
+    capturedCallback!('TOKEN_REFRESHED', mockSession);
 
-    expect(localStorage.setItem).toHaveBeenCalledWith(
-      'mako_auth_backup',
-      expect.any(String)
-    );
+    await vi.waitFor(() => {
+      expect(localStorage.setItem).toHaveBeenCalledWith(
+        'mako_auth_backup',
+        expect.any(String)
+      );
+    });
+  });
+
+  // MAK-229: supabase-js awaits this callback while the token refresh holds the
+  // auth lock. If the callback awaits getSession(), the refresh never finishes
+  // and every later request hangs.
+  it('returns without waiting for the backup, so a token refresh can finish', async () => {
+    let capturedCallback: ((event: string, session: any) => unknown) | null = null;
+
+    vi.mocked(supabase.auth.onAuthStateChange).mockImplementationOnce((cb) => {
+      capturedCallback = cb;
+      return { data: { subscription: { unsubscribe: vi.fn() } } } as any;
+    });
+
+    AuthStateRecoveryService.setupAutoBackup();
+
+    // Simulate the lock: getSession() never settles while the refresh is in progress.
+    vi.mocked(supabase.auth.getSession).mockClear();
+    vi.mocked(supabase.auth.getSession).mockReturnValueOnce(new Promise(() => {}));
+
+    const result = capturedCallback!('TOKEN_REFRESHED', mockSession);
+
+    // The callback must not hand supabase-js a promise to wait on...
+    expect(result).toBeUndefined();
+    // ...and must not touch the auth client before it returns.
+    expect(supabase.auth.getSession).not.toHaveBeenCalled();
+
+    // The backup still runs, on the next tick.
+    await vi.waitFor(() => {
+      expect(supabase.auth.getSession).toHaveBeenCalledTimes(1);
+    });
   });
 
   it('does NOT call backupAuthState for SIGNED_OUT event', async () => {
@@ -552,7 +586,8 @@ describe('AuthStateRecoveryService – setupAutoBackup()', () => {
 
     AuthStateRecoveryService.setupAutoBackup();
 
-    await capturedCallback!('SIGNED_OUT', null);
+    capturedCallback!('SIGNED_OUT', null);
+    await new Promise(resolve => setTimeout(resolve, 0));
 
     expect(localStorage.setItem).not.toHaveBeenCalled();
   });
