@@ -53,6 +53,7 @@ npm run agents:test              # Run framework tests
 - **Role Security**: Roles stored in separate `user_roles` table (never on profiles) to prevent privilege escalation.
 - **Password Reset Flow**: Complete implementation with token validation in dedicated `/reset-password` route.
 - **Auth Context Consolidation**: All components must use `@/contexts/NewAuthContext` - no legacy auth imports allowed.
+- **Never await Supabase inside `onAuthStateChange`**: supabase-js awaits every callback while a token refresh holds the auth lock (`client.ts` passes a custom `lock`). A callback that awaits `getSession()`, `getUser()`, `setSession()` or a query waits on that lock, and every later request hangs. Keep callbacks synchronous and move Supabase work to `setTimeout(() => ..., 0)`, as `AuthStateRecoveryService.setupAutoBackup()` and `NewAuthContext`'s `loadUserData` do (MAK-229).
 
 ## Build Commands
 

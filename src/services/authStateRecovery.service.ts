@@ -439,10 +439,18 @@ export class AuthStateRecoveryService {
    * Setup automatic backup on auth state changes
    */
   static setupAutoBackup(): () => void {
+    // Never await a Supabase call inside this callback. supabase-js runs it while
+    // the token refresh still holds the auth lock (client.ts passes a custom
+    // lock), and backupAuthState calls getSession(), which queues behind that
+    // lock. Awaiting it here deadlocks the refresh, and every later request
+    // hangs on getSession() for its access token (MAK-229). Run the backup on
+    // the next tick, after the refresh has released the lock.
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
+      (event) => {
         if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
-          await this.backupAuthState('automatic');
+          setTimeout(() => {
+            void this.backupAuthState('automatic');
+          }, 0);
         }
       }
     );
