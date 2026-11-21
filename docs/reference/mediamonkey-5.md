@@ -2,8 +2,8 @@
 
 > **Reference**: What MediaMonkey 5 can do for the MediaMonkey 5 Download Cleanup project, checked against the installed app and its add-on source.
 
-**Status**: Draft (add-on API answered; in-app checks pending)
-**Last Updated**: 15 November 2026
+**Status**: Draft (add-on API answered; in-app checks 1–5 done, 6–9 pending)
+**Last Updated**: 21 November 2026
 
 ---
 
@@ -29,13 +29,17 @@ The public API reference at <https://www.mediamonkey.com/docs/api/> no longer ha
 |------|------|------|
 | Add-on writes Genre, Grouping, Album Artist | **Yes.** Fields `genre`, `groupDesc`, `albumArtist`, saved with `commitAsync()` | MAK-197, MAK-199, MAK-200 |
 | The write reaches the file | **Yes, when "Update tags when editing properties" is on.** It's on here | MAK-197 |
-| Add-on runs when new tracks arrive | **Probably.** A `trackAdded` event exists. Whether a monitored-folder scan fires it needs an in-app check | MAK-201 |
+| Add-on runs when new tracks arrive | **Probably.** A `trackAdded` event exists. Whether a monitored-folder scan fires it needs an in-app check (check 7) | MAK-201 |
 | Add-on reads the exported genre map | **Yes.** `app.filesystem.loadTextFromFileAsync(path)` | MAK-195, MAK-199 |
 | Add-on removes one ID3 comment frame | **No.** Only the single Comment field, or a whole ID3v1 or ID3v2 tag | `fix_comments.py` stays in Python |
 | Packaging and install | `.mmip` (a renamed ZIP), installed from **Tools > Addons > Add** | MAK-197 |
 | Auto-Organize by Grouping | **Yes.** Grouping is an Auto-Organize mask field | MAK-201 |
-| Auto-Organize runs by itself | **Gold only** ("Automatically organize files (during scans or edits)") | MAK-201 |
-| Monitored folders | No Gold check in the app's code. Confirm in the app | MAK-201 |
+| Auto-Organize runs by itself | **Gold only** ("Automatically organize files (during scans or edits)"). This install is Gold | MAK-201 |
+| Monitored folders | No Gold check in the app's code. Confirm in the app (check 8) | MAK-201 |
+| Edition | **Gold**, build 2024.2.2.3222 | MAK-201, MAK-203 |
+| M4A Grouping set in MM reaches Mako | **Yes.** Mako's Local scan shows it as the SuperGenre | MAK-202 |
+| Grouping edit in MM keeps Serato BPM and key | **Yes** | MAK-197, MAK-199 |
+| MM sees tag edits made by other tools | **Only after a rescan** | MAK-201 |
 
 ---
 
@@ -55,7 +59,7 @@ The public API reference at <https://www.mediamonkey.com/docs/api/> no longer ha
   | Album Artist | `track.albumArtist` | `copy-and-swap-fields/actions_add.js` (`supportedFields`) |
   | Comment | `await track.getCommentAsync()` / `await track.setCommentAsync(text)` | `typescript\src\controls\trackListView.ts:1081-1099` |
 
-* **Several genres on one track:** `track.genre` holds them as one string. The app shows it with `utils.multiString2VisualString(track.genre)`, which uses the separator `"; "` (`MultiStringSeparator=; ` in `MediaMonkey.ini`). How the value is written into the file is an in-app check below.
+* **Several genres on one track:** `track.genre` holds them as one string. The app shows it with `utils.multiString2VisualString(track.genre)`, which uses the separator `"; "` (`MultiStringSeparator=; ` in `MediaMonkey.ini`). In the file, MM writes them as separate TCON values, not one string (check 2).
 * **Saving:** set the properties, then call `commitAsync()` on the track or on the whole list. Source: `copy-and-swap-fields/actions_add.js` calls `tracklist.commitAsync()` after the loop, and MediaMonkey's own rating control calls `itm.commitAsync()` (`typescript\src\templates.ts:942-952`). The forms seen in the app's code are:
   * `commitAsync()`: the normal save.
   * `commitAsync({ forceSaveToDB: true })`: also adds a track that isn't in the library yet (`templates.ts:942`).
@@ -63,7 +67,7 @@ The public API reference at <https://www.mediamonkey.com/docs/api/> no longer ha
 * **Does it reach the file?** It depends on **Tools > Options > Library > Tags & Playlists > "Update tags when editing properties"** (`Options.StoreID3AfterEdit`; `dialogs\dlgOptions\pnl_TagsAndPlaylists.html:33`, `pnl_TagsAndPlaylists.js:64`). It's **on** on this PC (`StoreID3AfterEdit=1`). With it off, edits stay in the library database until you run **Synchronize tags** (`app.trackOperation.updateTags(tracks, true)`, `typescript\src\actions.ts:7940-7956`).
 * **Other settings that affect the write**, as set here: MP3 tags are written as ID3v2.3 (`StoreID3v2Version=3`), and "Modify timestamp when updating tags" is on (`ModifyTimeOnTag=1`).
 
-**Caveat:** whether `commitAsync()` writes M4A and FLAC tags as well as MP3 isn't visible in the JavaScript. That's covered by the M4A in-app check.
+**Caveat:** whether `commitAsync()` writes M4A and FLAC tags as well as MP3 isn't visible in the JavaScript. Check 3 shows that an M4A Grouping edit made in MM's own UI reaches the file. A write from an add-on's `commitAsync()` hasn't been tested on M4A or FLAC.
 
 ### Can an add-on run when a monitored folder adds tracks, or only from a menu action?
 
@@ -72,7 +76,7 @@ The public API reference at <https://www.mediamonkey.com/docs/api/> no longer ha
 * **Menu action:** define it in `actions_add.js` and push it into a menu, e.g. `window._menuItems.editTags.action.submenu`. Source: [copy-and-swap-fields/actions_add.js](https://github.com/ventismedia/mediamonkey-addons/blob/master/copy-and-swap-fields/actions_add.js). The wiki says custom actions must be defined in `actions_add.js` ([Getting Started (Addons)](https://www.mediamonkey.com/wiki/Getting_Started_(Addons))).
 * **On startup:** an `init.js` at the add-on root runs at startup. Wrap the code in `window.whenReady(() => { ... })`. Source: [output-now-playing-to-file/init.ts](https://github.com/ventismedia/mediamonkey-addons/blob/master/output-now-playing-to-file/init.ts).
 * **On new tracks:** `app.listen(app, 'trackAdded', (track) => { ... })`. MediaMonkey's own device sync uses it, with the comment "a new track was added to library right now" (`typescript\src\helpers\mediaSync.ts:2949-2953`). A sibling event `app.listen(app, 'trackModified', (track) => ...)` fires when a track changes (`mediaSync.ts:2943-2947`).
-* **Not confirmed:** whether a monitored-folder scan raises `trackAdded` once per track, and whether the track's tags are fully read by then. The event is raised in native code, which doesn't ship. The in-app check below covers it.
+* **Not confirmed:** whether a monitored-folder scan raises `trackAdded` once per track, and whether the track's tags are fully read by then. The event is raised in native code, which doesn't ship. In-app check 7 covers it.
 * **Caution for MAK-201:** a handler that edits and commits the track will itself raise `trackModified`, and Auto-Organize can also run "during scans or edits". The add-on must not react to its own writes.
 
 ### Can an add-on read a local file, such as the exported genre map?
@@ -111,31 +115,41 @@ So `fix_comments.py` stays in Python, as the project assumed.
 
 ## In MediaMonkey
 
-Run these on **copies** of files, in a test folder outside Supercrates. Some answers already come from the app's settings and code. Each one says what's left to check in the app.
+Run these on **copies** of files, in a test folder outside Supercrates. Some answers already come from the app's settings and code. Each one says what's left to check in the app. The numbers match the checklist on MAK-193.
 
 | # | Question | Answer | Status |
 |---|----------|--------|--------|
-| 1 | Edition (Gold or free) and build number | Build **2024.2.2.3222** (from `MediaMonkey.exe`). Edition: _to check_ in **Help > About** | Edition pending |
-| 2 | How MM stores several genres on one track | Shown and edited as `House; Deep House` (separator `"; "`). How it's written into an MP3's TCON frame: _to check_ | Pending |
-| 3 | M4A: set Grouping in MM, then run Mako's Local scan. Does `super_genre` show the value? | _To check_ | Pending |
-| 4 | Serato: change Grouping in MM on an analysed MP3 copy. Are BPM and key still there in Serato? | _To check_ | Pending |
-| 5 | Mako Step 5 on a file MM knows. Does MM show the new Grouping without a manual rescan? | Settings say a rescan re-reads tags of changed files (`RescanDBInfo=1`, `RescanModifFilesOnly=1`). No folders are monitored yet (`FolderCount=0`). Without a scan: _to check_ | Pending |
-| 6a | Auto-Organize: can the destination use Grouping? | **Yes.** Grouping is one of the mask fields (`typescript\src\masks.ts:30`, `107`). Pick it with the mask editor's field list, e.g. `Supercrates\<Grouping>\<Artist> - <Title>` | Confirm the mask in the app |
-| 6b | Can it run by itself? | **Only with Gold**: "Automatically organize files (during scans or edits)" (`dialogs\dlgOptions\pnl_AutoOrganize.js:14-18`). Off here (`DoInBackground=0`). Without Gold, run it by hand on selected tracks with **Tools > Organize files** (Ctrl+R) | Confirm |
-| 6c | Can it skip tracks with a blank Grouping? | A rule's criteria are collections, genres or playlists, not a free filter (`dialogs\dlgAutoOrganizeRule.js:47-80`). Skipping blank Grouping needs an auto-playlist or collection with "Grouping is not empty". Creating or editing collections needs Gold (`dialogs\dlgOptions\pnl_MediaTree.js:225-260`) | Pending: try an auto-playlist as the criteria |
-| 7a | Gold: monitored folders | No Gold check in the monitored-folders code (`typescript\src\controls\monitoredFoldersView.ts`). Schedules offered: One time, Manual, At startup, Continuously | Confirm in the app |
-| 7b | Gold: Auto-Organize | Running it by itself is Gold (6b). By hand appears free | Confirm |
-| 7c | Gold: web lookup | Looking up tracks during a scan is Gold (`typescript\src\uitools.ts:3018`). Auto-tag from web works for the first batch, then asks for Gold (`dialogs\dlgAutotag.js:141-143`) | Confirm |
-| 7d | Gold: duplicate finding | The duplicate-content view (**List (by Content)**, `app.db.runDuplicateAnalyze()`) has no Gold check (`typescript\src\viewHandlers.ts:484-515`) | Confirm |
+| 1 | Edition (Gold or free) and build number | **Gold**, build **2024.2.2.3222** (build from `MediaMonkey.exe`, edition from **Help > About**) | Done |
+| 2 | How MM stores several genres on one track | **Separate values.** Setting Genre to `Soul; Funk` in MM and saving wrote an ID3v2.4 TCON frame holding `['Soul', 'Funk']`, not the single string `Soul; Funk`. The `"; "` separator is only how MM shows them. Tested on a copy of `34 Proud Mary.mp3`, 16 November 2026. Not tested: ID3v2.3 files, and whether the copy was already ID3v2.4 before the edit (`StoreID3v2Version=3` says new tags are v2.3) | Done |
+| 3 | M4A: set Grouping in MM, then run Mako's Local scan. Does `super_genre` show the value? | **Yes.** Grouping `House` set in MM shows as the SuperGenre in Mako's Local tab | Done |
+| 4 | Serato: change Grouping in MM on an analysed MP3 copy. Are BPM and key still there in Serato? | **Yes.** BPM and key are kept | Done |
+| 5 | Mako Step 5 on a file MM knows. Does MM show the new Grouping without a manual rescan? | **No.** MM shows the old Grouping until **File > Add/Rescan files to the Library**, then the new one. A rescan re-reads the tags of changed files (`RescanDBInfo=1`, `RescanModifFilesOnly=1`). No folders are monitored yet (`FolderCount=0`) | Done |
+| 6a | Auto-Organize: can the destination use Grouping? | **Yes.** Grouping is one of the mask fields (`typescript\src\masks.ts:30`, `107`). Pick it with the mask editor's field list, e.g. `Supercrates\<Grouping>\<Artist> - <Title>` | Pending: confirm the mask in the app |
+| 6b | Can it run by itself? | **Only with Gold**: "Automatically organize files (during scans or edits)" (`dialogs\dlgOptions\pnl_AutoOrganize.js:14-18`). This install is Gold. Off here (`DoInBackground=0`). It can also be run by hand on selected tracks with **Tools > Organize files** (Ctrl+R) | Pending: confirm the option is offered |
+| 6c | Can it skip tracks with a blank Grouping? | A rule's criteria are collections, genres or playlists, not a free filter (`dialogs\dlgAutoOrganizeRule.js:47-80`). Skipping blank Grouping needs an auto-playlist or collection with "Grouping is not empty". Creating or editing collections needs Gold (`dialogs\dlgOptions\pnl_MediaTree.js:225-260`), which this install has | Pending: try an auto-playlist as the criteria |
+| 7 | Does a monitored-folder scan fire `trackAdded`, with the tags already read? | _To check_ with the test add-on below | Pending |
+| 8a | Gold: monitored folders | No Gold check in the monitored-folders code (`typescript\src\controls\monitoredFoldersView.ts`). Schedules offered: One time, Manual, At startup, Continuously | Pending: confirm in the app |
+| 8b | Gold: Auto-Organize | Running it by itself is Gold (6b). By hand appears free | Pending: confirm |
+| 8c | Gold: web lookup | Looking up tracks during a scan is Gold (`typescript\src\uitools.ts:3018`). Auto-tag from web works for the first batch, then asks for Gold (`dialogs\dlgAutotag.js:141-143`) | Pending: confirm |
+| 8d | Gold: duplicate finding | The duplicate-content view (**List (by Content)**, `app.db.runDuplicateAnalyze()`) has no Gold check (`typescript\src\viewHandlers.ts:484-515`) | Pending: confirm |
+| 9 | Mako's Local scan on the Dependabot PR #144 preview (music-metadata 12.5) vs production. Do genre and Grouping match for MP3, FLAC and M4A? | _To check_ (for MAK-230) | Pending |
 
-### How to run the pending checks
+Because this install is Gold, checks 8a–8d record which features _ask_ for Gold, by the prompt or a Gold badge, not whether they work here.
+
+### How to run the checks
 
 1. **Edition:** **Help > About**. Note Gold or Standard.
-2. **Multi-genre storage:** on a copy of an MP3, set Genre to `House; Deep House` in MM and save. Open the copy with `python python/mp3_metadata_demo.py "<file>" detailed` and note the TCON value: one string with `; `, or two values.
+2. **Multi-genre storage:** on a copy of an MP3, set Genre to `House; Deep House` in MM and save. Read TCON with mutagen:
+
+   ```bash
+   python -c "import sys; from mutagen.id3 import ID3; t = ID3(sys.argv[1]); print(t.version, [f.text for f in t.getall('TCON')])" "<file>"
+   ```
+
+   Two values look like `[['House', 'Deep House']]`; one string looks like `[['House; Deep House']]`. Don't use `mp3_metadata_demo.py detailed` for this: it prints two values as `House Deep House`, which looks like one string.
 3. **M4A Grouping:** on a copy of an M4A, set Grouping to a SuperGenre (e.g. `House`) in MM and save. Run Mako's Local scan on that folder. In the Local tab, check the track's SuperGenre.
 4. **Serato:** copy an MP3 that Serato has analysed (it has BPM and key). Set Grouping on the copy in MM and save. Add the copy to Serato. Check BPM and key.
 5. **Edits from other tools:** add a folder of copies to MM's library. Run Mako Step 5 on the same folder. Without rescanning, look at the Grouping column in MM. Then rescan the folder (**File > Add/Rescan files to the Library**) and look again.
-6. **Auto-Organize:** in **Tools > Options > Library > Auto-Organize**, add a rule with a mask that uses Grouping. Try an auto-playlist ("Grouping is not empty") as the criteria. Select the test tracks and run **Tools > Organize files** (Ctrl+R).
+6. **Auto-Organize:** in **Tools > Options > Library > Auto-Organize**, add a rule with a mask that uses Grouping. Try an auto-playlist ("Grouping is not empty") as the criteria. Select the test tracks and run **Tools > Organize files** (Ctrl+R). Note whether "Automatically organize files (during scans or edits)" is offered.
 7. **`trackAdded` on a monitored-folder scan:** this answers the API question above. With a test add-on whose `init.js` is:
 
    ```javascript
@@ -149,6 +163,8 @@ Run these on **copies** of files, in a test folder outside Supercrates. Some ans
    ```
 
    add a test folder as a monitored folder, copy one new MP3 into it, and run the scan. If the text file appears with the track's genre filled in, the event fires and the tags are read by then. (The file is overwritten on each event, so test with one track.) Remove the add-on afterwards.
+8. **Gold features:** while you're in the app, note which of these ask for Gold: monitored folders, **Tools > Organize files**, auto-tag from web after the first batch, and the **List (by Content)** duplicate view.
+9. **Dependabot preview scan (MAK-230):** make sure the test folder has at least one MP3, one FLAC and one M4A copy. Run Mako's Local scan on it on the PR #144 Vercel preview, then on production. Compare the genre and Grouping columns for every file.
 
 ---
 
@@ -156,13 +172,13 @@ Run these on **copies** of files, in a test folder outside Supercrates. Some ans
 
 A first read, to help with the human review step. You decide each one.
 
-* **MAK-197 (add-on with preview and apply):** possible as planned. Menu action on the selected tracks, `commitAsync()` to save.
-* **MAK-199 (Grouping from the map):** possible. Write `track.groupDesc`. Read the map with `loadTextFromFileAsync`. Split `track.genre` on `"; "` before mapping.
+* **MAK-197 (add-on with preview and apply):** possible as planned. Menu action on the selected tracks, `commitAsync()` to save. A Grouping edit in MM keeps Serato's BPM and key (check 4).
+* **MAK-199 (Grouping from the map):** possible. Write `track.groupDesc`. Read the map with `loadTextFromFileAsync`. Split `track.genre` on `"; "` before mapping. MM writes several genres as separate TCON values (check 2).
 * **MAK-200 ("Mixed by" from Album Artist):** possible. Write `track.albumArtist`.
-* **MAK-201 (monitored folder and Auto-Organize):** depends on checks 1, 6 and 7. Hands-off organizing needs Gold. Running the add-on on new tracks depends on the `trackAdded` test.
-* **MAK-202 (M4A Grouping):** depends on check 3.
-* **MAK-198 (duplicates):** the duplicate-content view looks free. Confirm with check 7d.
-* **MAK-203 (web lookup):** looking up during a scan needs Gold. Confirm with checks 1 and 7c.
+* **MAK-201 (monitored folder and Auto-Organize):** this install is Gold (check 1), so hands-off organizing is available. Still depends on check 6 (the Grouping mask and skipping a blank Grouping) and check 7 (running the add-on on new tracks). MM doesn't see tag edits from other tools until a rescan (check 5). If Mako Step 5 writes Grouping, rescan before MM organizes on it.
+* **MAK-202 (M4A Grouping):** a Grouping set in MM's UI on an M4A reaches Mako as the SuperGenre (check 3). A write from the add-on is untested on M4A.
+* **MAK-198 (duplicates):** the duplicate-content view looks free. Confirm with check 8d.
+* **MAK-203 (web lookup):** looking up during a scan needs Gold, which this install has (check 1). Confirm with check 8c.
 
 ---
 
