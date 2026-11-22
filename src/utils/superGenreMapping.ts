@@ -1,5 +1,5 @@
 /**
- * Genre → SuperGenre mapping shared by Mako's Step 5 (Process Downloads) and the
+ * Genre -> SuperGenre mapping shared by Mako's Step 5 (Process Downloads) and the
  * Mako Clean MediaMonkey add-on (mediamonkey/mako-clean), which bundles this file.
  *
  * Keep it free of imports: the add-on build pulls it in as-is, outside the app.

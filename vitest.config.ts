@@ -7,7 +7,8 @@ export default defineConfig({
   test: {
     globals: true,
     environment: 'node',
-    include: ['src/**/*.{test,spec}.{ts,tsx}'],
+    // mediamonkey/: the Mako Clean add-on's pure rule engine (no MediaMonkey needed)
+    include: ['src/**/*.{test,spec}.{ts,tsx}', 'mediamonkey/**/*.{test,spec}.ts'],
     exclude: ['node_modules', 'dist'],
     coverage: {
       provider: 'v8',
