@@ -27,20 +27,28 @@ describe('albumArtistMixedBy (MAK-200 cases)', () => {
   });
 });
 
-describe('RULES', () => {
-  it('runs Grouping, then Album Artist, in one pass', () => {
-    expect(RULES.map((r) => r.id)).toEqual(['superGenreGrouping', 'albumArtistMixedBy']);
+const mixedByTrack = (genre: string) => ({
+  id: '1',
+  label: 'A - T',
+  file: 't.mp3',
+  fields: { genre, grouping: '', albumArtist: 'Mixed by DJ Mako' },
+});
 
-    const plan = planTrack(
-      {
-        id: '1',
-        label: 'A - T',
-        file: 't.mp3',
-        fields: { genre: 'Deep House', grouping: '', albumArtist: 'Mixed by DJ Mako' },
-      },
-      RULES,
-      ctx
-    );
+describe('RULES as shipped', () => {
+  it("doesn't change Album Artist yet: the Mixed by rule is off", () => {
+    expect(RULES.map((r) => r.id)).toEqual(['superGenreGrouping']);
+
+    const plan = planTrack(mixedByTrack('Deep House'), RULES, ctx);
+
+    expect(plan.changes).toEqual([{ field: 'grouping', from: '', to: 'House', overwrite: false }]);
+  });
+});
+
+describe('when the Mixed by rule is turned on (after superGenreGrouping)', () => {
+  const withMixedBy = [...RULES, albumArtistMixedBy];
+
+  it('runs Grouping, then Album Artist, in one pass', () => {
+    const plan = planTrack(mixedByTrack('Deep House'), withMixedBy, ctx);
 
     expect(plan.changes).toEqual([
       { field: 'grouping', from: '', to: 'House', overwrite: false },
@@ -49,16 +57,7 @@ describe('RULES', () => {
   });
 
   it('still fixes Album Artist when the genre does not map, and notes the genre', () => {
-    const plan = planTrack(
-      {
-        id: '1',
-        label: 'A - T',
-        file: 't.mp3',
-        fields: { genre: 'Zydeco', grouping: '', albumArtist: 'Mixed by DJ Mako' },
-      },
-      RULES,
-      ctx
-    );
+    const plan = planTrack(mixedByTrack('Zydeco'), withMixedBy, ctx);
 
     expect(plan.changes.map((c) => c.field)).toEqual(['albumArtist']);
     expect(plan.skipReasons).toEqual(['No SuperGenre for genres: Zydeco']);

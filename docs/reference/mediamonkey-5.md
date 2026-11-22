@@ -174,10 +174,11 @@ This install is Gold, so check 8 shows only that none of these features asked fo
 
 Built in MAK-197, MAK-199, MAK-200 and MAK-202. The source is in `mediamonkey/mako-clean/`.
 
-**Rules**, run in this order on each selected track:
+**Rule** the add-on runs on each selected track:
 
-1. **Grouping from the SuperGenre map** (MAK-199). It splits Genre on MM's multi-value separator and maps it with `mapToSuperGenre`, the same function Mako's Step 5 uses (`src/utils/superGenreMapping.ts`). If Grouping already equals the SuperGenre, nothing changes. A different existing Grouping shows as **Overwrite**. Tracks with no genre or an unmapped genre are listed with their genres.
-2. **"Mixed by" removed from Album Artist** (MAK-200). Same rule as `python/fix_album_artist.py`, and the result is trimmed.
+* **Grouping from the SuperGenre map** (MAK-199). It splits Genre on MM's multi-value separator and maps it with `mapToSuperGenre`, the same function Mako's Step 5 uses (`src/utils/superGenreMapping.ts`). If Grouping already equals the SuperGenre, nothing changes. A different existing Grouping shows as **Overwrite**. Tracks with no genre or an unmapped genre are listed with their genres.
+
+**Built but not turned on:** "Mixed by" removed from Album Artist (MAK-200, `src/core/rules/albumArtistMixedBy.ts`). It's the same rule as `python/fix_album_artist.py`, with the result trimmed. Album Artist is left alone until this is decided. A scan of `C:\Supercrates` on 21 November 2026 (8,979 MP3, FLAC and M4A files) found 12 such tracks. All 12 are MP3s from one DJ mix album in `Bass\UK Garage`: Album Artist "Mixed by DJ Ed Case", album "Sound of the Pirates 2". No other mix credits (such as "Mix by", "Compiled by" or "Mixed By:") were found in Album Artist or Artist. To turn the rule on, add it after `superGenreGrouping` in `src/core/rules/index.ts`.
 
 M4A gets Grouping the same way as MP3 and FLAC, because MM writes the tag (MAK-202).
 
@@ -196,7 +197,7 @@ Download the map again after you change mappings in Mako. The add-on reads the f
 2. The preview lists every change: track, file, field, current value, new value, and whether it overwrites a value. Tracks no rule changed are listed with the reason. Nothing is written yet.
 3. Click **Apply**. The add-on runs the rules again on the tags as they are at that moment, then saves each changed track with `commitAsync()`. Tracks with no change aren't rewritten. A summary shows how many tracks were changed, unchanged, skipped and failed, with the reasons.
 
-**Not done by the add-on:** comment frames (`fix_comments.py` stays in Python) and running by itself when tracks arrive (MAK-201).
+**Not done by the add-on:** Album Artist (see above), comment frames (`fix_comments.py` stays in Python) and running by itself when tracks arrive (MAK-201).
 
 ---
 

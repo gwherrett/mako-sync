@@ -1,7 +1,7 @@
 {
     "title": "Mako Clean",
     "id": "makoClean",
-    "description": "Preview and apply Mako-Sync cleanup rules to the selected tracks: Grouping from Mako's SuperGenre map, and \"Mixed by\" removed from Album Artist.",
+    "description": "Preview and apply Mako-Sync cleanup rules to the selected tracks: Grouping from Mako's SuperGenre map.",
     "version": "1.0.0",
     "type": "metadata",
     "author": "Mako-Sync",
