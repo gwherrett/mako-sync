@@ -226,6 +226,43 @@ describe('GenreMappingService', () => {
     });
   });
 
+  describe('exportForMediaMonkey', () => {
+    it('requests the JSON export with the session token', async () => {
+      const mockBlob = new Blob(['{"version":1,"mappings":[]}'], { type: 'application/json' });
+
+      vi.mocked(supabase.auth.getSession).mockResolvedValue({
+        data: { session: { access_token: 'test-token' } },
+        error: null
+      } as any);
+
+      mockFetch.mockResolvedValue({
+        ok: true,
+        blob: () => Promise.resolve(mockBlob)
+      });
+
+      const result = await GenreMappingService.exportForMediaMonkey();
+
+      expect(result).toBe(mockBlob);
+      expect(mockFetch).toHaveBeenCalledWith(
+        expect.stringContaining('genre-mapping?export=json'),
+        expect.objectContaining({
+          method: 'GET',
+          headers: expect.objectContaining({ 'Authorization': 'Bearer test-token' })
+        })
+      );
+    });
+
+    it('throws when the export fails', async () => {
+      vi.mocked(supabase.auth.getSession).mockResolvedValue({
+        data: { session: { access_token: 'test-token' } },
+        error: null
+      } as any);
+      mockFetch.mockResolvedValue({ ok: false, status: 500 });
+
+      await expect(GenreMappingService.exportForMediaMonkey()).rejects.toThrow('Failed to export mapping');
+    });
+  });
+
   describe('setBulkOverrides', () => {
     it('should set multiple overrides in bulk', async () => {
       vi.mocked(supabase.functions.invoke).mockResolvedValue({ data: null, error: null });

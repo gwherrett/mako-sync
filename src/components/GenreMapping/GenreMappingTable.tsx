@@ -25,6 +25,8 @@ interface GenreMappingTableProps {
   onRemoveOverride: (spotifyGenre: string) => void;
   onBulkOverrides: (overrides: Array<{ spotifyGenre: string; superGenre: SuperGenre }>) => Promise<void>;
   onExport: () => void;
+  /** Download the JSON genre map for the Mako Clean MediaMonkey add-on */
+  onExportForMediaMonkey?: () => void;
   isLoading?: boolean;
 }
 
@@ -45,6 +47,7 @@ export const GenreMappingTable: React.FC<GenreMappingTableProps> = ({
   onRemoveOverride,
   onBulkOverrides,
   onExport,
+  onExportForMediaMonkey,
   isLoading = false
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -180,10 +183,18 @@ export const GenreMappingTable: React.FC<GenreMappingTableProps> = ({
               {mappings.length} total • {overriddenCount} overridden • {unmappedCount} unmapped • {reviewedCount} reviewed
             </p>
           </div>
-          <Button onClick={onExport} variant="outline" size="sm" className="self-start sm:self-auto min-h-[44px] sm:min-h-0">
-            <Download className="w-4 h-4 mr-2" />
-            Export CSV
-          </Button>
+          <div className="flex flex-wrap gap-2 self-start sm:self-auto">
+            <Button onClick={onExport} variant="outline" size="sm" className="min-h-[44px] sm:min-h-0">
+              <Download className="w-4 h-4 mr-2" />
+              Export CSV
+            </Button>
+            {onExportForMediaMonkey && (
+              <Button onClick={onExportForMediaMonkey} variant="outline" size="sm" className="min-h-[44px] sm:min-h-0">
+                <Download className="w-4 h-4 mr-2" />
+                Download for MediaMonkey
+              </Button>
+            )}
+          </div>
         </div>
         
         <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 sm:items-center">

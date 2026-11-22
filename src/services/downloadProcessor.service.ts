@@ -14,6 +14,7 @@
 import { parseBlob } from 'music-metadata';
 import { withTimeout } from '@/utils/promiseUtils';
 import { splitLegacyId3Genres } from '@/utils/audioTags';
+import { mapToSuperGenre } from '@/utils/superGenreMapping';
 import type {
   ProcessedFile,
   ProcessingResult,
@@ -149,41 +150,6 @@ async function extractFileMetadata(file: File): Promise<{
     album: metadata.common.album || null,
     genres: Array.from(genresSet).filter(Boolean),
   };
-}
-
-/**
- * Map genre(s) to SuperGenre using the genre mapping
- *
- * Matching strategy:
- * 1. Exact match (case-insensitive)
- * 2. Partial match - genre contains a mapped key or vice versa
- *
- * Returns the first successful match, or null if no mapping found.
- */
-function mapToSuperGenre(
-  genres: string[],
-  genreMap: Map<string, string>
-): string | null {
-  for (const genre of genres) {
-    const normalizedGenre = genre.toLowerCase().trim();
-
-    // Try exact match first
-    if (genreMap.has(normalizedGenre)) {
-      return genreMap.get(normalizedGenre)!;
-    }
-
-    // Try partial matching - check if any mapped genre is contained in this genre
-    for (const [mappedGenre, superGenre] of genreMap.entries()) {
-      if (
-        normalizedGenre.includes(mappedGenre) ||
-        mappedGenre.includes(normalizedGenre)
-      ) {
-        return superGenre;
-      }
-    }
-  }
-
-  return null;
 }
 
 /**

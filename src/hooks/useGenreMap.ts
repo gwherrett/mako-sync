@@ -8,11 +8,12 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { fetchAllPages } from '@/services/trackMatching.service';
+import { normalizeGenreKey } from '@/utils/superGenreMapping';
 
 interface GenreMapRow {
   spotify_genre: string;
   super_genre: string;
-  is_overridden: boolean;
 }
 
 /**
@@ -20,19 +21,24 @@ interface GenreMapRow {
  * This view combines spotify_genre_map_base with user's spotify_genre_map_overrides
  */
 async function fetchGenreMap(): Promise<Map<string, string>> {
-  const { data, error } = await supabase
-    .from('v_effective_spotify_genre_map')
-    .select('spotify_genre, super_genre');
-
-  if (error) {
-    console.error('Error fetching genre map:', error);
-    throw new Error(`Failed to fetch genre map: ${error.message}`);
-  }
+  // Ordered by spotify_genre: the partial match in mapToSuperGenre returns the first
+  // hit in map order, and the MediaMonkey export (genre-mapping ?export=json) uses
+  // the same order, so Step 5 and the Mako Clean add-on agree.
+  const data = await fetchAllPages<GenreMapRow>(
+    (from, to) =>
+      supabase
+        .from('v_effective_spotify_genre_map')
+        .select('spotify_genre, super_genre')
+        .order('spotify_genre')
+        .range(from, to)
+        .then(r => r),
+    'fetch genre map'
+  );
 
   // Build Map with lowercase keys for case-insensitive matching
   const genreMap = new Map<string, string>();
-  data?.forEach((row: GenreMapRow) => {
-    genreMap.set(row.spotify_genre.toLowerCase().trim(), row.super_genre);
+  data.forEach((row) => {
+    genreMap.set(normalizeGenreKey(row.spotify_genre), row.super_genre);
   });
 
   console.log(`📊 Loaded ${genreMap.size} genre mappings`);

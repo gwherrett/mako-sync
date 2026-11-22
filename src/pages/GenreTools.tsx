@@ -25,6 +25,7 @@ export const GenreTools = () => {
     removeOverride,
     setBulkOverrides,
     exportToCSV,
+    exportForMediaMonkey,
   } = useGenreMapping();
 
   const {
@@ -123,6 +124,7 @@ export const GenreTools = () => {
                 onRemoveOverride={removeOverride}
                 onBulkOverrides={setBulkOverrides}
                 onExport={exportToCSV}
+                onExportForMediaMonkey={exportForMediaMonkey}
                 isLoading={isLoading}
               />
             </TabsContent>
