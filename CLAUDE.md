@@ -202,6 +202,7 @@ Standalone Python scripts for batch MP3 metadata operations using the **Mutagen*
 - `diagnose_comments.py` - Diagnose COMM frame conflicts (MediaMonkey vs Serato)
 - `fix_comments.py` - Remove problematic COMM frames, preserve Songs-DB_Custom1
 - `fix_album_artist.py` - Strip "Mixed By" prefix from Album Artist (TPE2) tags
+- `audit_downloads.py` - Read-only report on tag problems in a downloads folder (blank or unmapped genre with `--genre-map <csv>`, "Mixed by", URLs, iTunNORM, ID3v1, track-number prefixes, low bitrate, Grouping already set, leftover Serato frames). No `--apply`; it never writes
 
 ## Documentation
 
