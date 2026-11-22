@@ -3,6 +3,7 @@ import {
   processDownloads,
   reprocessWithUpdatedMap,
   writeTagsInPlace,
+  M4A_NOT_SUPPORTED_ERROR,
   _testExports,
 } from '../downloadProcessor.service';
 import { writeFlacGroupingTag } from '../flacTagWriter';
@@ -430,6 +431,22 @@ describe('downloadProcessor.service', () => {
         skipped: 0,
         errors: [{ filename: 'track.mp3', error: expect.stringContaining(UNPATCHABLE_ID3_TAG_ERROR) }],
       });
+      expect(fileHandle.createWritable).not.toHaveBeenCalled();
+    });
+
+    it('skips an M4A with a message pointing to the Mako Clean add-on, and never opens it', async () => {
+      const { fileHandle } = handleFor();
+      const m4a = new File([new Uint8Array(16)], 'track.m4a', { type: 'audio/mp4' });
+
+      const result = await writeTagsInPlace([mappedFile(m4a, fileHandle)]);
+
+      expect(result).toEqual({
+        success: 0,
+        skipped: 0,
+        errors: [{ filename: 'track.m4a', error: M4A_NOT_SUPPORTED_ERROR }],
+      });
+      expect(M4A_NOT_SUPPORTED_ERROR).toContain('Mako Clean add-on');
+      expect(M4A_NOT_SUPPORTED_ERROR.startsWith('M4A tag writing')).toBe(true);
       expect(fileHandle.createWritable).not.toHaveBeenCalled();
     });
   });

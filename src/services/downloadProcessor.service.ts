@@ -29,6 +29,14 @@ import { writeId3GroupingTag } from './id3TagWriter';
 // Timeout for parsing individual files (30 seconds)
 const PARSE_TIMEOUT_MS = 30000;
 
+/**
+ * writeTagsInPlace's error for an M4A file. The browser can't write MP4 atoms; the
+ * Mako Clean MediaMonkey add-on sets Grouping on M4A (MAK-202). The UI counts these
+ * errors with startsWith, so keep the 'M4A tag writing' prefix.
+ */
+export const M4A_NOT_SUPPORTED_ERROR =
+  'M4A tag writing not supported in the browser — set Grouping in MediaMonkey with the Mako Clean add-on (Edit Tags > Mako: Clean selected tracks)';
+
 // Default batch size for parallel processing
 const DEFAULT_BATCH_SIZE = 5;
 
@@ -497,7 +505,7 @@ export async function writeTagsInPlace(
   // M4A uses MP4 iTunes atoms, not ID3 — browser-side writing is not supported
   const mappedFiles = allMapped.filter(f => {
     if (f.filename.toLowerCase().endsWith('.m4a')) {
-      errors.push({ filename: f.filename, error: 'M4A tag writing not supported in the browser — use a desktop tool (e.g. Mp3tag, MusicBrainz Picard)' });
+      errors.push({ filename: f.filename, error: M4A_NOT_SUPPORTED_ERROR });
       return false;
     }
     return true;
