@@ -36,8 +36,13 @@ function showMessage(html: string, type: 'Information' | 'Error' = 'Information'
   });
 }
 
+/**
+ * Duck-typed, not `instanceof Error`: errors from MediaMonkey's native calls or from
+ * another window are made by a different Error constructor.
+ */
 function errorText(err: unknown): string {
-  return err instanceof Error ? err.message : String(err);
+  const message = (err as { message?: unknown } | null)?.message;
+  return typeof message === 'string' ? message : String(err);
 }
 
 function genreSeparator(): string {

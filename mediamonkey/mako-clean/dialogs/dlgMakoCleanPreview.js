@@ -39,10 +39,14 @@ function formatDate(iso) {
     return isNaN(date.getTime()) ? iso : date.toLocaleString();
 }
 
+function count(n, noun) {
+    return n + ' ' + noun + (n === 1 ? '' : 's');
+}
+
 function renderHeader(header, payload) {
-    addLine(header, 'Genre map exported ' + formatDate(payload.mapExportedAt) + '.');
-    addLine(header, payload.trackCount + ' tracks selected. ' +
-        payload.rows.length + ' changes on ' + payload.changedTrackCount + ' tracks.');
+    addLine(header, 'Genre map exported: ' + formatDate(payload.mapExportedAt));
+    addLine(header, count(payload.trackCount, 'track') + ' selected. ' +
+        count(payload.rows.length, 'change') + ' on ' + count(payload.changedTrackCount, 'track') + '.');
     addLine(header, 'Nothing is written until you click Apply.', 'unimportantText');
 }
 
