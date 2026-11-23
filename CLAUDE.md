@@ -21,6 +21,9 @@ npx vitest run src/services/__tests__/tokenPersistenceGateway.service.test.ts  #
 npx vitest run <pattern>          # Run by filename pattern
 npm run eval:matching             # Run track matching eval suite (verbose)
 
+# MediaMonkey add-on
+npm run mm:package       # Build mediamonkey/dist/mako-clean.mmip (install in MM: Tools > Addons > Add)
+
 # Agents framework (code validation)
 npm run agents:validate  # Validate all agents
 npm run agents:test      # Run agent tests (from agents/ dir)
@@ -187,6 +190,17 @@ See [AGENTS.md](AGENTS.md) for additional critical non-obvious patterns includin
 - SpotifyAuthManager singleton usage
 - Session cache direct access requirements
 
+## MediaMonkey Add-on (`mediamonkey/mako-clean/`)
+
+**Mako Clean** runs Mako's cleanup rules inside MediaMonkey: select tracks, **Edit Tags > Mako: Clean selected tracks**, check the preview, then Apply. It reads the genre map downloaded from Genre Tools (**Download for MediaMonkey**, the `genre-mapping` Edge Function's `?export=json`).
+
+- `src/core/` is pure TypeScript (rule runner, rules, map parsing), tested by vitest like `src/`. Each rule is a function: track fields in, proposed changes out.
+- `src/actions_add.ts` is the only code that touches MediaMonkey objects. `npm run mm:package` bundles it into one IIFE `actions_add.js`, because MediaMonkey appends it to its own `actions.js` as a plain script.
+- `dialogs/` and `config.js` are plain JavaScript in MediaMonkey's dialog format (global `init(params)`, `modalResult`).
+- Grouping uses `mapToSuperGenre` from `src/utils/superGenreMapping.ts`, the same function Step 5 uses. The shared cases in `src/services/__tests__/fixtures/genre-mapping-cases.json` run against both.
+- Packaged files must be plain ASCII; the packaging script fails otherwise.
+- Take MediaMonkey API names from [docs/reference/mediamonkey-5.md](docs/reference/mediamonkey-5.md) or MediaMonkey's own sources, never guess them.
+
 ## Python Utilities (`python/`)
 
 Standalone Python scripts for batch MP3 metadata operations using the **Mutagen** library. All new metadata/tag scripts should be created here.
@@ -201,7 +215,8 @@ Standalone Python scripts for batch MP3 metadata operations using the **Mutagen*
 - `mp3_metadata_demo.py` - Read/inspect MP3 metadata (EasyID3, ID3, MP3)
 - `diagnose_comments.py` - Diagnose COMM frame conflicts (MediaMonkey vs Serato)
 - `fix_comments.py` - Remove problematic COMM frames, preserve Songs-DB_Custom1
-- `fix_album_artist.py` - Strip "Mixed By" prefix from Album Artist (TPE2) tags
+- `fix_album_artist.py` - Strip "Mixed By" prefix from Album Artist (TPE2) tags. The Mako Clean add-on has the same rule (`albumArtistMixedBy`) but doesn't run it yet, so this script is still the only way to do it
+- `audit_downloads.py` - Read-only report on tag problems in a downloads folder (blank or unmapped genre with `--genre-map <csv>`, "Mixed by", URLs, iTunNORM, ID3v1, track-number prefixes, low bitrate, Grouping already set, leftover Serato frames). No `--apply`; it never writes
 
 ## Documentation
 

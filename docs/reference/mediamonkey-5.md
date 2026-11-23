@@ -170,6 +170,37 @@ This install is Gold, so check 8 shows only that none of these features asked fo
 
 ---
 
+## Mako Clean add-on
+
+Built in MAK-197, MAK-199, MAK-200 and MAK-202. The source is in `mediamonkey/mako-clean/`.
+
+**Rule** the add-on runs on each selected track:
+
+* **Grouping from the SuperGenre map** (MAK-199). It splits Genre on MM's multi-value separator and maps it with `mapToSuperGenre`, the same function Mako's Step 5 uses (`src/utils/superGenreMapping.ts`). If Grouping already equals the SuperGenre, nothing changes. A different existing Grouping shows as **Overwrite**. Tracks with no genre or an unmapped genre are listed with their genres.
+
+**Built but not turned on:** "Mixed by" removed from Album Artist (MAK-200, `src/core/rules/albumArtistMixedBy.ts`). It's the same rule as `python/fix_album_artist.py`, with the result trimmed. Album Artist is left alone until this is decided. A scan of `C:\Supercrates` on 21 November 2026 (8,979 MP3, FLAC and M4A files) found 12 such tracks. All 12 are MP3s from one DJ mix album in `Bass\UK Garage`: Album Artist "Mixed by DJ Ed Case", album "Sound of the Pirates 2". No other mix credits (such as "Mix by", "Compiled by" or "Mixed By:") were found in Album Artist or Artist. To turn the rule on, add it after `superGenreGrouping` in `src/core/rules/index.ts`.
+
+M4A gets Grouping the same way as MP3 and FLAC, because MM writes the tag (MAK-202).
+
+### Install
+
+1. Run `npm run mm:package`. It builds `mediamonkey/dist/mako-clean.mmip`.
+2. In MM, go to **Tools > Addons > Add**, pick the `.mmip` and reload when asked.
+3. On Mako's **Genre Tools** page, click **Download for MediaMonkey**. This saves `mako-genre-map.json`.
+4. In **Tools > Addons**, open the settings for **Mako Clean** and set **Genre map file** to that file.
+
+Download the map again after you change mappings in Mako. The add-on reads the file on every run, and the preview shows when the map was exported.
+
+### Use
+
+1. Select tracks and choose **Edit Tags > Mako: Clean selected tracks...**.
+2. The preview lists every change: track, file, field, current value, new value, and whether it overwrites a value. Tracks no rule changed are listed with the reason. Nothing is written yet.
+3. Click **Apply**. The add-on runs the rules again on the tags as they are at that moment, then saves each changed track with `commitAsync()`. Tracks with no change aren't rewritten. A summary shows how many tracks were changed, unchanged, skipped and failed, with the reasons.
+
+**Not done by the add-on:** Album Artist (see above), comment frames (`fix_comments.py` stays in Python) and running by itself when tracks arrive (MAK-201).
+
+---
+
 ## What this means for the Phase 2 and 3 issues
 
 A first read, to help with the human review step. You decide each one.

@@ -1,0 +1,27 @@
+{
+  "description": "Shared genre -> SuperGenre cases. Run by Mako (src/utils/__tests__/superGenreMapping.test.ts) and by the Mako Clean add-on (mediamonkey/mako-clean). The map is a list of pairs in the order Mako loads it: ordered by genre, keys lowercased and trimmed, the same shape as the 'Download for MediaMonkey' export.",
+  "map": [
+    ["acid house", "House"],
+    ["deep house", "House"],
+    ["disco", "Disco"],
+    ["hip hop", "Hip Hop"],
+    ["house", "House"],
+    ["nu disco", "Disco"],
+    ["soul", "Soul-Funk"]
+  ],
+  "cases": [
+    { "name": "exact match", "genres": ["deep house"], "expected": "House" },
+    { "name": "exact match ignores case", "genres": ["DEEP House"], "expected": "House" },
+    { "name": "exact match ignores surrounding spaces", "genres": ["  hip hop  "], "expected": "Hip Hop" },
+    { "name": "partial: genre contains a mapped key", "genres": ["progressive deep house"], "expected": "House" },
+    { "name": "partial: mapped key contains the genre", "genres": ["hip"], "expected": "Hip Hop" },
+    { "name": "partial: first key in map order wins", "genres": ["neo soul disco"], "expected": "Disco" },
+    { "name": "several genres, only the second maps", "genres": ["zydeco", "deep house"], "expected": "House" },
+    { "name": "several genres, the first that maps wins", "genres": ["soul", "disco"], "expected": "Soul-Funk" },
+    { "name": "exact match on an earlier genre beats a later one", "genres": ["nu disco", "house"], "expected": "Disco" },
+    { "name": "no match", "genres": ["classical"], "expected": null },
+    { "name": "no genres", "genres": [], "expected": null },
+    { "name": "a blank genre is skipped, not matched to the first key", "genres": ["   ", "classical"], "expected": null },
+    { "name": "a blank genre is skipped and the next one maps", "genres": ["", "soul"], "expected": "Soul-Funk" }
+  ]
+}

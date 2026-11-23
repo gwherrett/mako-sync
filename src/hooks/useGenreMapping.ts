@@ -109,13 +109,17 @@ export const useGenreMapping = () => {
     }
   };
 
-  const exportToCSV = async () => {
+  const downloadExport = async (
+    fetchBlob: () => Promise<Blob>,
+    filename: string,
+    description: string
+  ) => {
     try {
-      const blob = await GenreMappingService.exportToCSV();
+      const blob = await fetchBlob();
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = 'spotify-genre-mapping.csv';
+      a.download = filename;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
@@ -123,7 +127,7 @@ export const useGenreMapping = () => {
 
       toast({
         title: 'Export Complete',
-        description: 'Genre mapping downloaded as CSV',
+        description,
       });
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to export mappings';
@@ -135,6 +139,21 @@ export const useGenreMapping = () => {
     }
   };
 
+  const exportToCSV = () =>
+    downloadExport(
+      () => GenreMappingService.exportToCSV(),
+      'spotify-genre-mapping.csv',
+      'Genre mapping downloaded as CSV'
+    );
+
+  // For the Mako Clean MediaMonkey add-on: point its "Genre map file" setting at this file
+  const exportForMediaMonkey = () =>
+    downloadExport(
+      () => GenreMappingService.exportForMediaMonkey(),
+      'mako-genre-map.json',
+      'Genre map downloaded for MediaMonkey'
+    );
+
   return {
     mappings,
     isLoading,
@@ -143,6 +162,7 @@ export const useGenreMapping = () => {
     setOverride,
     removeOverride,
     setBulkOverrides,
-    exportToCSV
+    exportToCSV,
+    exportForMediaMonkey
   };
 };

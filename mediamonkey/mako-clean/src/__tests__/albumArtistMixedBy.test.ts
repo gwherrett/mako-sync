@@ -1,0 +1,65 @@
+import { describe, it, expect } from 'vitest';
+import { albumArtistMixedBy } from '../core/rules/albumArtistMixedBy';
+import { RULES } from '../core/rules';
+import { planTrack } from '../core/runner';
+import type { RuleContext } from '../core/types';
+
+const ctx: RuleContext = { genreMap: new Map([['deep house', 'House']]), genreSeparator: '; ' };
+
+function newAlbumArtist(albumArtist: string): string {
+  const result = albumArtistMixedBy.run({ genre: '', grouping: '', albumArtist }, ctx);
+  return result.changes?.[0]?.value ?? albumArtist;
+}
+
+describe('albumArtistMixedBy (MAK-200 cases)', () => {
+  it.each([
+    ['Mixed by DJ Mako', 'DJ Mako'],
+    ['MIXED BY DJ Mako', 'DJ Mako'],
+    ['Mixed by  DJ Mako', 'DJ Mako'],
+    ['Mixed Bystander', 'Mixed Bystander'],
+    ['', ''],
+  ])('%j -> %j', (input, expected) => {
+    expect(newAlbumArtist(input)).toBe(expected);
+  });
+
+  it('leaves "Mixed by " with nothing after it alone rather than blanking it', () => {
+    expect(albumArtistMixedBy.run({ genre: '', grouping: '', albumArtist: 'Mixed by ' }, ctx)).toEqual({});
+  });
+});
+
+const mixedByTrack = (genre: string) => ({
+  id: '1',
+  label: 'A - T',
+  file: 't.mp3',
+  fields: { genre, grouping: '', albumArtist: 'Mixed by DJ Mako' },
+});
+
+describe('RULES as shipped', () => {
+  it("doesn't change Album Artist yet: the Mixed by rule is off", () => {
+    expect(RULES.map((r) => r.id)).toEqual(['superGenreGrouping']);
+
+    const plan = planTrack(mixedByTrack('Deep House'), RULES, ctx);
+
+    expect(plan.changes).toEqual([{ field: 'grouping', from: '', to: 'House', overwrite: false }]);
+  });
+});
+
+describe('when the Mixed by rule is turned on (after superGenreGrouping)', () => {
+  const withMixedBy = [...RULES, albumArtistMixedBy];
+
+  it('runs Grouping, then Album Artist, in one pass', () => {
+    const plan = planTrack(mixedByTrack('Deep House'), withMixedBy, ctx);
+
+    expect(plan.changes).toEqual([
+      { field: 'grouping', from: '', to: 'House', overwrite: false },
+      { field: 'albumArtist', from: 'Mixed by DJ Mako', to: 'DJ Mako', overwrite: false },
+    ]);
+  });
+
+  it('still fixes Album Artist when the genre does not map, and notes the genre', () => {
+    const plan = planTrack(mixedByTrack('Zydeco'), withMixedBy, ctx);
+
+    expect(plan.changes.map((c) => c.field)).toEqual(['albumArtist']);
+    expect(plan.skipReasons).toEqual(['No SuperGenre for genres: Zydeco']);
+  });
+});

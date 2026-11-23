@@ -81,6 +81,46 @@ serve(async (req) => {
     const url = new URL(req.url);
     const path = url.pathname.split('/').pop();
 
+    // GET ?export=json - effective mapping for the Mako Clean MediaMonkey add-on.
+    // A list of [genre, SuperGenre] pairs ordered by spotify_genre, keys lowercased and
+    // trimmed: the same map, in the same order, that Mako's Step 5 builds in useGenreMap.
+    if (req.method === 'GET' && url.searchParams.get('export') === 'json') {
+      const PAGE_SIZE = 1000;
+      const rows: { spotify_genre: string; super_genre: string | null }[] = [];
+      for (let from = 0; ; from += PAGE_SIZE) {
+        const { data, error } = await userSupabase
+          .from('v_effective_spotify_genre_map')
+          .select('spotify_genre, super_genre')
+          .order('spotify_genre')
+          .range(from, from + PAGE_SIZE - 1);
+
+        if (error) {
+          console.error('Error fetching mapping for JSON export:', error);
+          throw error;
+        }
+        rows.push(...(data ?? []));
+        if (!data || data.length < PAGE_SIZE) break;
+      }
+
+      const mappings = rows
+        .filter(row => row.spotify_genre && row.super_genre)
+        .map(row => [row.spotify_genre.toLowerCase().trim(), row.super_genre]);
+
+      const body = JSON.stringify({
+        version: 1,
+        exportedAt: new Date().toISOString(),
+        mappings,
+      }, null, 1);
+
+      return new Response(body, {
+        headers: {
+          ...corsHeaders,
+          'Content-Type': 'application/json',
+          'Content-Disposition': 'attachment; filename="mako-genre-map.json"'
+        },
+      });
+    }
+
     // GET /export - export effective mapping as CSV (check this BEFORE regular GET)
     if (req.method === 'GET' && url.searchParams.get('export') === 'csv') {
       const { data, error } = await userSupabase

@@ -14,6 +14,7 @@
 import { parseBlob } from 'music-metadata';
 import { withTimeout } from '@/utils/promiseUtils';
 import { splitLegacyId3Genres } from '@/utils/audioTags';
+import { mapToSuperGenre } from '@/utils/superGenreMapping';
 import type {
   ProcessedFile,
   ProcessingResult,
@@ -27,6 +28,14 @@ import { writeId3GroupingTag } from './id3TagWriter';
 
 // Timeout for parsing individual files (30 seconds)
 const PARSE_TIMEOUT_MS = 30000;
+
+/**
+ * writeTagsInPlace's error for an M4A file. The browser can't write MP4 atoms; the
+ * Mako Clean MediaMonkey add-on sets Grouping on M4A (MAK-202). The UI counts these
+ * errors with startsWith, so keep the 'M4A tag writing' prefix.
+ */
+export const M4A_NOT_SUPPORTED_ERROR =
+  'M4A tag writing not supported in the browser — set Grouping in MediaMonkey with the Mako Clean add-on (Edit Tags > Mako: Clean selected tracks)';
 
 // Default batch size for parallel processing
 const DEFAULT_BATCH_SIZE = 5;
@@ -149,41 +158,6 @@ async function extractFileMetadata(file: File): Promise<{
     album: metadata.common.album || null,
     genres: Array.from(genresSet).filter(Boolean),
   };
-}
-
-/**
- * Map genre(s) to SuperGenre using the genre mapping
- *
- * Matching strategy:
- * 1. Exact match (case-insensitive)
- * 2. Partial match - genre contains a mapped key or vice versa
- *
- * Returns the first successful match, or null if no mapping found.
- */
-function mapToSuperGenre(
-  genres: string[],
-  genreMap: Map<string, string>
-): string | null {
-  for (const genre of genres) {
-    const normalizedGenre = genre.toLowerCase().trim();
-
-    // Try exact match first
-    if (genreMap.has(normalizedGenre)) {
-      return genreMap.get(normalizedGenre)!;
-    }
-
-    // Try partial matching - check if any mapped genre is contained in this genre
-    for (const [mappedGenre, superGenre] of genreMap.entries()) {
-      if (
-        normalizedGenre.includes(mappedGenre) ||
-        mappedGenre.includes(normalizedGenre)
-      ) {
-        return superGenre;
-      }
-    }
-  }
-
-  return null;
 }
 
 /**
@@ -531,7 +505,7 @@ export async function writeTagsInPlace(
   // M4A uses MP4 iTunes atoms, not ID3 — browser-side writing is not supported
   const mappedFiles = allMapped.filter(f => {
     if (f.filename.toLowerCase().endsWith('.m4a')) {
-      errors.push({ filename: f.filename, error: 'M4A tag writing not supported in the browser — use a desktop tool (e.g. Mp3tag, MusicBrainz Picard)' });
+      errors.push({ filename: f.filename, error: M4A_NOT_SUPPORTED_ERROR });
       return false;
     }
     return true;

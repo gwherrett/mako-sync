@@ -55,6 +55,7 @@ import {
   processDownloadsWithHandles,
   reprocessWithUpdatedMap,
   writeTagsInPlace,
+  M4A_NOT_SUPPORTED_ERROR,
 } from '@/services/downloadProcessor.service';
 import { UNPATCHABLE_ID3_TAG_ERROR } from '@/services/id3TagWriter';
 import {
@@ -339,13 +340,13 @@ export function DownloadProcessingSection() {
       setTagsHaveBeenWritten(true);
 
       if (errors.length > 0) {
-        const m4aCount = errors.filter(e => e.error.startsWith('M4A tag writing')).length;
+        const m4aCount = errors.filter(e => e.error === M4A_NOT_SUPPORTED_ERROR).length;
         const unpatchableCount = errors.filter(e => e.error.startsWith(UNPATCHABLE_ID3_TAG_ERROR)).length;
         const failCount = errors.length - m4aCount - unpatchableCount;
         const parts = [
           success > 0 ? `${success} written` : null,
           skipped > 0 ? `${skipped} skipped (already correct)` : null,
-          m4aCount > 0 ? `${m4aCount} M4A skipped (not supported — use a desktop tool)` : null,
+          m4aCount > 0 ? `${m4aCount} M4A skipped (set Grouping in MediaMonkey with the Mako Clean add-on)` : null,
           unpatchableCount > 0 ? `${unpatchableCount} MP3 left untouched (tag can't be changed safely — see console)` : null,
           failCount > 0 ? `${failCount} failed` : null,
         ].filter(Boolean).join(', ');

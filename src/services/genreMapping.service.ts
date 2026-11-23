@@ -95,6 +95,19 @@ export class GenreMappingService {
    * Export effective mapping as CSV
    */
   static async exportToCSV(): Promise<Blob> {
+    return this.fetchExport('csv');
+  }
+
+  /**
+   * Export effective mapping as JSON for the Mako Clean MediaMonkey add-on:
+   * { version: 1, exportedAt, mappings: [[genre, superGenre], ...] }, in the order
+   * Step 5 uses.
+   */
+  static async exportForMediaMonkey(): Promise<Blob> {
+    return this.fetchExport('json');
+  }
+
+  private static async fetchExport(format: 'csv' | 'json'): Promise<Blob> {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) {
       throw new Error('No active session');
@@ -102,7 +115,7 @@ export class GenreMappingService {
 
     const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
     const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
-    const response = await fetch(`${supabaseUrl}/functions/v1/genre-mapping?export=csv`, {
+    const response = await fetch(`${supabaseUrl}/functions/v1/genre-mapping?export=${format}`, {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${session.access_token}`,
