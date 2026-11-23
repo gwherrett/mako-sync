@@ -162,6 +162,8 @@ Hosted on **Vercel**. Merging to `main` deploys to production and also generates
 
 `main` is protected: changes land through a pull request, which can't merge until the `test` check (`.github/workflows/test.yml`) and the `Vercel` check pass. The rule applies to admins too, so direct pushes to `main` are rejected.
 
+**Edge Functions deploy themselves.** When a merge to `main` changes anything under `supabase/functions/`, `.github/workflows/deploy-edge-functions.yml` deploys them to Supabase project `bzzstdpfmyqttnzhgaoa`. Don't deploy them by hand after a merge. To check a deploy, look for that workflow's run on the merge commit (`gh run list --workflow deploy-edge-functions.yml`). To redeploy without a code change, run it from the Actions tab (`workflow_dispatch`). The workflow names each function, so a new function must be added to its list or it won't deploy. Database migrations are not deployed by this workflow.
+
 Dependabot (`.github/dependabot.yml`) groups minor and patch bumps into one PR per ecosystem and opens each major bump as its own PR.
 
 ## Linear Workflow
