@@ -64,7 +64,7 @@ const Index = () => {
 
   // Get initial tab + review source from URL query params. The Review Matches tab keeps
   // the value `missing`, so old ?tab=missing&source=... links still open it.
-  const initialTab = searchParams.get('tab') || 'vinyl';
+  const initialTab = searchParams.get('tab') || 'spotify';
   const [activeTab, setActiveTab] = useState(initialTab);
   const reviewSource = (searchParams.get('source') as ReviewSource) || 'spotify';
 
