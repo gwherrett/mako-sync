@@ -4,6 +4,8 @@ import { useToast } from '@/hooks/use-toast';
 
 interface SyncResult {
   pulled: number;
+  /** Existing records matched to their Discogs copy (absent from older function versions) */
+  linked?: number;
   partial: boolean;
   errors: { id: string | number; reason: string }[];
 }
@@ -57,18 +59,20 @@ export function useDiscogsSync() {
       console.log('[DiscogsSync] onSuccess', result);
       queryClient.invalidateQueries({ queryKey: ['physical_media'] });
 
+      const linked = result.linked ?? 0;
+      const counts = linked > 0
+        ? `↓ ${result.pulled} new · ${linked} matched to existing records`
+        : `↓ ${result.pulled} pulled from Discogs`;
+
       if (result.partial) {
         toast({
           title: 'Partial sync complete',
-          description: `↓ ${result.pulled} synced — click Sync again to continue importing`,
+          description: `${counts} — click Sync again to continue importing`,
         });
-      } else if (result.pulled === 0) {
+      } else if (result.pulled === 0 && linked === 0) {
         toast({ title: 'Already in sync', description: 'Collection is already up to date.' });
       } else {
-        toast({
-          title: 'Discogs sync complete',
-          description: `↓ ${result.pulled} pulled from Discogs`,
-        });
+        toast({ title: 'Discogs sync complete', description: counts });
       }
 
       if (result.errors.length > 0) {

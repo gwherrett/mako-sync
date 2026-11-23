@@ -2,6 +2,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.100.0"
 import { Pool } from "https://deno.land/x/postgres@v0.17.0/mod.ts"
+import { planPullSync, type LegacyRow } from "./plan.ts"
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -135,7 +136,8 @@ interface DiscogsBasicInfo {
 }
 
 interface DiscogsCollectionItem {
-  id: number          // instance_id
+  id: number          // RELEASE id (not the instance id)
+  instance_id: number // this copy in the user's collection
   rating: number      // 0 = unrated
   basic_information: DiscogsBasicInfo
 }
@@ -158,7 +160,8 @@ interface SyncError {
 }
 
 interface SyncResult {
-  pulled: number
+  pulled: number      // new rows inserted
+  linked: number      // existing rows tagged with their instance id
   partial: boolean
   errors: SyncError[]
 }
@@ -174,26 +177,43 @@ async function pullFromDiscogs(
   accessToken: string,
   accessTokenSecret: string,
 ): Promise<SyncResult> {
-  // Load existing instance IDs for deduplication — paginate to handle collections > 1000
+  // Load every existing row for deduplication — paginate to handle collections > 1000.
+  // Rows with an instance id are matched by it; rows without one (legacy) are
+  // matched by release id and linked instead of being inserted again.
   const DEDUP_PAGE_SIZE = 1000
   const existingInstanceIds = new Set<number>()
+  const legacyRows: LegacyRow[] = []
   let dedupOffset = 0
   while (true) {
-    const { data: existingRows } = await supabaseClient
+    const { data: existingRows, error: dedupError } = await supabaseClient
       .from('physical_media')
-      .select('discogs_instance_id')
+      .select('id, discogs_instance_id, discogs_release_id')
       .eq('user_id', userId)
-      .not('discogs_instance_id', 'is', null)
+      .order('created_at', { ascending: true })
+      .order('id', { ascending: true })
       .range(dedupOffset, dedupOffset + DEDUP_PAGE_SIZE - 1)
-    const rows = existingRows ?? []
-    for (const r of rows as Array<{ discogs_instance_id: number }>) {
-      existingInstanceIds.add(r.discogs_instance_id)
+    // A failed dedup read would make every record look new — never continue
+    if (dedupError) throw new Error(`Failed to load existing records: ${dedupError.message}`)
+    const rows = (existingRows ?? []) as Array<{
+      id: string
+      discogs_instance_id: number | null
+      discogs_release_id: number | null
+    }>
+    for (const r of rows) {
+      if (r.discogs_instance_id != null) {
+        existingInstanceIds.add(r.discogs_instance_id)
+      } else {
+        legacyRows.push({ id: r.id, discogs_release_id: r.discogs_release_id })
+      }
     }
     if (rows.length < DEDUP_PAGE_SIZE) break
     dedupOffset += DEDUP_PAGE_SIZE
   }
 
-  log('info', 'Pull: existing instance IDs', { count: existingInstanceIds.size })
+  log('info', 'Pull: existing records', {
+    withInstanceId: existingInstanceIds.size,
+    withoutInstanceId: legacyRows.length,
+  })
 
   const PER_PAGE = 100
   const BUDGET_MS = 60_000
@@ -201,11 +221,13 @@ async function pullFromDiscogs(
   const baseUrl = `https://api.discogs.com/users/${username}/collection/folders/0/releases`
   let page = 1
   let totalPages = 1
-  const newItems: DiscogsCollectionItem[] = []
+  let partial = false
+  const collectionItems: DiscogsCollectionItem[] = []
 
   while (page <= totalPages) {
     if (Date.now() - startTime > BUDGET_MS) {
       log('warn', 'Pull: time budget exceeded', { page, totalPages })
+      partial = true
       break
     }
 
@@ -238,16 +260,44 @@ async function pullFromDiscogs(
     const data = await resp.json() as DiscogsCollectionResponse
     totalPages = data.pagination.pages
 
-    for (const item of data.releases) {
-      if (!existingInstanceIds.has(item.id)) newItems.push(item)
-    }
+    collectionItems.push(...data.releases)
 
-    log('info', `Pull: fetched page ${page}/${totalPages}`, { newSoFar: newItems.length })
+    log('info', `Pull: fetched page ${page}/${totalPages}`, { fetchedSoFar: collectionItems.length })
     page++
   }
 
+  const { toLink, toInsert: newItems } = planPullSync(collectionItems, existingInstanceIds, legacyRows)
+  log('info', 'Pull: plan', { toLink: toLink.length, toInsert: newItems.length })
+
+  const errors: SyncError[] = []
+  const syncedAt = new Date().toISOString()
+
+  // Link existing rows to their instance ids. No Discogs calls are needed, so
+  // this is fast; it runs before enrichment so the budget goes to new items.
+  const LINK_CHUNK_SIZE = 25
+  let linked = 0
+  for (let i = 0; i < toLink.length; i += LINK_CHUNK_SIZE) {
+    const chunk = toLink.slice(i, i + LINK_CHUNK_SIZE)
+    const results = await Promise.all(chunk.map(({ rowId, instanceId }) =>
+      supabaseClient
+        .from('physical_media')
+        .update({ discogs_instance_id: instanceId, discogs_synced_at: syncedAt })
+        .eq('id', rowId)
+        .eq('user_id', userId)
+        .then(r => ({ rowId, error: r.error })),
+    ))
+    for (const { rowId, error } of results) {
+      if (error) {
+        log('error', 'Pull: link failed', { rowId, error: error.message })
+        errors.push({ id: rowId, reason: error.message })
+      } else {
+        linked++
+      }
+    }
+  }
+
   if (newItems.length === 0) {
-    return { pulled: 0, partial: false, errors: [] }
+    return { pulled: 0, linked, partial, errors }
   }
 
   // Enrich items sequentially, checking the budget before each one.
@@ -257,7 +307,6 @@ async function pullFromDiscogs(
   // Rate limit: 2 API calls per item, staggered to stay under Discogs 60 req/min.
   log('info', 'Pull: enriching items with release data + marketplace stats', { count: newItems.length })
   const enriched: DiscogsEnrichedItem[] = []
-  let partial = false
 
   for (let i = 0; i < newItems.length; i++) {
     if (Date.now() - startTime > BUDGET_MS) {
@@ -339,10 +388,9 @@ async function pullFromDiscogs(
   }
 
   // Insert in batches of 100
-  const syncedAt = new Date().toISOString()
   const rows = enriched.map(item => ({
     user_id: userId,
-    discogs_instance_id: item.id,
+    discogs_instance_id: item.instance_id,
     discogs_release_id: item.basic_information.id ?? null,
     discogs_master_id: item.basic_information.master_id ?? null,
     discogs_synced_at: syncedAt,
@@ -365,25 +413,26 @@ async function pullFromDiscogs(
     notes: null,
   }))
 
-  const errors: SyncError[] = []
   const DB_BATCH_SIZE = 100
   let pulled = 0
 
   for (let i = 0; i < rows.length; i += DB_BATCH_SIZE) {
     const batch = rows.slice(i, i + DB_BATCH_SIZE)
-    const { error: insertError } = await supabaseClient
+    // .select() returns only the rows actually inserted, so skipped duplicates aren't counted
+    const { data: inserted, error: insertError } = await supabaseClient
       .from('physical_media')
       .upsert(batch, { onConflict: 'user_id,discogs_instance_id', ignoreDuplicates: true })
+      .select('id')
 
     if (insertError) {
       log('error', 'Pull: batch upsert failed', { batchStart: i, error: insertError.message })
       errors.push({ id: `batch-${i}`, reason: insertError.message })
     } else {
-      pulled += batch.length
+      pulled += inserted?.length ?? 0
     }
   }
 
-  return { pulled, partial, errors }
+  return { pulled, linked, partial, errors }
 }
 
 // ─── Main handler ──────────────────────────────────────────────────────────
